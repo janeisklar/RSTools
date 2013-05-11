@@ -155,6 +155,97 @@ LinearRegression.val     = {regressor dataLR prefixLR maskLR};
 LinearRegression.help    = {'This is mainly a wrapper for Matlab''s regress() function. As opposed to SPM''s model specification, no high pass-filter or any other additional corrections are being applied.'};
 LinearRegression.prog    = @spm_local_linearRegression;
 LinearRegression.vout    = @vout_linearRegression;
+
+% ---------------------------------------------------------------------
+% dataDF data used for the linear regression
+% ---------------------------------------------------------------------
+dataDF           = cfg_files;
+dataDF.tag       = 'dataDF';
+dataDF.name      = 'Data that is to be filtered';
+dataDF.filter    = 'image';
+dataDF.ufilter   = '.*';
+dataDF.num       = [1 Inf];
+dataDF.help      = {['Select the volumes on which the filter will be applied on']};
+
+% ---------------------------------------------------------------------
+% prefixDF prefix of the output file
+% ---------------------------------------------------------------------
+prefixDF         = cfg_entry;
+prefixDF.tag     = 'prefixDF';
+prefixDF.name    = 'Filename Prefix';
+prefixDF.help    = {'Specify the string to be prepended to the filenames. Default prefix is ''Filtered_''.'};
+prefixDF.strtype = 's';
+prefixDF.num     = [1 Inf];
+prefixDF.val     = {'Filtered_'};
+
+% ---------------------------------------------------------------------
+% filterSpecification matlab code that creates the filter
+% ---------------------------------------------------------------------
+filterSpecification         = cfg_entry;
+filterSpecification.tag     = 'filterSpecification';
+filterSpecification.name    = 'Filter specification';
+filterSpecification.help    = {'Specify the filter that will be applied on the data by creating a Matlab filter object. You can use fdatool to generate the corresponding code for your filter. Then transform it in the following format before copying it into this field: "design(fdesign.lowpass(0.08, 0.16, 1, 80, 1/1.8), ''butter'', ''MatchExactly'', ''stopband'')"'};
+filterSpecification.strtype = 's';
+filterSpecification.num     = [1 Inf];
+filterSpecification.val     = {'design(fdesign.lowpass(0.08, 0.16, 1, 80, 1/1.8), ''butter'', ''MatchExactly'', ''stopband'')'};
+
+% ---------------------------------------------------------------------
+% RT TR time
+% ---------------------------------------------------------------------
+RT         = cfg_entry;
+RT.tag     = 'RT';
+RT.name    = 'TR in s';
+RT.help    = {'Please specify the TR time, which will be needed to correct for the delay of the filter.'};
+RT.strtype = 'r';
+RT.num     = [1 1];
+RT.val     = {1.8};
+
+% ---------------------------------------------------------------------
+%  DigitalFilter Apply digital filter
+% ---------------------------------------------------------------------
+DigitalFilter         = cfg_exbranch;
+DigitalFilter.tag     = 'DigitalFilter';
+DigitalFilter.name    = 'Digital filter';
+DigitalFilter.val     = {dataDF prefixDF filterSpecification RT};
+DigitalFilter.help    = {'This batch task will apply a filter that can be specified on every voxel in the given dataset. Please keep in mind that the filter will have a delay which will result in less output volumes. The data will be cut off at the beginning of the recording. This delay depends on the specified filter and will be saved in a ''-delay.txt''-file with the same name as the output volume which contains the delay in seconds and a second ''-cutoff.txt'' that holds the number of dropped volumes).'};
+DigitalFilter.prog    = @spm_local_digitalFilter;
+DigitalFilter.vout    = @vout_digitalFilter;
+% ---------------------------------------------------------------------
+
+% ---------------------------------------------------------------------
+% RT TR time
+% ---------------------------------------------------------------------
+RT         = cfg_entry;
+RT.tag     = 'RT';
+RT.name    = 'TR in s';
+RT.help    = {'The TR time.'};
+RT.strtype = 'r';
+RT.num     = [1 1];
+RT.val     = {1.8};
+
+% ---------------------------------------------------------------------
+% f Frequency range
+% ---------------------------------------------------------------------
+frequencyRange         = cfg_entry;
+frequencyRange.tag     = 'frequencyRange';
+frequencyRange.name    = 'Frequency range in Hz';
+frequencyRange.help    = {'Provide the lower and upper bounds of the frequency range that should be filtered. For a low-pass filter use [0 f], for a high-pass filter [f Inf] and for a band-pass filter [f1 f2].'};
+frequencyRange.strtype = 'r';
+frequencyRange.num     = [1 2];
+frequencyRange.val     = {[0.009 0.08]};
+
+% ---------------------------------------------------------------------
+%  FFTFilter Apply filter using FFT
+% ---------------------------------------------------------------------
+FFTFilter         = cfg_exbranch;
+FFTFilter.tag     = 'FFTFilter';
+FFTFilter.name    = 'FFT filter';
+FFTFilter.val     = {dataDF prefixDF frequencyRange RT};
+FFTFilter.help    = {'This batch task will apply a frequency filter by transforming the data into frequency space using FFT, cutting out the provided frequency range and transforming it back using IFFT.'};
+FFTFilter.prog    = @spm_local_FFTFilter;
+FFTFilter.vout    = @vout_FFTFilter;
+% ---------------------------------------------------------------------
+
 % ---------------------------------------------------------------------
 % rstools RSTools
 % ---------------------------------------------------------------------
@@ -162,7 +253,7 @@ rstools         = cfg_choice;
 rstools.tag     = 'RSTools';
 rstools.name    = 'RS Tools';
 rstools.help    = {'This is a toolbox that provides a couple of helpers for the preprocessing of RS data.'};
-rstools.values  = {ROIExtraction RegressorMerging LinearRegression};
+rstools.values  = {ROIExtraction RegressorMerging LinearRegression DigitalFilter FFTFilter};
 
 %======================================================================
 function out = spm_local_roiExtraction(varargin)
@@ -353,4 +444,186 @@ function dep = vout_linearRegression(job)
 dep(1)            = cfg_dep;
 dep(1).sname      = 'Residuals of the linear regression';
 dep(1).src_output = substruct('.','residuals');
+dep(1).tgt_spec   = cfg_findspec({{'filter','image'}});
+
+%======================================================================
+function out = spm_local_digitalFilter(varargin)
+job = varargin{1};
+
+% load job params
+prefix = job.prefixDF;
+data = job.dataDF;
+filterHandle = eval(job.filterSpecification);
+RT = job.RT(1);
+
+% load volumes
+volumes = spm_vol(char(data));
+volumesData = spm_read_vols(volumes);
+nX=size(volumesData,1);
+nY=size(volumesData,2);
+nZ=size(volumesData,3);
+t = size(volumesData, 4);
+NaNrep = spm_type(volumes(1).dt(1),'nanrep');
+
+% determine the coefficients of the filter
+if isprop(filterHandle, 'sosMatrix')
+    % IIR filter
+    SOS = filterHandle.sosMatrix;
+    G = filterHandle.ScaleValues;
+else
+    % FIR filter
+    SOS = filterHandle.Numerator;
+    G = 1;
+end
+
+% apply the filter on a voxel-basis
+spm_progress_bar('Init',nX*nY*nZ,'Digital filtering','Voxels complete');
+c = 0;
+for x = 1:nX
+    for y = 1:nY
+        if any(volumesData(x,y,:,:) ~= NaNrep)
+            line = reshape(volumesData(x,y,:,:), [nZ, t]);
+            f = filtfilt(SOS, G, line');
+            volumesData(x,y,:,:) = f';
+        end
+    end
+    c = c + nY*nZ;
+    spm_progress_bar('Set',c);
+end
+spm_progress_bar('Clear');
+
+% create the filename for the filtered volumes
+basename = fliplr(regexprep(fliplr(volumes(1).fname), '^[^,]*,?[^\.]*\.([^/]*)/(.*)$', ['$1' fliplr(prefix) '/$2']));
+filename = [basename '.nii'];
+
+spm_unlink(filename);
+
+% create filtered volumes
+filteredVolumes = volumes(1:t);
+
+for k=1:t
+    vol = struct('fname', spm_file(volumes(k).fname, 'prefix', prefix), ...
+         'dim',     [nX nY nZ], ...
+         'dt',      [spm_type('float32') spm_platform('bigend')], ...
+         'mat',     volumes(k).mat, ...
+         'pinfo',   [1 0 0]', ...
+         'descrip', ['volumes filtered with the following filter: ' job.filterSpecification], ...
+         'n',       volumes(k).n ...
+    );
+    
+    vol = spm_create_vol(vol);
+    spm_write_vol(vol, double(volumesData(:,:,:,k)));
+         
+    if k<2
+        filteredVolumes = vol;
+    else
+        filteredVolumes(k) = vol;
+    end
+end
+
+out.data = cell(t,1);
+for k=1:t
+    out.data{k} = [filteredVolumes(k).fname ',' filteredVolumes(k).n(1)];
+end
+
+%======================================================================
+function dep = vout_digitalFilter(job)
+dep(1)            = cfg_dep;
+dep(1).sname      = 'Filtered data';
+dep(1).src_output = substruct('.','data');
+dep(1).tgt_spec   = cfg_findspec({{'filter','image'}});
+
+%======================================================================
+function out = spm_local_FFTFilter(varargin)
+job = varargin{1};
+
+% load job params
+prefix = job.prefixDF
+data = job.dataDF
+frequencyRange = job.frequencyRange
+RT = job.RT(1)
+
+% load volumes
+volumes = spm_vol(char(data));
+volumesData = spm_read_vols(volumes);
+nX=size(volumesData,1);
+nY=size(volumesData,2);
+nZ=size(volumesData,3);
+t = size(volumesData, 4);
+NaNrep = spm_type(volumes(1).dt(1),'nanrep');
+
+
+% compute how many volumes will have to be cut off
+cutoff = mean(grpdelay(filterHandle))
+
+% compute the delay of the filter in seconds
+delay = cutoff * RT
+
+% apply the filter on a voxel-basis
+spm_progress_bar('Init',nX*nY*nZ,'Digital filtering','Voxels complete');
+c = 0;
+for x = 1:nX
+    for y = 1:nY
+        for z = 1:nZ            
+            if all(volumesData(x,y,z,:) == 0)
+                f = NaNrep;
+            else 
+                voxel = volumesData(x,y,z,:);
+                f = filter(filterHandle, voxel(:));
+            end
+            volumesData(x,y,z,:) = f;
+        end
+    end
+    c = c + nY*nZ;
+    spm_progress_bar('Set',c);
+end
+spm_progress_bar('Clear');
+
+% create the filename for the filtered volumes
+basename = fliplr(regexprep(fliplr(volumes(1).fname), '^[^,]*,?[^\.]*\.([^/]*)/(.*)$', ['$1' fliplr(prefix) '/$2']));
+filename = [basename '.nii'];
+
+spm_unlink(filename);
+
+% create delay and cutoff files
+save([basename '-delay.txt'] ,'delay','-ascii');
+save([basename '-cutoff.txt'] ,'cutoff','-ascii');
+
+% create filtered volumes
+newT = t-cutoff
+filteredVolumes = volumes{1:newT};
+
+for i=1:newT
+    k = i+cutoff;
+    vol = struct('fname', spm_file(volumes(i).fname, 'prefix', prefix), ...
+         'dim',     [nX nY nZ], ...
+         'dt',      [spm_type('float32') spm_platform('bigend')], ...
+         'mat',     volumes(i).mat, ...
+         'pinfo',   [1 0 0]', ...
+         'descrip', ['volumes filtered with the following filter: ' job.filterSpecification], ...
+         'n',       volumes(i).n ...
+    );
+    
+    vol = spm_create_vol(vol);
+    spm_write_vol(vol, double(volumesData(:,:,:,k)));
+         
+    if i<2
+        filteredVolumes = vol;
+    else
+        filteredVolumes(i) = vol;
+    end
+end
+
+out.data = cell(newT,1);
+for k=1:newT
+    out.data{k} = [filteredVolumes(k).fname ',' filteredVolumes(k).n(1)];
+end
+out.delay = delay;
+out.cutoff = cutoff;
+
+%======================================================================
+function dep = vout_FFTFilter(job)
+dep(1)            = cfg_dep;
+dep(1).sname      = 'Filtered data';
+dep(1).src_output = substruct('.','data');
 dep(1).tgt_spec   = cfg_findspec({{'filter','image'}});
