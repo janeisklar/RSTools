@@ -247,13 +247,58 @@ FFTFilter.vout    = @vout_FFTFilter;
 % ---------------------------------------------------------------------
 
 % ---------------------------------------------------------------------
+% description a description of the command
+% ---------------------------------------------------------------------
+description         = cfg_entry;
+description.tag     = 'description';
+description.name    = 'Description of this task';
+description.help    = {'This field doesn''t serve any functional purpose and exists soley for the purpose of documentation(text will be printed during execution).'};
+description.strtype = 's';
+description.num     = [1 Inf];
+description.val     = {'>>Description of the task<<'};
+
+% ---------------------------------------------------------------------
+% command unix command to be executed
+% ---------------------------------------------------------------------
+command         = cfg_entry;
+command.tag     = 'command';
+command.name    = 'Command';
+command.help    = {'The unix command to be executed'};
+command.strtype = 's';
+command.num     = [1 Inf];
+command.val     = {'echo foo;'};
+
+% ---------------------------------------------------------------------
+% dataUC data tbat will be passed onto the next module
+% ---------------------------------------------------------------------
+dataUC           = cfg_files;
+dataUC.tag       = 'dataUC';
+dataUC.name      = 'Output Data';
+dataUC.filter    = 'image';
+dataUC.ufilter   = '.*';
+dataUC.num       = [1 Inf];
+dataUC.help      = {['Select the volumes that will be passed onto the next module']};
+
+% ---------------------------------------------------------------------
+%  UnixCommand Execute unix command
+% ---------------------------------------------------------------------
+UnixCommand         = cfg_exbranch;
+UnixCommand.tag     = 'UnixCommand';
+UnixCommand.name    = 'Execute Unix Command';
+UnixCommand.val     = {description command dataUC};
+UnixCommand.help    = {'This task will execute a supplied unix command.'};
+UnixCommand.prog    = @spm_local_UnixCommand;
+UnixCommand.vout    = @vout_UnixCommand;
+% ---------------------------------------------------------------------
+
+% ---------------------------------------------------------------------
 % rstools RSTools
 % ---------------------------------------------------------------------
 rstools         = cfg_choice;
 rstools.tag     = 'RSTools';
 rstools.name    = 'RS Tools';
 rstools.help    = {'This is a toolbox that provides a couple of helpers for the preprocessing of RS data.'};
-rstools.values  = {ROIExtraction RegressorMerging LinearRegression DigitalFilter FFTFilter};
+rstools.values  = {ROIExtraction RegressorMerging LinearRegression DigitalFilter FFTFilter UnixCommand};
 
 %======================================================================
 function out = spm_local_roiExtraction(varargin)
@@ -625,5 +670,30 @@ out.cutoff = cutoff;
 function dep = vout_FFTFilter(job)
 dep(1)            = cfg_dep;
 dep(1).sname      = 'Filtered data';
+dep(1).src_output = substruct('.','data');
+dep(1).tgt_spec   = cfg_findspec({{'filter','image'}});
+
+%======================================================================
+function out = spm_local_UnixCommand(varargin)
+
+job = varargin{1};
+command = job.command;
+description = job.description;
+out.data = job.dataUC;
+
+disp(['Job description: ' description]);
+
+[status, error]  = unix(command);
+
+if status ~= 0
+    throw(MException('RSTools:UnixCommand','The execution of the command ''%s'' returned an error.', command));
+else
+    disp('Execution successful!');
+end
+
+%======================================================================
+function dep = vout_UnixCommand(job)
+dep(1)            = cfg_dep;
+dep(1).sname      = sprintf('Result from the execution of ''%s''', job.description);
 dep(1).src_output = substruct('.','data');
 dep(1).tgt_spec   = cfg_findspec({{'filter','image'}});
