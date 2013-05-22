@@ -2,7 +2,7 @@ cc		=	gcc
 CC		=	gcc
 AR		=	ar
 RANLIB  =	ranlib
-CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99
+CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99 
 
 FSLIO_INCS	=	-I../include
 NIFTI_INCS	=	-I../include
@@ -46,7 +46,7 @@ niftiutils:
 
 timecourse:
 	$(CC) $(CFLAGS) -c rstimecourse.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(CC) $(CFLAGS) -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) rstimecourse.o
+	$(CC) $(CFLAGS) rstimecourse.o -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS)
 
 help:
 	@echo "all:      make the rstools"
