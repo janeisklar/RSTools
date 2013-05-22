@@ -1,0 +1,28 @@
+# Object files
+*.o
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Data files
+*.nii
+*.ima
+
+# Binaries
+bin/*
+rstools/rstimecourse
+utils/nifti_tool
+utils/nifti1_test
+utils/nifti_stats
