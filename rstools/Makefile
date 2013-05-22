@@ -1,14 +1,17 @@
-CC	=	gcc
-CFLAGS	=	-ansi -pedantic -Woverlength-strings -g
+cc		=	gcc
+CC		=	gcc
+AR		=	ar
+RANLIB  =	ranlib
+CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99
 
 FSLIO_INCS	=	-I../include
 NIFTI_INCS	=	-I../include
 ZNZ_INCS	=	-I/usr/include
 
-FSLIO_LIBS	=	-L../lib -lfslio
-NIFTI_LIBS	=	-L../lib -lniftiio
-ZNZ_LIBS	=	-L/usr/lib -L../lib -lznz -lm -lz
-
+FSLIO_LIBS	    =	-L../lib -lfslio
+NIFTI_LIBS	    =	-L../lib -lniftiio
+ZNZ_LIBS	    =	-L/usr/lib -L../lib -lznz -lm -lz
+RSNIFTI_LIBS	=	-L. -lrsniftiutils
 
 ##############################################################
 # platform specific redefines (to use, set ARCH appropriately)
@@ -31,14 +34,19 @@ endif
 endif
 
 
-
-all:	timecourse
+all:	niftiutils timecourse
 
 clean:
 	rm -f *.o *.a
 
-timecourse: 
-	$(CC) $(CFLAGS) -o rstimecourse rstimecourse.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS)
+niftiutils:
+	$(CC) $(CFLAGS) -o rsniftiutils.o -c rsniftiutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(AR) rcs librsniftiutils.a rsniftiutils.o
+	$(RANLIB) librsniftiutils.a
+
+timecourse:
+	$(CC) $(CFLAGS) -c rstimecourse.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) rstimecourse.o
 
 help:
 	@echo "all:      make the rstools"

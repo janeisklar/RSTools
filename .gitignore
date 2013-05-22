@@ -1,3 +1,6 @@
+# General
+*.DS_Store
+
 # Object files
 *.o
 
@@ -10,6 +13,7 @@
 *.so
 *.so.*
 *.dylib
+*.dSYM
 
 # Executables
 *.exe
@@ -23,6 +27,7 @@
 # Binaries
 bin/*
 rstools/rstimecourse
+rstools/rsniftiutils
 utils/nifti_tool
 utils/nifti1_test
 utils/nifti_stats

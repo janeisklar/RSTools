@@ -9,7 +9,7 @@ FSLIO		=	fsliolib
 EXAMPLES	=	examples
 UTILS		=	utils
 TESTING		=	Testing
-UTILS_PROGS	=	nifti_stats nifti_tool nifti1_test
+UTILS_PROGS	=	nifti_stats nifti_tool nifti1_test 
 THIS_DIR	=	`basename ${PWD}`
 RSTOOLS         =       rstools
 
@@ -107,7 +107,7 @@ FSLIO_LIBS	=	$(FSLIO_PATH) -lfslio
 
 all:	   znz nifti nifticdf fslio rstools install
 
-install:   znz_install nifti_install nifticdf_install fslio_install utils_install
+install:   znz_install nifti_install nifticdf_install fslio_install utils_install rstools_install
 
 clean:	   znz_clean nifti_clean nifticdf_clean fslio_clean examples_clean \
 	   utils_clean regress_clean rstools_clean
@@ -183,6 +183,13 @@ nifti_install: $(INSTALL_INC_DIR) $(INSTALL_LIB_DIR)
 	($(CP) $(NIFTI)/*.a $(INSTALL_LIB_DIR); $(CP) $(NIFTI)/*.h $(INSTALL_INC_DIR);)
 	$(RANLIB) $(INSTALL_LIB_DIR)/*.a
 	@echo " $(NIFTI) installed."
+	@echo ""
+
+rstools_install: $(INSTALL_INC_DIR) $(INSTALL_LIB_DIR)
+	($(CP) $(RSTOOLS)/*.a $(INSTALL_LIB_DIR); $(CP) $(RSTOOLS)/*.h $(INSTALL_INC_DIR);)
+	($(CP) $(RSTOOLS)/rstimecourse $(INSTALL_BIN_DIR);)
+	$(RANLIB) $(INSTALL_LIB_DIR)/*.a
+	@echo " $(RSTOOLS) installed."
 	@echo ""
 
 nifticdf_install: $(INSTALL_INC_DIR) $(INSTALL_LIB_DIR)
