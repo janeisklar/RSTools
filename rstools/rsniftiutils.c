@@ -9,6 +9,50 @@ Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z)
     return a;
 }
 
+void convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+    switch ( datatype ) {
+        case NIFTI_TYPE_UINT8:
+            convertScaledDoubleToBuffer_UINT8(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_INT8:
+            convertScaledDoubleToBuffer_INT8(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_UINT16:
+            convertScaledDoubleToBuffer_UINT16(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_INT16:
+            convertScaledDoubleToBuffer_INT16(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_UINT64:
+            convertScaledDoubleToBuffer_UINT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_INT64:
+            convertScaledDoubleToBuffer_INT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_UINT32:
+            convertScaledDoubleToBuffer_UINT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_INT32:
+            convertScaledDoubleToBuffer_INT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_FLOAT32:
+            convertScaledDoubleToBuffer_FLOAT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+        case NIFTI_TYPE_FLOAT64:
+            convertScaledDoubleToBuffer_FLOAT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            break;
+            
+        case NIFTI_TYPE_FLOAT128:
+        case NIFTI_TYPE_COMPLEX128:
+        case NIFTI_TYPE_COMPLEX256:
+        case NIFTI_TYPE_COMPLEX64:
+        default:
+            fprintf(stderr, "\nWarning, %s not supported yet.\n",nifti_datatype_string(datatype));
+            
+    }
+}
+
+
 void convertScaledDoubleToBuffer_UINT8(THIS_UINT8 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
     int x, y, z;
 

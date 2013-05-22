@@ -171,46 +171,16 @@ Point3D* ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *
         
         void *maskBuffer = malloc((unsigned long)newX * (unsigned long)newY * (unsigned long)newZ * (unsigned long)(dt/8));
         
-        switch ( maskPrototype->niftiptr->datatype ) {
-            case NIFTI_TYPE_UINT8:
-                convertScaledDoubleToBuffer_UINT8(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_INT8:
-                convertScaledDoubleToBuffer_INT8(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_UINT16:
-                convertScaledDoubleToBuffer_UINT16(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_INT16:
-                convertScaledDoubleToBuffer_INT16(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_UINT64:
-                convertScaledDoubleToBuffer_UINT64(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_INT64:
-                convertScaledDoubleToBuffer_INT64(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_UINT32:
-                convertScaledDoubleToBuffer_UINT32(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_INT32:
-                convertScaledDoubleToBuffer_INT32(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_FLOAT32:
-                convertScaledDoubleToBuffer_FLOAT32(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-            case NIFTI_TYPE_FLOAT64:
-                convertScaledDoubleToBuffer_FLOAT64(maskBuffer, resampledMask, maskPrototype->niftiptr->scl_slope, maskPrototype->niftiptr->scl_inter, newX, newY, newZ);
-                break;
-                
-            case NIFTI_TYPE_FLOAT128:
-            case NIFTI_TYPE_COMPLEX128:
-            case NIFTI_TYPE_COMPLEX256:
-            case NIFTI_TYPE_COMPLEX64:
-            default:
-                fprintf(stderr, "\nWarning, %s not supported yet.\n",nifti_datatype_string(fslio->niftiptr->datatype));
-
-        }
+        convertScaledDoubleToBuffer(
+            maskPrototype->niftiptr->datatype,
+            maskBuffer,
+            resampledMask,
+            maskPrototype->niftiptr->scl_slope,
+            maskPrototype->niftiptr->scl_inter,
+            newX,
+            newY,
+            newZ
+        );
         
         FslWriteVolumes(fslioResampled, maskBuffer, 1);
         FslClose(fslioResampled);

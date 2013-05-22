@@ -22,6 +22,7 @@ typedef struct {
 Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z);
 double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
 
+void convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double ***inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_INT8(   THIS_INT8 *outbuf,    double ***inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_UINT16( THIS_UINT16 *outbuf,  double ***inbuf, float slope, float inter, int xh, int yh, int zh);
