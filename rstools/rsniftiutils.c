@@ -1,5 +1,8 @@
 #include "rsniftiutils.h"
 
+/*
+ * Creates a new 3D point
+ */
 Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z)
 {
     Point3D a;
@@ -9,45 +12,219 @@ Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z)
     return a;
 }
 
-void convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+/*
+ * Reads in a binary mask in terms of a nifti file and
+ * rescales it to the specified dimensions. It then
+ * returns an array with all the points in the mask
+ * that have a value higher than 0.
+ * The resulting mask after rescaling can be saved as
+ * a nifti by supplying an additional path. The headers
+ * for this file will be cloned from the given 
+ * prototype. This can be used to ensure that the used
+ * mask is appropriate for the orientation of the file
+ * that it is later applied to.
+ */
+Point3D* ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *resampledMaskPath, FSLIO *maskPrototype)
+{
+    FSLIO *fslio;
+	void *buffer;
+	unsigned long buffsize;
+    
+    short xDim, yDim, zDim, vDim;
+	short pixtype;
+	size_t dt;
+    float inter = 0.0, slope = 1.0;
+    
+    int pointCount = 0;
+    
+    /* Open mask */
+    fslio = FslOpen(path, "rb");
+    if (fslio == NULL) {
+        fprintf(stderr, "\nError, could not read header info for %s.\n",path);
+        return NULL;
+    }
+    
+    /* Read out dimensions */
+    FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
+    
+    if (fslio->niftiptr->scl_slope != 0) {
+        slope = fslio->niftiptr->scl_slope;
+        inter = fslio->niftiptr->scl_inter;
+    }
+    
+    /* Determine datatype */
+	dt = FslGetDataType(fslio, &pixtype);
+    
+    /* Init buffer */
+    buffsize = (unsigned long)xDim * (unsigned long)yDim * (unsigned long)zDim * (unsigned long)(dt/8);
+    buffer   = malloc(buffsize);
+    
+    /* Read in first volume */
+    if (!FslReadVolumes(fslio, buffer, 1)) {
+        free(buffer);
+        fprintf(stderr, "\nError - reading data in %s\n", path);
+        FslClose(fslio);
+        return NULL;
+    }
+    
+    double ***mask = FslGetVolumeAsScaledDouble(fslio, 0);
+    
+    /* Resample mask to have the same scaling as the input volume */
+    double ***resampledMask = ResampleVolume(mask, xDim, yDim, zDim, newX, newY, newZ);
+    
+    free(mask[0][0]);
+    free(mask[0]);
+    free(mask);
+    
+    /* Count how many points we'll get */
+    *nPoints = 0;
+    for (unsigned int x=0; x<newX; x=x+1) {
+        for (unsigned int y=0; y<newY; y=y+1) {
+            for (unsigned int z=0; z<newZ; z=z+1) {
+                if ( resampledMask[z][y][x] > 0.01 ) {
+                    *nPoints = *nPoints + 1;
+                }
+            }
+        }
+    }
+    
+    /* Initialize result array */
+    Point3D* points = malloc(*nPoints*sizeof(Point3D));
+    
+    /* Create array with all points that are in the mask */
+    int i=0;
+    for (unsigned int x=0; x<newX; x=x+1) {
+        for (unsigned int y=0; y<newY; y=y+1) {
+            for (unsigned int z=0; z<newZ; z=z+1) {
+                if ( resampledMask[z][y][x] > 0.01 ) {
+                    points[i] = MakePoint3D(x,y,z);
+                    i = i+1;
+                }
+            }
+        }
+    }
+    
+    /* Save mask */
+    FSLIO *fslioResampled = NULL;
+    
+    if ( resampledMaskPath != NULL ) {
+        fslioResampled = FslOpen(resampledMaskPath, "wb");
+    }
+    if (fslioResampled == NULL) {
+        if ( resampledMaskPath != NULL ) {
+            fprintf(stderr, "\nWarning, could not open %s for writing.\n",resampledMaskPath);
+        }
+    } else {
+        
+        dt = FslGetDataType(maskPrototype, &pixtype);
+        
+        FslCloneHeader(fslioResampled, maskPrototype);
+        FslSetDim(fslioResampled, newX,newY,newZ,1);
+        FslSetDimensionality(fslioResampled, 3);
+        FslSetDataType(fslioResampled, pixtype);
+        FslWriteHeader(fslioResampled);
+        
+        void *maskBuffer = malloc((unsigned long)newX * (unsigned long)newY * (unsigned long)newZ * (unsigned long)(dt/8));
+        
+        convertScaledDoubleToBuffer(
+            maskPrototype->niftiptr->datatype,
+            maskBuffer,
+            resampledMask,
+            maskPrototype->niftiptr->scl_slope,
+            maskPrototype->niftiptr->scl_inter,
+            newX,
+            newY,
+            newZ
+        );
+        
+        FslWriteVolumes(fslioResampled, maskBuffer, 1);
+        FslClose(fslioResampled);
+    }
+    
+    FslClose(fslio);
+    free(buffer);
+    free(resampledMask[0][0]);
+    free(resampledMask[0]);
+    free(resampledMask);
+    free(fslio);
+    free(fslioResampled);
+    
+    return points;
+}
+
+/*
+ * Resamples a 3D volume from a given resolution into a new resolution. 
+ * The 3D volume thereby needs to be supplied as a 3D matrix of scaled
+ * doubles as created by d3matrix.
+ */
+double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ)
+{
+    double ***resampledVolume = d3matrix(newZ, newY, newX);
+    
+    for (int x=0; x<newX; x=x+1) {
+        
+        int resampledX = ((float)oldX / (float)newX) * (float)x;
+        for (int y=0; y<newY; y=y+1) {
+            
+            int resampledY = ((float)oldY / (float)newY) * (float)y;
+            for (int z=0; z<newZ; z=z+1) {
+                
+                int resampledZ = ((float)oldZ / (float)newZ) * (float)z;
+                resampledVolume[z][y][x] = oldVolume[resampledZ][resampledY][resampledX];
+            }
+        }
+    }
+    
+    return resampledVolume;
+}
+
+/*
+ * This function will convert a given 3D matrix of scaled doubles into
+ * a buffer using the supplied datatype.
+ * In the conversion the data will be rescaled(inter and slope) as
+ * required by FslWriteVolumes.
+ * It is the counterpart to the method convertBufferToScaledDouble that
+ * is included in FslIO.
+ */
+BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
     switch ( datatype ) {
         case NIFTI_TYPE_UINT8:
             convertScaledDoubleToBuffer_UINT8(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_INT8:
             convertScaledDoubleToBuffer_INT8(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_UINT16:
             convertScaledDoubleToBuffer_UINT16(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_INT16:
             convertScaledDoubleToBuffer_INT16(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_UINT64:
             convertScaledDoubleToBuffer_UINT64(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_INT64:
             convertScaledDoubleToBuffer_INT64(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_UINT32:
             convertScaledDoubleToBuffer_UINT32(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_INT32:
             convertScaledDoubleToBuffer_INT32(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_FLOAT32:
             convertScaledDoubleToBuffer_FLOAT32(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
         case NIFTI_TYPE_FLOAT64:
             convertScaledDoubleToBuffer_FLOAT64(outbuf, inbuf, slope, inter, xh, yh, zh);
-            break;
+            return TRUE;
             
         case NIFTI_TYPE_FLOAT128:
         case NIFTI_TYPE_COMPLEX128:
         case NIFTI_TYPE_COMPLEX256:
         case NIFTI_TYPE_COMPLEX64:
         default:
-            fprintf(stderr, "\nWarning, %s not supported yet.\n",nifti_datatype_string(datatype));
+            return FALSE;
             
     }
 }
@@ -171,25 +348,4 @@ void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double ***inbuf, 
             }
         }
     }
-}
-
-double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ)
-{
-    double ***resampledVolume = d3matrix(newZ, newY, newX);
-    
-    for (int x=0; x<newX; x=x+1) {
-        
-        int resampledX = ((float)oldX / (float)newX) * (float)x;
-        for (int y=0; y<newY; y=y+1) {
-            
-            int resampledY = ((float)oldY / (float)newY) * (float)y;
-            for (int z=0; z<newZ; z=z+1) {
-                
-                int resampledZ = ((float)oldZ / (float)newZ) * (float)z;
-                resampledVolume[z][y][x] = oldVolume[resampledZ][resampledY][resampledX];
-            }
-        }
-    }
-    
-    return resampledVolume;
 }

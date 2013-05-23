@@ -69,134 +69,6 @@ int show_help( void )
    return 0;
 }
 
-Point3D* ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *resampledMaskPath, FSLIO *maskPrototype)
-{    
-    FSLIO *fslio;
-	void *buffer;
-	unsigned long buffsize;
-    
-    short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
-    float inter = 0.0, slope = 1.0;
-    
-    int pointCount = 0;
-
-    /* Open mask */
-    fslio = FslOpen(path, "rb");
-    if (fslio == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n",path);
-        return NULL;
-    }
-    
-    /* Read out dimensions */
-    FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
-
-    if (fslio->niftiptr->scl_slope != 0) {
-        slope = fslio->niftiptr->scl_slope;
-        inter = fslio->niftiptr->scl_inter;
-    }
-    
-    /* Determine datatype */
-	dt = FslGetDataType(fslio, &pixtype);
-    
-    /* Init buffer */
-    buffsize = (unsigned long)xDim * (unsigned long)yDim * (unsigned long)zDim * (unsigned long)(dt/8);
-    buffer   = malloc(buffsize);
-    
-    /* Read in first volume */
-    if (!FslReadVolumes(fslio, buffer, 1)) {
-        free(buffer);
-        fprintf(stderr, "\nError - reading data in %s\n", path);
-        FslClose(fslio);
-        return NULL;
-    }
-    
-    double ***mask = FslGetVolumeAsScaledDouble(fslio, 0);
-    
-    /* Resample mask to have the same scaling as the input volume */
-    double ***resampledMask = ResampleVolume(mask, xDim, yDim, zDim, newX, newY, newZ);
-    
-    free(mask[0][0]);
-    free(mask[0]);
-    free(mask);
-    
-    /* Count how many points we'll get */
-    *nPoints = 0;
-    for (unsigned int x=0; x<newX; x=x+1) {
-        for (unsigned int y=0; y<newY; y=y+1) {
-            for (unsigned int z=0; z<newZ; z=z+1) {
-                if ( resampledMask[z][y][x] > 0.01 ) {
-                    *nPoints = *nPoints + 1;
-                }
-            }
-        }
-    }
-
-    /* Initialize result array */
-    Point3D* points = malloc(*nPoints*sizeof(Point3D));
-    
-    /* Create array with all points that are in the mask */
-    int i=0;
-    for (unsigned int x=0; x<newX; x=x+1) {
-        for (unsigned int y=0; y<newY; y=y+1) {
-            for (unsigned int z=0; z<newZ; z=z+1) {
-                if ( resampledMask[z][y][x] > 0.01 ) {
-                    points[i] = MakePoint3D(x,y,z);
-                    i = i+1;
-                }
-            }
-        }
-    }
-    
-    /* Save mask */
-    FSLIO *fslioResampled = NULL;
-    
-    if ( resampledMaskPath != NULL ) {
-        fslioResampled = FslOpen(resampledMaskPath, "wb");
-    }
-    if (fslioResampled == NULL) {
-        if ( resampledMaskPath != NULL ) {
-            fprintf(stderr, "\nWarning, could not open %s for writing.\n",resampledMaskPath);
-        }
-    } else {
-        
-        dt = FslGetDataType(maskPrototype, &pixtype);
-        
-        FslCloneHeader(fslioResampled, maskPrototype);
-        FslSetDim(fslioResampled, newX,newY,newZ,1);
-        FslSetDimensionality(fslioResampled, 3);
-        FslSetDataType(fslioResampled, pixtype);
-        FslWriteHeader(fslioResampled);
-        
-        void *maskBuffer = malloc((unsigned long)newX * (unsigned long)newY * (unsigned long)newZ * (unsigned long)(dt/8));
-        
-        convertScaledDoubleToBuffer(
-            maskPrototype->niftiptr->datatype,
-            maskBuffer,
-            resampledMask,
-            maskPrototype->niftiptr->scl_slope,
-            maskPrototype->niftiptr->scl_inter,
-            newX,
-            newY,
-            newZ
-        );
-        
-        FslWriteVolumes(fslioResampled, maskBuffer, 1);
-        FslClose(fslioResampled);
-    }
-    
-    FslClose(fslio);
-    free(buffer);
-    free(resampledMask[0][0]);
-    free(resampledMask[0]);
-    free(resampledMask);
-    free(fslio);
-    free(fslioResampled);
-    
-    return points;
-}
-
 int main(int argc, char * argv[])
 {
 	FSLIO *fslio;
@@ -359,6 +231,7 @@ int main(int argc, char * argv[])
         Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
+            FslClose(fslio);
             return 1;
         }
 
