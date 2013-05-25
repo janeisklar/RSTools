@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		6518E14217502C0800540A80 /* rsmathutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rsmathutils.cpp; sourceTree = "<group>"; };
+		6518E14317502C0800540A80 /* rsmathutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rsmathutils.h; sourceTree = "<group>"; };
+		6518E14417502C0800540A80 /* rsregression.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rsregression.c; sourceTree = "<group>"; };
+		6518E14517503BB700540A80 /* rsmathutils_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rsmathutils_internal.h; sourceTree = "<group>"; };
 		654194C4174A8CEB009F5EF6 /* rstimecourse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rstimecourse.c; sourceTree = "<group>"; };
 		654194C9174A8FDA009F5EF6 /* rstimecourse */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = rstimecourse; sourceTree = "<group>"; };
 		654194CC174A9194009F5EF6 /* dbh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dbh.h; sourceTree = "<group>"; };
@@ -186,6 +190,10 @@
 		654194F4174A9194009F5EF6 /* rstools */ = {
 			isa = PBXGroup;
 			children = (
+				6518E14217502C0800540A80 /* rsmathutils.cpp */,
+				6518E14317502C0800540A80 /* rsmathutils.h */,
+				6518E14517503BB700540A80 /* rsmathutils_internal.h */,
+				6518E14417502C0800540A80 /* rsregression.c */,
 				656F1F8F174C00A7007783BB /* rsniftiutils.c */,
 				656F1F90174C00A7007783BB /* rsniftiutils.h */,
 				654194F5174A9194009F5EF6 /* brainmask.nii */,

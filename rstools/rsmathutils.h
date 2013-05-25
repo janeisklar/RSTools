@@ -8,7 +8,8 @@
 extern "C" {
 #endif
 
-int testMath();
+void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **regressors, double *betas, double *residuals, double *fitted, int verbose);
+double **d2matrix(int yh, int xh);
 
 #ifdef __cplusplus
 }

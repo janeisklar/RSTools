@@ -72,7 +72,32 @@ int show_help( void )
 
 int main(int argc, char * argv[])
 {
-    printf("%d", testMath());
+    int nSamples        = 10;
+    double signal[]     = {1.9, 0.6, 0.5, 0.8, -0.4, -0.9, -0.7, -0.1, -1.7, -0.2};
+    int nRegressors     = 2;
+    /*double regressors[] = {-2.0, -1.0, -0.8, -0.3, 0.0, 0.5, 0.6, 0.7, 1.0, 1.2}; */
+    double **regressors = d2matrix(nRegressors, nSamples);
+    double r1[]         = {-2.0, -1.0, -0.8, -0.3, 0.0, 0.5, 0.6, 0.7, 1.0, 1.2};
+    double r2[]         = {0.3, 0.1, 0.9, 0.1, 1.3, -1.3, -0.7,  0.4, -1.2, 0.8};
+    regressors[0]       = r1;
+    regressors[1]       = r2;
+    double betas[]      = {0.0, 0.0};
+    double residuals[]  = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    double fitted[]     = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    
+    rsLinearRegression(nSamples, signal, nRegressors, regressors, betas, residuals, fitted, TRUE);
+    
+    for ( int i = 0; i < nSamples; i++) {
+        printf("Residual %d: %.4f\n", i+1, residuals[i]);
+    }
+    
+    for ( int i = 0; i < nRegressors+1; i++) {
+        printf("Beta %d: %.4f\n", i+1, betas[i]);
+    }
+    
+    for ( int i = 0; i < nSamples; i++) {
+        printf("Fitted %d: %.4f\n", i+1, fitted[i]);
+    }
     
 	return 0;
 }
