@@ -24,7 +24,7 @@ Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z)
  * mask is appropriate for the orientation of the file
  * that it is later applied to.
  */
-Point3D* ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *resampledMaskPath, FSLIO *maskPrototype)
+Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn)
 {
     FSLIO *fslio;
 	void *buffer;
@@ -77,12 +77,16 @@ Point3D* ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *
     free(mask);
     
     /* Count how many points we'll get */
-    *nPoints = 0;
+    *nPoints = (unsigned long)0L;
     for (unsigned int x=0; x<newX; x=x+1) {
         for (unsigned int y=0; y<newY; y=y+1) {
             for (unsigned int z=0; z<newZ; z=z+1) {
                 if ( resampledMask[z][y][x] > 0.01 ) {
-                    *nPoints = *nPoints + 1;
+                    *nPoints = *nPoints + ((unsigned long)1L);
+                }
+                
+                if ( resampledMaskReturn != NULL ) {
+                    resampledMaskReturn[z][y][x] = resampledMask[z][y][x];
                 }
             }
         }
@@ -176,6 +180,62 @@ double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int 
     }
     
     return resampledVolume;
+}
+
+size_t WriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols)
+{
+    size_t volbytes, offset, orig_offset;
+    size_t n;
+    short xdim,ydim,zdim,v,wordsize;
+    
+    if (fslio==NULL)  fprintf(stderr, "rsWriteTimeSeries: Null pointer passed for FSLIO");
+    if (fslio->niftiptr!=NULL) {
+        
+        FslGetDim(fslio,&xdim,&ydim,&zdim,&v);
+        
+        if ((xVox<0) || (xVox >=xdim)){
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid x-range(%hd..%hd)", xVox, 0, xdim-1);
+            return 0;
+        }
+        if ((yVox<0) || (yVox >=ydim)) {
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid y-range(%hd..%hd)", yVox, 0, ydim-1);
+            return 0;
+        }
+        if ((zVox<0) || (zVox >=zdim)) {
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid z-range(%hd..%hd)", zVox, 0, zdim-1);
+            return 0;
+        }
+        
+        wordsize = fslio->niftiptr->nbyper;
+        volbytes = xdim * ydim * zdim * wordsize;
+        
+        orig_offset = znztell(fslio->fileptr);
+        
+        /* go back to the beginning of the data(after the header) */
+        znzseek(fslio->fileptr, fslio->niftiptr->iname_offset, SEEK_SET);
+        offset = ((ydim * zVox + yVox) * xdim + xVox) * wordsize;
+        znzseek(fslio->fileptr,offset,SEEK_CUR);
+        
+        for (n=0; n<nvols; n++) {
+            if (n>0) znzseek(fslio->fileptr, volbytes - wordsize, SEEK_CUR);
+/*            fprintf(stdout, "Wrote %03zd: %hd.\n", n, (short)*((char*)(buffer)+(n*wordsize))); */
+            if (znzwrite((char *)buffer+(n*wordsize), 1, wordsize,fslio->fileptr) != wordsize) {
+                fprintf(stderr, "rsWriteTimeSeries: failed to write values");
+                return 0;
+            }
+            /*if (fslio->niftiptr->byteorder != nifti_short_order())
+                nifti_swap_Nbytes(1,fslio->niftiptr->swapsize,
+                                  (char *)buffer+(n*wordsize));*/
+        }
+        
+        /* restore file pointer to original position */
+        znzseek(fslio->fileptr,orig_offset,SEEK_SET);
+        return n;
+    }
+    if (fslio->mincptr!=NULL) {
+        fprintf(stderr,"Warning:: Minc is not yet supported\n");
+    }
+    return 0;
 }
 
 /*

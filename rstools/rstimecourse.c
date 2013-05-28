@@ -227,8 +227,8 @@ int main(int argc, char * argv[])
         free(buffer);
     } else {
         /*** Extract timecourse for a mask ***/
-        int nPoints;
-        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio);
+        unsigned long nPoints = 0L;
+        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, NULL);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
             FslClose(fslio);
@@ -241,10 +241,10 @@ int main(int argc, char * argv[])
             /* Read in volume */
             double ***volume = FslGetVolumeAsScaledDouble(fslio, t);
             double sum = 0;
-            
+
             /* Iterate over all points in the mask */
-            for ( int i=0; i<nPoints; i=i+1) {
-                Point3D p = maskPoints[i];                
+            for ( unsigned long i=0; i<nPoints; i=i+1) {
+                Point3D p = maskPoints[i];               
                 sum = sum + volume[p.z][p.y][p.x];
             }
             

@@ -7,21 +7,25 @@
 #if !defined(__NIFTIUTILS_H)
 #define __NIFTIUTILS_H
 
-#define BOOL    int
-#define FALSE   0
-#define TRUE    1
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+    
+    
+#define BOOL    int
+#define FALSE   0
+#define TRUE    1
+    
+#define RSIOERR(x) { fprintf(stderr,"Error:: %s\n",(x)); fflush(stderr); exit(EXIT_FAILURE); }
+    
 typedef struct {
     unsigned int x, y, z;
 } Point3D;
 
 Point3D   MakePoint3D(unsigned int x, unsigned int y, unsigned int z);
-Point3D*  ReadMask(char *path, int newX, int newY, int newZ, int *nPoints, char *resampledMaskPath, FSLIO *maskPrototype);
+Point3D*  ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
 double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
+size_t    WriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
     
 BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double ***inbuf, float slope, float inter, int xh, int yh, int zh);
