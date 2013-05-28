@@ -50,8 +50,8 @@
       </PathRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-m brainmask.nii -v -input swavols.nii -savemask roi.nii"
-            isEnabled = "NO">
+            argument = "-m brainmask.nii -v -input swavols.nii -savemask roi.nii -residuals residuals.nii -fitted fitted.nii -betas beta.nii"
+            isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>
