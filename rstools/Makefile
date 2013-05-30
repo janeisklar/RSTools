@@ -68,6 +68,8 @@ GLIB_CXX        =   -static-libstdc++ ##-L/usr/lib -lstdc++
 CXX             =   /usr/local/rsTools/lib/gcc/bin/g++-4.8
 cc              =   /usr/local/rsTools/lib/gcc/bin/gcc-4.8
 CC              =   /usr/local/rsTools/lib/gcc/bin/gcc-4.8
+#AR              =   /usr/local/rsTools/lib/gcc/bin/gcc-ar-4.8
+#RANLIB          =   /usr/local/rsTools/lib/gcc/bin/gcc-ranlib-4.8
 endif
 endif
 endif
