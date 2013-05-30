@@ -241,7 +241,7 @@ int main(int argc, char * argv[])
             /* Read in volume */
             double ***volume = FslGetVolumeAsScaledDouble(fslio, t);
             double sum = 0;
-
+            
             /* Iterate over all points in the mask */
             for ( unsigned long i=0; i<nPoints; i=i+1) {
                 Point3D p = maskPoints[i];               

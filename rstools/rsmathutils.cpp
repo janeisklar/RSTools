@@ -12,11 +12,11 @@
 /* Internal API with all the functions that shouldn't be visible to the outside(anything related to R) */
 #include "rsmathutils_internal.h"
 
-void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **regressors, double *betas, double *residuals, double *fitted, int verbose)
+void rsLinearRegressionR(int nSamples, double *signal, int nRegressors, double **regressors, double *betas, double *residuals, double *fitted, int verbose)
 {
     // create an embedded R instance
     const char * const argv = "";
-    RInside R(0, &argv, true, verbose > 0, false); //argc, argv, loadRcpp, verbose, interactive
+    static RInside R(0, &argv, true, verbose > 0, false); //argc, argv, loadRcpp, verbose, interactive
     
     // convert inputs to R variables
     R["signal"] = rsMathCreateVector(signal, nSamples);
@@ -31,7 +31,14 @@ void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **
         regressorName << "regressor";
         regressorName << (r+1);
         
-        R[regressorName.str()] = rsMathCreateVector(regressors[r], nSamples);
+        if (regressors != NULL) {
+            R[regressorName.str()] = rsMathCreateVector(regressors[r], nSamples);
+        }
+        
+        if (verbose) {
+            fprintf(stdout, "Regressor %d: \n", (r+1));
+            R.parseEvalQ(regressorName.str());
+        }
         
         if ( r>0 ) {
             lmRCommand << " + ";
@@ -40,19 +47,78 @@ void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **
         lmRCommand << regressorName.str();
     }
     lmRCommand << ")";
-           
+
+    if (verbose) {
+        fprintf(stdout, "Signal:\n");
+        R.parseEvalQ("signal");
+    }
+    
     // do linear regression
     R.parseEvalQ(lmRCommand.str());
     
-    // extract the results
-    Rcpp::NumericVector Rresiduals( (SEXP) R.parseEval("residuals(fm)"));
-    Rcpp::NumericVector Rfitted(    (SEXP) R.parseEval("fitted.values(fm)"));
-    Rcpp::NumericVector Rbetas(     (SEXP) R.parseEval("as.numeric(coefficients(fm))"));
+    // extract the results and convert them into C variables
+    if ( residuals != NULL ) {
+        if (verbose) fprintf(stdout, "Residuals:\n");
+        Rcpp::NumericVector Rresiduals((SEXP) R.parseEval("residuals(fm)"));
+        rsMathCovertVector(Rresiduals, residuals);
+    }
     
-    // convert the results into C variables
-    rsMathCovertVector(Rresiduals, residuals);
-    rsMathCovertVector(Rfitted,    fitted);
-    rsMathCovertVector(Rbetas,     betas);
+    if ( fitted != NULL ) {
+        if (verbose) fprintf(stdout, "Fitted:\n");
+        Rcpp::NumericVector Rfitted((SEXP) R.parseEval("fitted.values(fm)"));
+        rsMathCovertVector(Rfitted, fitted);
+    }
+    if ( betas != NULL ) {
+        if (verbose) fprintf(stdout, "Betas:\n");
+        Rcpp::NumericVector Rbetas((SEXP) R.parseEval("as.numeric(coefficients(fm))"));
+        rsMathCovertVector(Rbetas, betas);
+    }
+}
+
+void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **regressors, double *betas, double *residuals, double *fitted, int verbose)
+{
+    gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(nSamples, nRegressors);
+    
+    // convert inputs to gsl variables
+    gsl_vector *y   = gsl_vector_alloc(nSamples);                 // input/signal
+    gsl_matrix *X   = gsl_matrix_alloc(nSamples, nRegressors);    // regressors
+    gsl_vector *b   = gsl_vector_alloc(nRegressors);              // betas
+    gsl_matrix *cov = gsl_matrix_alloc(nRegressors, nRegressors); // covariance
+    gsl_vector *res = gsl_vector_alloc(nSamples);                 // residuals
+    
+    // fill them
+    for (int i=0; i < nSamples; i++){
+        gsl_vector_set(y,i,signal[i]);
+    }
+    
+    for (int r=0; r<nRegressors; r++) {
+        for (int t=0; t<nSamples; t++) {
+            gsl_matrix_set(X,t,r,regressors[r][t]);
+        }
+    }
+    
+    // execute linear regression
+    double chisq;
+    int success = gsl_multifit_linear(X, y, b, cov, &chisq, work);
+    
+    // compute residuals
+    gsl_multifit_linear_residuals(X, y, b, res);
+    
+    // convert back to basic C variables
+    for (int t=0; t < nSamples; t++) {
+        residuals[t] = gsl_vector_get(res, t);
+    }
+    
+    for (int r=0; r < nRegressors; r++) {
+        betas[r] = gsl_vector_get(b, r);
+    }
+    
+    gsl_matrix_free(X);
+    gsl_matrix_free(cov);
+    gsl_vector_free(y);
+    gsl_vector_free(b);
+    gsl_vector_free(res);
+    gsl_multifit_linear_free(work);
 }
 
 Rcpp::NumericVector rsMathCreateVector(double *v, int length)

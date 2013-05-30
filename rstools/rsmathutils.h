@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <strings.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multifit.h>
 
 #if !defined(__MATHUTILS_H)
 #define __MATHUTILS_H

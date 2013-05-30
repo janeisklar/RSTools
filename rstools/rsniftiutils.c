@@ -133,12 +133,13 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
         convertScaledDoubleToBuffer(
             maskPrototype->niftiptr->datatype,
             maskBuffer,
-            resampledMask,
+            resampledMask[0][0],
             maskPrototype->niftiptr->scl_slope,
             maskPrototype->niftiptr->scl_inter,
             newX,
             newY,
-            newZ
+            newZ,
+            TRUE
         );
         
         FslWriteVolumes(fslioResampled, maskBuffer, 1);
@@ -182,7 +183,7 @@ double*** ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int 
     return resampledVolume;
 }
 
-size_t WriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols)
+size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols)
 {
     size_t volbytes, offset, orig_offset;
     size_t n;
@@ -246,37 +247,37 @@ size_t WriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox,
  * It is the counterpart to the method convertBufferToScaledDouble that
  * is included in FslIO.
  */
-BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     switch ( datatype ) {
         case NIFTI_TYPE_UINT8:
-            convertScaledDoubleToBuffer_UINT8(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_UINT8(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_INT8:
-            convertScaledDoubleToBuffer_INT8(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_INT8(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_UINT16:
-            convertScaledDoubleToBuffer_UINT16(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_UINT16(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_INT16:
-            convertScaledDoubleToBuffer_INT16(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_INT16(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_UINT64:
-            convertScaledDoubleToBuffer_UINT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_UINT64(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_INT64:
-            convertScaledDoubleToBuffer_INT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_INT64(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_UINT32:
-            convertScaledDoubleToBuffer_UINT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_UINT32(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_INT32:
-            convertScaledDoubleToBuffer_INT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_INT32(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_FLOAT32:
-            convertScaledDoubleToBuffer_FLOAT32(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_FLOAT32(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
         case NIFTI_TYPE_FLOAT64:
-            convertScaledDoubleToBuffer_FLOAT64(outbuf, inbuf, slope, inter, xh, yh, zh);
+            convertScaledDoubleToBuffer_FLOAT64(outbuf, inbuf, slope, inter, xh, yh, zh, multidim);
             return TRUE;
             
         case NIFTI_TYPE_FLOAT128:
@@ -290,121 +291,140 @@ BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double ***inbuf, fl
 }
 
 
-void convertScaledDoubleToBuffer_UINT8(THIS_UINT8 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_UINT8(THIS_UINT8 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_UINT8) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_UINT8) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_INT8(THIS_INT8 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_INT8(THIS_INT8 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_INT8) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_INT8) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_UINT16(THIS_UINT16 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_UINT16(THIS_UINT16 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_UINT16) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_UINT16) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_INT16(THIS_INT16 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_INT16(THIS_INT16 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_INT16) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_INT16) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_UINT64(THIS_UINT64 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_UINT64(THIS_UINT64 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_UINT64) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_UINT64) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_INT64(THIS_INT64 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_INT64(THIS_INT64 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_INT64) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_INT64) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_UINT32(THIS_UINT32 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_UINT32(THIS_UINT32 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
-
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_UINT32) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_UINT32) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_INT32(THIS_INT32 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_INT32(THIS_INT32 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
-
-    for (x=0; x<xh; x++) {
+    
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_INT32) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_INT32) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_FLOAT32(THIS_FLOAT32 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_FLOAT32(THIS_FLOAT32 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_FLOAT32) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_FLOAT32) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
 }
 
-void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double ***inbuf, float slope, float inter, int xh, int yh, int zh) {
+void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
 
-    for (x=0; x<xh; x++) {
+    for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
-            for (z=0; z<zh; z++) {
-                outbuf[z * (yh * xh) + y * xh + x] = (THIS_FLOAT64) ((inbuf[z][y][x] - inter) / slope);
+            long inAddress = z * ((yh+multidim) * (xh+multidim)) + y * (xh+multidim);
+            long outAddress = z * (yh * xh) + y * xh;
+            for (x=0; x<xh; x++) {
+                outbuf[outAddress + x] = (THIS_FLOAT64) ((inbuf[inAddress + x] - inter) / slope);
             }
         }
     }
