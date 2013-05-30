@@ -13,7 +13,7 @@ FSLIO_LIBS	    =	-L../lib -lfslio
 NIFTI_LIBS	    =	-L../lib -lniftiio
 ZNZ_LIBS	    =	-L/usr/lib -L../lib -lznz -lm -lz
 RSNIFTI_LIBS	=	-L. -lrsniftiutils
-RSMATH_LIBS	    =	-L. -lrsmathutils
+RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas
 
 ##############################################################
 # R integration
@@ -39,8 +39,9 @@ RINSIDELIBS   =	$(shell echo 'RInside:::LdFlags()'  | $(R_HOME)/bin/R --vanilla 
 
 ## compiler etc settings used in default make rules
 CXX           = $(shell $(R_HOME)/bin/R CMD config CXX)
-CPPFLAGS      =	-v -Wall $(shell $(R_HOME)/bin/R CMD config CPPFLAGS)
+CPPFLAGS      =	-O3 -Wall $(shell $(R_HOME)/bin/R CMD config CPPFLAGS)
 CXXFLAGS      = $(RCPPFLAGS) $(RCPPINCL) $(RINSIDEINCL) $(shell $(R_HOME)/bin/R CMD config CXXFLAGS)
+LDLIBS        =	$(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) -lgsl -lgslcblas
 
 ##############################################################
 # platform specific redefines (to use, set ARCH appropriately)
