@@ -71,6 +71,7 @@
 		6541950F174A9194009F5EF6 /* znzlib.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = znzlib.o; sourceTree = "<group>"; };
 		656F1F8F174C00A7007783BB /* rsniftiutils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rsniftiutils.c; sourceTree = SOURCE_ROOT; };
 		656F1F90174C00A7007783BB /* rsniftiutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rsniftiutils.h; sourceTree = SOURCE_ROOT; };
+		65DD8AF8175764D700DD8A07 /* rsmathutils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rsmathutils.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -190,6 +191,7 @@
 		654194F4174A9194009F5EF6 /* rstools */ = {
 			isa = PBXGroup;
 			children = (
+				65DD8AF8175764D700DD8A07 /* rsmathutils.c */,
 				6518E14217502C0800540A80 /* rsmathutils.cpp */,
 				6518E14317502C0800540A80 /* rsmathutils.h */,
 				6518E14517503BB700540A80 /* rsmathutils_internal.h */,

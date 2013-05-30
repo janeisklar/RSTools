@@ -41,7 +41,6 @@ RINSIDELIBS   =	$(shell echo 'RInside:::LdFlags()'  | $(R_HOME)/bin/R --vanilla 
 CXX           = $(shell $(R_HOME)/bin/R CMD config CXX)
 CPPFLAGS      =	-O3 -Wall $(shell $(R_HOME)/bin/R CMD config CPPFLAGS)
 CXXFLAGS      = $(RCPPFLAGS) $(RCPPINCL) $(RINSIDEINCL) $(shell $(R_HOME)/bin/R CMD config CXXFLAGS)
-LDLIBS        =	$(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) -lgsl -lgslcblas
 
 ##############################################################
 # platform specific redefines (to use, set ARCH appropriately)
@@ -74,7 +73,7 @@ CC              =   /usr/local/rsTools/lib/gcc/bin/gcc-4.8
 endif
 endif
 endif
-LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX)
+LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
 all:	mathutils niftiutils timecourse regression
 
@@ -86,8 +85,9 @@ mathutils:
 	@echo "***************************"
 	@echo "*      RS Math Utils      *"
 	@echo "***************************"
-	$(CXX) $(CPPFLAGS) -c rsmathutils.cpp $(CXXFLAGS)
-	$(CXX) $(CPPFLAGS) -shared rsmathutils.o -o librsmathutils$(DLL_EXT) $(CXXFLAGS) -shared-libgcc $(LDLIBS) ## -Wl,-Bstatic $(LDLIBS)
+	$(CC) $(CFLAGS) -o rsmathutils.o -c rsmathutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(AR) rcs rsmathutils.a rsmathutils.o
+	$(RANLIB) rsmathutils.a
 
 niftiutils:
 	@echo
@@ -112,8 +112,7 @@ regression:
 	@echo "*      RS Regression      *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsregression.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	##$(CC) $(CFLAGS) rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
-	$(CXX) $(CPPFLAGS) rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(LDLIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
 
 help:
 	@echo "all:      make the rstools"
