@@ -21,53 +21,63 @@
 #include "rsmathutils.h"
 
 BOOL rsReadline(FILE *f, char *line, int *length);
-double **rsLoadRegressors(char *path, long *nRegressors, long *nValues);
+double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double constantFactor);
 
 int show_help( void )
 {
    printf(
-      "rstimecourse: Given a 4D-Nifti, this tool extracts the time course\n"
-      "              for a single voxel or the meaned average of a region\n"
-      "              specified by a binary mask\n"
+      "rsregression: Given a 4D-Nifti and a txt file with regressors(columns),\n"
+      "              this tool will perform a multiple linear regression on it.\n"
       "\n"
    );
     
    printf(
-      "basic usage:  rstimecourse [-m <mask> [-a <algorithm>] [-savemask <mask>]] [-p <X> <Y> <Z>] -input <volume>\n"
+      "basic usage:  rsregression -input <volume> -regressors <txtFile> [-residuals <volume> | -fitted <volume> | -betas <volume> | -mask <volume>]\n"
       "\n"
    );
     
    printf(
       "options:\n"
-      "              -a <algorithm>   : the algorithm used to aggregate the data within\n"
-      "                                 a ROI, e.g. mean\n"
    );
 
    printf(
-      "              -help            : show this help\n"
+      "   -help                : show this help\n"
    );
  
    printf(
-      "              -input <volume>  : the volume from which the timecourse will be extracted\n"
-   );
-   
-   printf(
-      "              -mask <mask>     : a mask specifying the ROI\n"
-   );
-   
-   printf(
-      "              -p <X> <Y> <Z>   : speficies a voxel using nifti coordinates(0-based) from\n"
-      "                                 which the timecourse is to be extracted\n"
+      "   -input <volume>      : the volume to be regressed\n"
    );
     
    printf(
-      "              -savemask <mask> : optional path where the rescaled mask specified with -mask\n"
-      "                                 will be saved. The saved file with have the same dimensions\n"
-      "                                 as the input volume.\n"
+      "   -residuals <volume>  : the volume to be regressed\n"
+   );
+    
+   printf(
+      "   -fitted <volume>     : the volume to be regressed\n"
    );
    
    printf(
-      "              -v               : show debug information\n"
+      "   -betas <volume>      : the volume to be regressed\n"
+   );
+    
+   printf(
+      "   -mask <mask>         : a mask specifying the ROI for improved performance\n"
+   );
+    
+   printf(
+      "   -savemask <mask>     : optional path where the rescaled mask specified with -mask\n"
+      "                          will be saved. The saved file with have the same dimensions\n"
+      "                          as the input volume.\n"
+   );
+    
+   printf(
+      "   -regressors <txt>    : a tabbed/spaced textfile containing the regressors with the\n"
+      "                          different regressors in the columns and time course in the\n"
+      "                          rows. Decimal numbers may be formatted like this: 1.23e+45\n"
+   );
+   
+   printf(
+      "   -v                   : show debug information\n"
       "\n"
    );
     
@@ -157,10 +167,11 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 	
+    /*
 	if ( maskpath == NULL ) {
 		fprintf(stderr, "A binary mask must be specified(-mask)!\n");
 		return 1;
-	}
+	}*/
 	
 	if ( regressorspath == NULL ) {
 		fprintf(stderr, "A file containing the regressors must be specified(-regressors)!\n");
@@ -180,7 +191,7 @@ int main(int argc, char * argv[])
     long nRegressorValues = 0L;
 
     double **regressors;
-    regressors = rsLoadRegressors(regressorspath, &nRegressors, &nRegressorValues);
+    regressors = rsLoadRegressors(regressorspath, &nRegressors, &nRegressorValues, 1.0);
     
     if ( verbose ) {
         fprintf(stdout, "Regressors: %ld, Samples: %ld\n", nRegressors, nRegressorValues);
@@ -235,19 +246,45 @@ int main(int argc, char * argv[])
         residualsBuffer = malloc(buffsize);
     }
     
+    /* prepare betas file */
     FSLIO *fslioBetas;
+   	void *betasBuffer;
+    
+    if ( saveBetasPath != NULL ) {
+        
+        fslioBetas = FslOpen(saveBetasPath, "wb");
+        
+        if (fslioBetas == NULL) {
+            fprintf(stderr, "\nError, could not read header info for %s.\n",saveBetasPath);
+            return 1;
+        }
+        
+        FslCloneHeader(fslioBetas, fslio);
+        FslSetDim(fslioBetas, xDim, yDim, zDim, (nRegressors+1L));
+        FslSetDimensionality(fslioBetas, 4);
+        FslSetDataType(fslioBetas, pixtype);
+        FslWriteHeader(fslioBetas);
+        
+        // prepare buffer
+        buffsize = xDim*yDim*zDim*(nRegressors+1L)*dt/8;
+        betasBuffer = malloc(buffsize);
+    }
+    
     FSLIO *fslioFitted;
  
-    unsigned long nPoints = 0L;
-    double ***mask = d3matrix(zDim, yDim, xDim);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
-    if ( maskPoints == NULL) {
-        fprintf(stderr, "\nError: Mask invalid.\n");
-        FslClose(fslio);
-        return 1;
+    double ***mask = NULL;
+    if ( maskpath != NULL ) {
+        unsigned long nPoints = 0L;
+        mask = d3matrix(zDim, yDim, xDim);
+        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
+        if ( maskPoints == NULL) {
+            fprintf(stderr, "\nError: Mask invalid.\n");
+            FslClose(fslio);
+            return 1;
+        }
+        free(maskPoints);
     }
-    free(maskPoints);
-    
+        
     // Prepare buffer
     buffsize = vDim*dt/8;
     buffer = malloc(buffsize);
@@ -257,9 +294,11 @@ int main(int argc, char * argv[])
     double fitted[vDim];
 
     /* Prepare empty timecourse */
-    void *emptybuffer = malloc(buffsize);
+    int emptyBufferLength = vDim > nRegressors ? vDim : nRegressors;
+    void *emptybuffer     = malloc(emptyBufferLength*dt/8);
+    
     double v[vDim];
-    for (short t=0; t<vDim; t=t+1) {
+    for (short t=0; t<emptyBufferLength; t=t+1) {
         v[t] = 0.0;
     }
     convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, emptybuffer, v, slope, inter, vDim, 1, 1, FALSE);
@@ -267,17 +306,23 @@ int main(int argc, char * argv[])
     /* Iterate over all voxels that are to be regressed */
     BOOL regressionInitalized = FALSE;
     for (short z=0; z<zDim; z=z+1) {
+        fprintf(stdout, "Regressing slice Z%03hd/%03hd\n", z+1, zDim);
         for (short y=0; y<yDim; y=y+1) {
             for (short x=0; x<xDim; x=x+1) {
                 
                 if (verbose) fprintf(stdout, "(%03hd,%03hd,%03hd)\n", x, y, z);
                 
                 /* If it's not in the mask skip it to improve the performance */
-                if (mask[z][y][x] < 0.1) {
+                if (mask != NULL && mask[z][y][x] < 0.1) {
                     
                     /* set the value in the residuals to 0 so that the nifti isn't empty */
                     if ( fslioResiduals != NULL ) {
                         rsWriteTimeSeries(fslioResiduals, emptybuffer, x, y, z, vDim);
+                    }
+
+                    /* set the value in the betas to 0 so that the nifti isn't empty */
+                    if ( fslioBetas != NULL ) {
+                        rsWriteTimeSeries(fslioBetas, emptybuffer, x, y, z, nRegressors+1L);
                     }
                     
                     continue;
@@ -291,7 +336,7 @@ int main(int argc, char * argv[])
                 rsLinearRegression(
                     (int)vDim,
                     signal,
-                    (int)nRegressors,
+                    (int)nRegressors+1,
                     regressors,
                     betas,
                     residuals,
@@ -315,18 +360,31 @@ int main(int argc, char * argv[])
                     convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, residualsBuffer, residuals, slope, inter, vDim, 1, 1, FALSE);
                     rsWriteTimeSeries(fslioResiduals, residualsBuffer, x, y, z, vDim);
                 }
+                
+                /* write out betas if desired */
+                if ( saveBetasPath != NULL ) {
+                    convertScaledDoubleToBuffer(fslioBetas->niftiptr->datatype, betasBuffer, betas, slope, inter, nRegressors+1L, 1, 1, FALSE);
+                    rsWriteTimeSeries(fslioBetas, betasBuffer, x, y, z, nRegressors+1L);
+                }
             }
         }
-        fprintf(stdout, "Regressing slice Z%03hd/%03hd\n", z+1, zDim);
     }
     
-    if ( saveResidualsPath ) {
+    if ( saveResidualsPath != NULL ) {
         FslClose(fslioResiduals);
         free(fslioResiduals);
-        free(residualsBuffer);
+        free(residualsBuffer);    }
+    
+    if ( saveBetasPath != NULL ) {
+        FslClose(fslioBetas);
+        free(fslioBetas);
+        free(betasBuffer);
     }
     
-    free(mask);
+    if ( maskpath != NULL ) {
+        free(mask);
+    }
+    
     free(buffer);
     FslClose(fslio);
     free(fslio);
@@ -403,7 +461,7 @@ double *rsParseRegressorLine(char *line, long *nRegressors) {
  * by spaces or tabs.
  * Returns a 2D matrix in the following form: double[regressor][time]
  */
-double **rsLoadRegressors(char *path, long *nRegressors, long *nValues) {
+double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double constantFactor) {
     FILE *f = fopen(path, "r");
     
     if (f == NULL) {
@@ -418,13 +476,13 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues) {
     *nValues = 0L;
     
     rewind(f);
-
+    
+    long n = 0L;
     while( rsReadline(f, line, &length) ) {
         if ( length < 1 ) {
             continue;
         }
         
-        long n = 0L;
         double *regressors = rsParseRegressorLine(line, &n);
         if (*nRegressors < 0) {
             *nRegressors = n;
@@ -433,22 +491,26 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues) {
         *nValues = *nValues+1L;
     }
 
-    /* Initialize result matrix and save regressors in it */
+    /* Initialize result matrix */
     rewind(f);
-
-    double **result = d2matrix(*nRegressors, *nValues);
+    double **result = d2matrix(*nRegressors+1, *nValues);
+    
+    /* Fill with constant regressor */
+    for ( long v=0L; v<n; v = v+1L ) {
+        result[0][v] = constantFactor;
+    }
+    
+    /* Save regressors in result matrix */
     long v=0L;
-
     while( rsReadline(f, line, &length) ) {
         if ( length < 1 ) {
             continue;
         }
 
-        long n = 0L;
         double *regressors = rsParseRegressorLine(line, &n);
         
         for( long l=0L; l<n; l=l+1L ) {
-            result[l][v] = regressors[l];
+            result[l+1L][v] = regressors[l];
         }
         free(regressors);
         v=v+1L;
