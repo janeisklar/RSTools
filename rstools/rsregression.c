@@ -49,11 +49,12 @@ int show_help( void )
    );
     
    printf(
-      "   -residuals <volume>  : the volume to be regressed\n"
+      "   -residuals <volume>  : the volume in which the residuals will be saved\n"
    );
     
    printf(
-      "   -fitted <volume>     : the volume to be regressed\n"
+      "   -fitted <volume>     : the volume in which the fitted volumes will be saved\n"
+      "                          !!! This function has not been implemented yet !!!\n"
    );
    
    printf(

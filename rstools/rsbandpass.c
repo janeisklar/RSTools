@@ -7,13 +7,13 @@
 int show_help( void )
 {
    printf(
-      "rsregression: Given a 4D-Nifti and a txt file with regressors(columns),\n"
-      "              this tool will perform a multiple linear regression on it.\n"
+      "rsbandpass: Given a 4D-Nifti and a frequency band this tool will apply\n"
+      "            FFT filtering on it.\n"
       "\n"
    );
     
    printf(
-      "basic usage:  rsregression -input <volume> -regressors <txtFile> [-residuals <volume> | -fitted <volume> | -betas <volume> | -mask <volume>]\n"
+      "basic usage:  rsbandpass -input <volume> -filtered <volume> -f1 <double> -f2 <double> -sampling_rate <double> [-savemask <mask>] [-verbose]\n"
       "\n"
    );
     
@@ -22,43 +22,41 @@ int show_help( void )
    );
 
    printf(
-      "   -help                : show this help\n"
+      "   -help                   : show this help\n"
    );
  
    printf(
-      "   -input <volume>      : the volume to be regressed\n"
+      "   -input <volume>         : the volume to be regressed\n"
    );
     
    printf(
-      "   -residuals <volume>  : the volume to be regressed\n"
+      "   -filtered <volume>      : the volume in which the filtered data will be saved\n"
    );
     
    printf(
-      "   -fitted <volume>     : the volume to be regressed\n"
+      "   -f1 <double>            : the lower frequency of the bandpass filter\n"
    );
    
    printf(
-      "   -betas <volume>      : the volume to be regressed\n"
+      "   -f2 <double>            : the upper frequency of the bandpass filter\n"
    );
     
    printf(
-      "   -mask <mask>         : a mask specifying the ROI for improved performance\n"
+      "   -sampling_rate <double> : the sampling_rate used for the FFT\n"
    );
     
    printf(
-      "   -savemask <mask>     : optional path where the rescaled mask specified with -mask\n"
-      "                          will be saved. The saved file with have the same dimensions\n"
-      "                          as the input volume.\n"
+      "   -mask <mask>            : a mask specifying the ROI for improved performance\n"
    );
     
    printf(
-      "   -regressors <txt>    : a tabbed/spaced textfile containing the regressors with the\n"
-      "                          different regressors in the columns and time course in the\n"
-      "                          rows. Decimal numbers may be formatted like this: 1.23e+45\n"
+      "   -savemask <mask>        : optional path where the rescaled mask specified with\n"
+      "                             -mask will be saved. The saved file with have the same\n"
+      "                             dimensions as the input volume.\n"
    );
    
    printf(
-      "   -v                   : show debug information\n"
+      "   -v                      : show debug information\n"
       "\n"
    );
     
