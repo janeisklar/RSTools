@@ -242,8 +242,10 @@ int main(int argc, char * argv[])
         FslWriteHeader(fslioResiduals);
         
         // prepare buffer
-        buffsize = xDim*yDim*zDim*vDim*dt/8;
+        buffsize = (unsigned long)xDim*(unsigned long)yDim*(unsigned long)zDim*(unsigned long)vDim*(unsigned long)dt/(unsigned long)8;
         residualsBuffer = malloc(buffsize);
+
+	if (verbose) fprintf(stdout, "residualsbuffer: %lu\n", buffsize);
     }
     
     /* prepare betas file */
