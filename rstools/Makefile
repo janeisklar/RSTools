@@ -75,10 +75,12 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression
+all:	mathutils niftiutils timecourse regression bandpass
 
 clean:
 	rm -f *.o *.a *.dylib
+	rm -f rsregression
+	rm -f rstimecourse
 
 mathutils:
 	@echo 
@@ -86,8 +88,8 @@ mathutils:
 	@echo "*      RS Math Utils      *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -o rsmathutils.o -c rsmathutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(AR) rcs rsmathutils.a rsmathutils.o
-	$(RANLIB) rsmathutils.a
+	$(AR) rcs librsmathutils.a rsmathutils.o
+	$(RANLIB) librsmathutils.a
 
 niftiutils:
 	@echo
@@ -113,6 +115,14 @@ regression:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsregression.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
 	$(CC) $(CFLAGS) rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+
+bandpass:
+	@echo
+	@echo "***************************"
+	@echo "*       RS Bandpass       *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsbandpass.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) rsbandpass.o -o rsbandpass $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
 
 help:
 	@echo "all:      make the rstools"

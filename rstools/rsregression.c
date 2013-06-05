@@ -294,14 +294,14 @@ int main(int argc, char * argv[])
     double fitted[vDim];
 
     /* Prepare empty timecourse */
-    int emptyBufferLength = vDim > nRegressors ? vDim : nRegressors;
+    int emptyBufferLength = vDim > nRegressors ? vDim : nRegressors+1;
     void *emptybuffer     = malloc(emptyBufferLength*dt/8);
     
     double v[vDim];
     for (short t=0; t<emptyBufferLength; t=t+1) {
         v[t] = 0.0;
     }
-    convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, emptybuffer, v, slope, inter, vDim, 1, 1, FALSE);
+    convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, emptybuffer, v, slope, inter, emptyBufferLength, 1, 1, FALSE);
     
     /* Iterate over all voxels that are to be regressed */
     BOOL regressionInitalized = FALSE;
@@ -343,17 +343,6 @@ int main(int argc, char * argv[])
                     fitted,
                     verbose
                 );
-                /*rsLinearRegression(
-                    (int)vDim,
-                    signal,
-                    (int)nRegressors,
-                    (regressionInitalized     ? NULL : regressors),
-                    ((fslioBetas     == NULL) ? NULL : betas),
-                    ((fslioResiduals == NULL) ? NULL : residuals),
-                    ((fslioFitted    == NULL) ? NULL : fitted),
-                    verbose
-                );*/
-                regressionInitalized = TRUE;
                 
                 /* write out residuals if desired */
                 if ( saveResidualsPath != NULL ) {
