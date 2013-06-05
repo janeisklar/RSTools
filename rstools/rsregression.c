@@ -242,7 +242,7 @@ int main(int argc, char * argv[])
         FslWriteHeader(fslioResiduals);
         
         // prepare buffer
-        buffsize = (unsigned long)xDim*(unsigned long)yDim*(unsigned long)zDim*(unsigned long)vDim*(unsigned long)dt/(unsigned long)8;
+        buffsize = (size_t)((size_t)vDim*(size_t)dt/(size_t)8);
         residualsBuffer = malloc(buffsize);
 
 	if (verbose) fprintf(stdout, "residualsbuffer: %lu\n", buffsize);
@@ -268,7 +268,7 @@ int main(int argc, char * argv[])
         FslWriteHeader(fslioBetas);
         
         // prepare buffer
-        buffsize = xDim*yDim*zDim*(nRegressors+1L)*dt/8;
+        buffsize = (size_t)((size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)(nRegressors+1)*(size_t)dt/(size_t)8);
         betasBuffer = malloc(buffsize);
     }
     
@@ -297,7 +297,7 @@ int main(int argc, char * argv[])
 
     /* Prepare empty timecourse */
     int emptyBufferLength = vDim > nRegressors ? vDim : nRegressors+1;
-    void *emptybuffer     = malloc(emptyBufferLength*dt/8);
+    void *emptybuffer     = malloc((size_t)emptyBufferLength*(size_t)dt/(size_t)8);
     
     double v[vDim];
     for (short t=0; t<emptyBufferLength; t=t+1) {

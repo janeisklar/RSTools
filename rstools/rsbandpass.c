@@ -207,7 +207,7 @@ int main(int argc, char * argv[])
     FslSetDataType(fslioFiltered, pixtype);
     FslWriteHeader(fslioFiltered);
     
-    buffsize = xDim*yDim*zDim*vDim*dt/8;
+    buffsize = (size_t)((size_t)vDim*(size_t)dt/(size_t)8);
     filteredBuffer = malloc(buffsize);
     
     /* load mask */
@@ -225,7 +225,7 @@ int main(int argc, char * argv[])
     }
         
     // Prepare buffer
-    buffsize = vDim*dt/8;
+    buffsize = (size_t)((size_t)vDim*(size_t)dt/(size_t)8);
     buffer = malloc(buffsize);
     double signal[vDim];
 
