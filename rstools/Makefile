@@ -86,8 +86,8 @@ mathutils:
 	@echo "*      RS Math Utils      *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -o rsmathutils.o -c rsmathutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(AR) rcs rsmathutils.a rsmathutils.o
-	$(RANLIB) rsmathutils.a
+	$(AR) rcs librsmathutils.a rsmathutils.o
+	$(RANLIB) librsmathutils.a
 
 niftiutils:
 	@echo
