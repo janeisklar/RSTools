@@ -75,7 +75,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass
+all:	mathutils niftiutils timecourse regression bandpass roi
 
 clean:
 	rm -f *.o *.a *.dylib
@@ -123,6 +123,14 @@ bandpass:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsbandpass.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
 	$(CC) $(CFLAGS) rsbandpass.o -o rsbandpass $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+
+roi:
+	@echo
+	@echo "***************************"
+	@echo "*         RS ROI          *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsroi.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) rsroi.o -o rsroi $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
 
 help:
 	@echo "all:      make the rstools"

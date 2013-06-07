@@ -42,7 +42,7 @@ int show_help( void )
    );
     
    printf(
-      "   -sampling_rate <double> : the sampling_rate used for the FFT\n"
+      "   -samplingrate <double> : the sampling_rate used for the FFT\n"
    );
     
    printf(
@@ -62,6 +62,8 @@ int show_help( void )
     
    return 0;
 }
+
+void testFFTFilter();
 
 int main(int argc, char * argv[])
 {
@@ -135,6 +137,9 @@ int main(int argc, char * argv[])
 			savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
+		} else if ( ! strcmp(argv[ac], "-test") ) {
+            testFFTFilter();
+			return 0;
 		} else {
 			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
 		}
@@ -291,23 +296,28 @@ void testFFTFilter() {
     /* Create artifical data */
     double sampling_rate=1.8;
     int    T = 170;
-    double f = 0.13;
+    double f = 0.025;
     
     double angular_frequency = (2 * M_PI * f) * sampling_rate;
     double angular_frequency2 = (2 * M_PI * 0.09) * sampling_rate;
-    double angular_frequency3 = (2 * M_PI * 0.21) * sampling_rate;
+    double angular_frequency3 = (2 * M_PI * 0.07) * sampling_rate;
     double wave[T];
     double data[T];
     
     for (int i=0; i<T; i=i+1) {
-        wave[i] = 1000L * sin((i+1L)*angular_frequency)  + 1000L;
-        wave[i] = 700L  * sin((i+1L)*angular_frequency2) + wave[i];
-        wave[i] = 300L  * sin((i+1L)*angular_frequency3) + wave[i];
+        wave[i] = 0.0;
+//        wave[i] = 1000L * sin((i+1L)*angular_frequency)  + 1000L;
+//        wave[i] = 700L  * sin((i+1L)*angular_frequency2) + wave[i];
+        wave[i] = 1000L  * sin((i+1L)*angular_frequency3) + wave[i];
         data[i] = wave[i];
-        //printf("%.2f\n", wave[i]);
+        fprintf(stdout, "%.10f\n", data[i]);
     }
     
-    rsFFTFilter(data, T, sampling_rate, 0.11, 0.15, TRUE);
+    rsFFTFilter(data, T, sampling_rate, 0.01, 0.04, FALSE);
+    
+    for (int i=0; i<T; i=i+1) {
+        fprintf(stderr, "%.10f\n", data[i]);
+    }
 }
 
 

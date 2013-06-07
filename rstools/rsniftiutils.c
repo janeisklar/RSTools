@@ -12,6 +12,15 @@ Point3D MakePoint3D(unsigned int x, unsigned int y, unsigned int z)
     return a;
 }
 
+FloatPoint3D MakeFloatPoint3D(float x, float y, float z)
+{
+    FloatPoint3D a;
+    a.x = x;
+    a.y = y;
+    a.z = z;
+    return a;
+}
+
 /*
  * Reads in a binary mask in terms of a nifti file and
  * rescales it to the specified dimensions. It then

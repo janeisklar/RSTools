@@ -87,7 +87,7 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
     if ( i1 < 0 ) i1 = (T % 2==0) ? T-1 : T-2; /* in the even case the complex part */
     if ( i2 < 0 ) i2 = (T % 2==0) ? T-1 : T-2; /* of the last bin is not stored     */
     
-    if (verbose) printf("Bandpass range: %.4fHz..%.4fHz\n", F[i1], F[i2]);
+    if (verbose) printf("Bandpass range: %.4fHz(%d)..%.4fHz(%d)\n", F[i1], i1, F[i2], i2);
     
     /* Prepare FFT Filtering */
     gsl_fft_real_wavetable        *real;
@@ -120,6 +120,30 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
     gsl_fft_real_wavetable_free(real);
     gsl_fft_halfcomplex_wavetable_free(hc);
     gsl_fft_real_workspace_free(work);
+}
+
+double rsDistance(FloatPoint3D A, FloatPoint3D B)
+{
+    return pow(
+        (
+            pow(A.x-B.x,2.0) +
+            pow(A.y-B.y,2.0) +
+            pow(A.z-B.z,2.0)
+        ),
+        1.0/3.0
+    );
+}
+
+BOOL rsVoxelInSphere(FloatPoint3D point, FloatPoint3D center, double radius)
+{
+    return rsDistance(point, center) < radius;
+}
+
+BOOL rsVoxelInCube(FloatPoint3D point, FloatPoint3D center, FloatPoint3D dim)
+{
+    return fabs(point.x-center.x) <= (dim.x / 2.0) &&
+           fabs(point.y-center.y) <= (dim.y / 2.0) &&
+           fabs(point.z-center.z) <= (dim.z / 2.0);
 }
 
 double **d2matrix(int yh, int xh)
