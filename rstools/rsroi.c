@@ -33,21 +33,23 @@ int show_help( void )
     );
     
     printf(
-       "   -input <volume>     : the volume to be regressed\n"
+       "   -input <volume>     : the volume from which the header, dimension and\n"
+       "                         alignment infos will be taken. The resulting mask\n"
+       "                         will thus be coregistered to this volume."
     );
     
     printf(
-       "   -sphere <radius>    : the volume in which the filtered data will be saved\n"
-    );
-    
-    
-    
-    printf(
-       "   -cube <x> <y> <z>   : the volume in which the filtered data will be saved\n"
+       "   -sphere <radius>    : use this option if the ROI that is to be added is\n"
+       "                         a sphere. Its radius should be given in mm.\n"
     );
     
     printf(
-       "   -center <x> <y> <z> : the volume in which the filtered data will be saved\n"
+       "   -cube <x> <y> <z>   : use this option if the ROI that is to be added is\n"
+       "                         a cube. The height/width/depth should be given in mm.\n"
+    );
+    
+    printf(
+       "   -center <x> <y> <z> : this option specifies the center of the ROI. \n"
     );
     
     printf(
@@ -55,7 +57,9 @@ int show_help( void )
     );
     
     printf(
-       "   -keepVolume         : keep values from the input volume\n"
+       "   -keepVolume         : keep values from the input volume. Use this option\n"
+       "                         if you want to add ROIs to a mask that you specified\n"
+       "                         as an input.\n"
     );
     
     printf(
