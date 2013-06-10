@@ -122,6 +122,16 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
     gsl_fft_real_workspace_free(work);
 }
 
+double rsCorrelation(const double* X, const double* Y, const size_t length)
+{
+    //gsl_vector_const_view gsl_X = gsl_vector_const_view_array( &X[0], length);
+    //gsl_vector_const_view gsl_Y = gsl_vector_const_view_array( &Y[0], length);
+    //return gsl_stats_correlation((double*)gsl_X.vector.data, (const size_t)1, (double*)gsl_Y.vector.data, (const size_t)1, length);
+    return gsl_stats_correlation(X, 1,
+                                 Y, 1,
+                                 length);
+}
+
 double rsDistance(FloatPoint3D A, FloatPoint3D B)
 {
     return pow(
