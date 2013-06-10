@@ -224,7 +224,7 @@ int main(int argc, char * argv[])
     }
 
     /* prepare residuals file */
-    FSLIO *fslioResiduals;
+    FSLIO *fslioResiduals = NULL;
    	void *residualsBuffer;
     
     if ( saveResidualsPath != NULL ) {
@@ -250,7 +250,7 @@ int main(int argc, char * argv[])
     }
     
     /* prepare betas file */
-    FSLIO *fslioBetas;
+    FSLIO *fslioBetas = NULL;
    	void *betasBuffer;
     
     if ( saveBetasPath != NULL ) {
