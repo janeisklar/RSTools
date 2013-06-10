@@ -15,7 +15,7 @@ int show_help( void )
 {
     printf(
        "rsroi: Given a 4D-Nifti that will be cloned this tool will create\n"
-       "       a binary mask for the specified region.\n"
+       "       a binary mask for the specified region(sphere or cube).\n"
        "\n"
     );
     
@@ -35,7 +35,7 @@ int show_help( void )
     printf(
        "   -input <volume>     : the volume from which the header, dimension and\n"
        "                         alignment infos will be taken. The resulting mask\n"
-       "                         will thus be coregistered to this volume."
+       "                         will thus be coregistered to this volume.\n"
     );
     
     printf(
@@ -63,7 +63,7 @@ int show_help( void )
     );
     
     printf(
-       "   -v                  : show debug information\n"
+       "   -v[erbose]          : show debug information\n"
        "\n"
     );
     

@@ -189,6 +189,9 @@ rstools_install: $(INSTALL_INC_DIR) $(INSTALL_LIB_DIR)
 	($(CP) $(RSTOOLS)/*.a $(INSTALL_LIB_DIR); $(CP) $(RSTOOLS)/*.h $(INSTALL_INC_DIR);)
 	($(CP) $(RSTOOLS)/rstimecourse $(INSTALL_BIN_DIR);)
 	($(CP) $(RSTOOLS)/rsregression $(INSTALL_BIN_DIR);)
+	($(CP) $(RSTOOLS)/rsbandpass $(INSTALL_BIN_DIR);)
+	($(CP) $(RSTOOLS)/rsroi $(INSTALL_BIN_DIR);)
+	($(CP) $(RSTOOLS)/rscorrelation $(INSTALL_BIN_DIR);)
 	$(RANLIB) $(INSTALL_LIB_DIR)/*.a
 	@echo " $(RSTOOLS) installed."
 	@echo ""

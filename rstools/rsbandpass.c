@@ -56,7 +56,7 @@ int show_help( void )
    );
    
    printf(
-      "   -v                      : show debug information\n"
+      "   -v[erbose]              : show debug information\n"
       "\n"
    );
     
