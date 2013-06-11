@@ -204,8 +204,8 @@ int main(int argc, char * argv[]) {
                 /* If it's not in the mask skip it to improve the performance */
                 if (mask != NULL && mask[z][y][x] < 0.1) {
                     
-                    /* set the value in the correlation file to 0 so that the nifti isn't empty */
-                    correlation[z][y][x] = 0.0;
+                    /* set the value in the correlation file to NaN so that it is skipped in later processing steps */
+                    correlation[z][y][x] = log(-1.0);
 
                     continue;
                 }
@@ -214,13 +214,8 @@ int main(int argc, char * argv[]) {
                 FslReadTimeSeries(fslio, buffer, x, y, z, vDim);
                 convertBufferToScaledDouble(signal, buffer, (long)vDim, slope, inter, fslio->niftiptr->datatype);
                 
-                //if (y==25&&x==25) {
-                //    fprintf(stdout, "(%03d,%03d,%03d): %05.4f - %05.4f\n", x, y, z, signal[0], regressor[0]);
-                //    fprintf(stdout, "(%03d,%03d,%03d): %05.4f - %05.4f\n", x, y, z, signal[1], regressor[1]);
-                //}
-                
                 /* compute correlation */
-                correlation[z][y][x] = rsCorrelation(signal, regressor, (size_t)nValues);
+                correlation[z][y][x] = rsZCorrelation(signal, regressor, (size_t)nValues);
             }
         }
     }

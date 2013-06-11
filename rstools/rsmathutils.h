@@ -22,6 +22,7 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
 BOOL rsVoxelInSphere(FloatPoint3D point, FloatPoint3D center, double radius);
 BOOL rsVoxelInCube(FloatPoint3D point, FloatPoint3D center, FloatPoint3D dim);
 double rsCorrelation(const double* X, const double *Y, const size_t length);
+double rsZCorrelation(const double* X, const double* Y, const size_t length);
 double rsDistance(FloatPoint3D A, FloatPoint3D B);
 double **d2matrix(int yh, int xh);
 

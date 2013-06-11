@@ -65,9 +65,7 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
             i      = i+1; // skip the bin holding the real part
             F[i]   = i/(2 * T * sampling_rate); // set the frequency of the complex part's bin
             F[i-1] = F[i]; // copy it to the real part's bin
-        }
-        
-        //printf("%d: %.10f\n", (i>0 ? i-1 : 0), F[i]);
+        }        
     }
     
     /* Compute which bins to keep */
@@ -111,22 +109,61 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
     /* Inverse FFT */
     gsl_fft_halfcomplex_inverse(data, 1, T, hc, work);
     
-    //for (int i=0; i<T; i=i+1) {
-    //    printf("%03d: %.2f\n", i+1, data[i]);
-    //    printf("%.10f\n", data[i]);
-    //}
-    
     /* Free memory */
     gsl_fft_real_wavetable_free(real);
     gsl_fft_halfcomplex_wavetable_free(hc);
     gsl_fft_real_workspace_free(work);
 }
 
+double rsZCorrelation(const double* X, const double* Y, const size_t length)
+{
+    /* 
+     * This implementation is based on:
+     * Weissenbacher, Andreas, et al. 
+     * "Correlations and anticorrelations in resting-state functional connectivity MRI: a quantitative comparison of preprocessing strategies."
+     * Neuroimage 47.4 (2009): 1408-1416.
+     */
+    
+    const long double N = length;
+    const long double Nm1 = length - 1;
+    
+    // compute means
+    long double meanX = 0.0;
+    long double meanY = 0.0;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        meanX = meanX + (long double)X[i] / N;
+        meanY = meanY + (long double)Y[i] / N;
+    }
+    
+    // compute standard scores(std. dev)
+    long double sX = 0.0;
+    long double sY = 0.0;
+
+    for (unsigned int i=0; i<length; i=i+1) {
+        sX = sX + powl((long double)X[i]-meanX, 2.0) / Nm1;
+        sY = sY + powl((long double)Y[i]-meanY, 2.0) / Nm1;
+    }
+    
+    sX = sqrtl(sX);
+    sY = sqrtl(sY);
+    
+    // compute correlation coeeficient
+    long double r = 0.0;
+    const long double norm = sX * sY * Nm1;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        r = r + (long double)((long double)X[i]-meanX) * ((long double)Y[i]-meanY) / norm;
+    }
+    
+    // Fisher's r-to-z transformation
+    const long double one = 1.0;
+    const long double half = 0.5;
+    return half * logl( (one + r) / (one - r) );
+}
+
 double rsCorrelation(const double* X, const double* Y, const size_t length)
 {
-    //gsl_vector_const_view gsl_X = gsl_vector_const_view_array( &X[0], length);
-    //gsl_vector_const_view gsl_Y = gsl_vector_const_view_array( &Y[0], length);
-    //return gsl_stats_correlation((double*)gsl_X.vector.data, (const size_t)1, (double*)gsl_Y.vector.data, (const size_t)1, length);
     return gsl_stats_correlation(X, 1,
                                  Y, 1,
                                  length);
