@@ -8,7 +8,7 @@
 
 #include "rsmathutils.h"
 
-void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **regressors, double *betas, double *residuals, double *fitted, int verbose)
+void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int verbose)
 {
     gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(nSamples, nRegressors);
     
@@ -63,6 +63,86 @@ void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **
     gsl_vector_free(b);
     gsl_vector_free(res);
     gsl_multifit_linear_free(work);
+}
+
+void rsLinearRegressionFilter(
+    const int nSamples,
+    const double *signal,
+    const int nRegressors,
+    const double **regressors,
+    const double sampling_rate,
+    const double f1,
+    const double f2,
+    double *betas,
+    double *residuals,
+    double *fitted,
+    const int verbose) {
+
+    const double nyquist_frequency = 1.0 / (2.0 * sampling_rate);
+    const double bin_width = nyquist_frequency / (nSamples/3);
+    
+    // Compute the number of frequency regressors that will be added to the existing regressors
+    const int nFrequencyBinsLow  = (int)floor(f1 / bin_width - 1.0);                       // number of frequency bins before the lower cutoff frequency
+    const int nFrequencyBinsHigh = (int)floor((nyquist_frequency - f2) / bin_width - 1.0); // number of frequency bins after the highter cutoff frequency
+    const int nFrequencyBins = nFrequencyBinsLow + nFrequencyBinsHigh;                     // number of frequency bins in total
+    const int nFrequencyRegressors = nFrequencyBins * 2;                                   // number of frequency regressors (both sine and cosine)
+    
+    // Compute the frequencies for the bins
+    double frequencyBins[nFrequencyBins];
+    
+    for ( int i=0; i<nFrequencyBins; i=i+1 ) {
+        if ( (i < nFrequencyBinsLow) ) {
+            frequencyBins[i] = (i + 1) * bin_width;
+        } else {
+            frequencyBins[i] = (i - nFrequencyBinsLow + 2) * bin_width;
+        }
+    }
+    
+    // Create new regressor matrix
+    const int nRegressors2 = nRegressors + nFrequencyRegressors;
+    double **regressors2;
+    regressors2 = d2matrix(nRegressors2, nSamples);
+    
+    for (int i=0; i<nRegressors2; i=i+1) {
+        
+        if ( i < nRegressors ) {
+            for (int t=0; t<nSamples; t=t+1) {
+                regressors2[i][t] = regressors[i][t];
+            }
+        } else if ( i < (nRegressors + nFrequencyBins) ) {
+            const int j = i - nRegressors;
+            for (int t=0; t<nSamples; t=t+1) {
+                regressors2[i][t] = rsSampleSineWave(sampling_rate, frequencyBins[j], t);
+            }
+        } else {
+            const int j = i - nRegressors - nFrequencyBins;
+            for (int t=0; t<nSamples; t=t+1) {
+                regressors2[i][t] = rsSampleCosineWave(sampling_rate, frequencyBins[j], t);
+            }
+        }
+    }
+    
+    double betas2[nRegressors2];
+    
+    // Regress
+    rsLinearRegression(
+        nSamples,
+        signal,
+        nRegressors2,
+        (const double**)regressors2,
+        betas2,
+        residuals,
+        fitted,
+        verbose
+    );
+    
+    // Copy only the beta values of the original regressors
+    for (int i=0; i<nRegressors; i=i+1) {
+        betas[i] = betas2[i];
+    }
+    
+    free(regressors2[0]);
+    free(regressors2);
 }
 
 void rsFFTFilter(double *data, const int T, const double sampling_rate, const double f1, const double f2, const int verbose) {
@@ -202,6 +282,16 @@ BOOL rsVoxelInCube(FloatPoint3D point, FloatPoint3D center, FloatPoint3D dim)
     return fabs(point.x-center.x) <= (dim.x / 2.0) &&
            fabs(point.y-center.y) <= (dim.y / 2.0) &&
            fabs(point.z-center.z) <= (dim.z / 2.0);
+}
+
+double rsSampleSineWave(const double sampling_rate, const double f, const int t)
+{
+    return sin((double)t * 2.0 * M_PI * f * sampling_rate);
+}
+
+double rsSampleCosineWave(const double sampling_rate, const double f, const int t)
+{
+    return cos((double)t * 2.0 * M_PI * f * sampling_rate);
 }
 
 double **d2matrix(int yh, int xh)

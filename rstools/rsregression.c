@@ -65,19 +65,34 @@ int show_help( void )
    );
     
    printf(
-      "   -savemask <mask>     : optional path where the rescaled mask specified with -mask\n"
-      "                          will be saved. The saved file with have the same dimensions\n"
-      "                          as the input volume.\n"
+      "   -savemask <mask>       : optional path where the rescaled mask specified with -mask\n"
+      "                            will be saved. The saved file with have the same dimensions\n"
+      "                            as the input volume.\n"
    );
     
    printf(
-      "   -regressors <txt>    : a tabbed/spaced textfile containing the regressors with the\n"
-      "                          different regressors in the columns and time course in the\n"
-      "                          rows. Decimal numbers may be formatted like this: 1.23e+45\n"
+      "   -regressors <txt>      : a tabbed/spaced textfile containing the regressors with the\n"
+      "                            different regressors in the columns and time course in the\n"
+      "                            rows. Decimal numbers may be formatted like this: 1.23e+45\n"
+   );
+    
+   printf(
+      "   -f1 <double>           : (optional) the lower frequency of the bandpass\n"
+      "                            filter\n"
+   );
+
+   printf(
+      "   -f2 <double>           : (optional) the upper frequency of the bandpass filter\n"
+      "                            filter\n"
+   );
+
+   printf(
+      "   -samplingrate <double> : (optional) only required if bandpass filtering is\n"
+      "                            requested.\n"
    );
    
    printf(
-      "   -v[erbose]           : show debug information\n"
+      "   -v[erbose]             : show debug information\n"
       "\n"
    );
     
@@ -103,7 +118,10 @@ int main(int argc, char * argv[])
 	size_t dt;
     float inter = 0.0, slope = 1.0;
     
+    double f1 = -1.0, f2 = -1.0, sampling_rate = -1.0;
+    
     BOOL verbose = FALSE;
+    BOOL filterActive = FALSE;
 	
 	int ac;
     
@@ -149,12 +167,30 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-s", 2) ) {
+		} else if ( ! strcmp(argv[ac], "-savemask") ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -savemask\n");
 				return 1;
 			}
 			savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-f1") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -f1\n");
+				return 1;
+			}
+			f1 = atof(argv[ac]);  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-f2") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -f2\n");
+				return 1;
+			}
+			f2 = atof(argv[ac]);  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-samplingrate") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -samplingrate\n");
+				return 1;
+			}
+			sampling_rate = atof(argv[ac]);  /* no string copy, just pointer assignment */            
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
 		} else {
@@ -177,13 +213,27 @@ int main(int argc, char * argv[])
 		fprintf(stderr, "A file containing the regressors must be specified(-regressors)!\n");
 		return 1;
 	}
-	
+
+    filterActive = sampling_rate >= 0.0 || f1 >= 0.0 || f2 >= 0.0;
+    
     if ( verbose ) {
         fprintf(stdout, "Input file: %s\n", inputpath);
+        fprintf(stdout, "Regressors file: %s\n", regressorspath);
         fprintf(stdout, "Mask file: %s\n", maskpath);
         fprintf(stdout, "Residuals file: %s\n", saveResidualsPath);
         fprintf(stdout, "Fitted file: %s\n", saveFittedPath);
         fprintf(stdout, "Betas file: %s\n", saveBetasPath);
+        
+        if ( filterActive ) {
+            fprintf(stdout, "Bandpass filter active!\n");
+            fprintf(stdout, "Sampling rate: %.4f\n", sampling_rate);
+            fprintf(stdout, "Bandpass: (%.4f-%.4fHz)\n", f1, f2);
+        }
+    }
+    
+    if ( filterActive && (sampling_rate < 0.0 || f1 < 0.0 || f2 < 0.0) ) {
+        fprintf(stderr, "Bandpass filter parameters are not complete. (-samplingrate, -f1, -f2)!\n");
+		return 1;
     }
     
     // load regressors
@@ -367,16 +417,32 @@ int main(int argc, char * argv[])
                 convertBufferToScaledDouble(signal, buffer, (long)vDim, slope, inter, fslio->niftiptr->datatype);
                 
                 /* run the regression */
-                rsLinearRegression(
-                    (int)vDim,
-                    signal,
-                    (int)nRegressors+1,
-                    regressors,
-                    betas,
-                    residuals,
-                    fitted,
-                    verbose
-                );
+                if ( filterActive ) { // Regression + Filtering
+                    rsLinearRegressionFilter(
+                        (int)vDim,
+                        signal,
+                        (int)nRegressors+1,
+                        (const double**)regressors,
+                        sampling_rate,
+                        f1,
+                        f2,
+                        betas,
+                        residuals,
+                        fitted,
+                        verbose
+                    );
+                } else { // Regression only
+                    rsLinearRegression(
+                        (int)vDim,
+                        signal,
+                        (int)nRegressors+1,
+                        (const double**)regressors,
+                        betas,
+                        residuals,
+                        fitted,
+                        verbose
+                    );
+                }
                 
                 /* write out residuals if desired */
                 if ( saveResidualsPath != NULL ) {

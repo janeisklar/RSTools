@@ -24,7 +24,7 @@ int show_help( void )
     );
     
     printf(
-       "basic usage:  rscorrelation -input <volume> -mask <volume> [-verbose]\n"
+       "basic usage:  rscorrelation -input <volume> -mask <volume> -output <volume> [-verbose]\n"
        "\n"
     );
     
@@ -33,25 +33,25 @@ int show_help( void )
     );
     
     printf(
-       "   -help               : show this help\n"
+       "   -help                  : show this help\n"
     );
     
     printf(
-       "   -input <volume>     : the volume for which the correlation of the\n"
-       "                         timecourse for each voxel is computed\n"
+       "   -input <volume>        : the volume for which the correlation of the\n"
+       "                            timecourse for each voxel is computed\n"
     );
     
     printf(
-       "   -output <volume>    : the volume in which the correlation values will\n"
-       "                         be saved in\n"
+       "   -output <volume>       : the volume in which the correlation values will\n"
+       "                            be saved in\n"
     );
     
     printf(
-       "   -mask <mask>        : a mask specifying the ROI for improved performance\n"
+       "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
     );
     
     printf(
-       "   -v[erbose]          : show debug information\n"
+       "   -v[erbose]             : show debug information\n"
        "\n"
     );
     
