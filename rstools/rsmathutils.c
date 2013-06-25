@@ -37,6 +37,17 @@ void rsLinearRegression(int nSamples, double *signal, int nRegressors, double **
     // compute residuals
     gsl_multifit_linear_residuals(X, y, b, res);
     
+    // compute fits
+    if ( fitted != NULL ) {
+        
+        double err;
+        
+        for (int t=0; t<nSamples; t=t+1) {
+            gsl_vector_const_view y = gsl_matrix_const_row(X, t);
+            gsl_multifit_linear_est(&y.vector, b, cov, &fitted[t], &err);
+        }
+    }
+    
     // convert back to basic C variables
     for (int t=0; t < nSamples; t++) {
         residuals[t] = gsl_vector_get(res, t);

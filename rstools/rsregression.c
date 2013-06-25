@@ -54,7 +54,6 @@ int show_help( void )
     
    printf(
       "   -fitted <volume>     : the volume in which the fitted volumes will be saved\n"
-      "                          !!! This function has not been implemented yet !!!\n"
    );
    
    printf(
@@ -273,7 +272,31 @@ int main(int argc, char * argv[])
         betasBuffer = malloc(buffsize);
     }
     
-    FSLIO *fslioFitted;
+    /* prepare fitted values file */
+    FSLIO *fslioFitted = NULL;
+   	void *fittedBuffer;
+    
+    if ( saveFittedPath != NULL ) {
+        
+        fslioFitted = FslOpen(saveFittedPath, "wb");
+        
+        if (fslioFitted == NULL) {
+            fprintf(stderr, "\nError, could not read header info for %s.\n",saveFittedPath);
+            return 1;
+        }
+        
+        FslCloneHeader(fslioFitted, fslio);
+        FslSetDim(fslioFitted, xDim, yDim, zDim, vDim);
+        FslSetDimensionality(fslioFitted, 4);
+        FslSetDataType(fslioFitted, pixtype);
+        FslWriteHeader(fslioFitted);
+        
+        // prepare buffer
+        buffsize = (size_t)((size_t)vDim*(size_t)dt/(size_t)8);
+        fittedBuffer = malloc(buffsize);
+    }
+
+    
  
     double ***mask = NULL;
     if ( maskpath != NULL ) {
@@ -313,7 +336,7 @@ int main(int argc, char * argv[])
         for (short y=0; y<yDim; y=y+1) {
             for (short x=0; x<xDim; x=x+1) {
                 
-                if (verbose) fprintf(stdout, "(%03hd,%03hd,%03hd)\n", x, y, z);
+                if (verbose) fprintf(stdout, "(%03hd,%03hd,%03hd)", x, y, z);
                 
                 /* If it's not in the mask skip it to improve the performance */
                 if (mask != NULL && mask[z][y][x] < 0.1) {
@@ -328,8 +351,16 @@ int main(int argc, char * argv[])
                         rsWriteTimeSeries(fslioBetas, emptybuffer, x, y, z, nRegressors+1L);
                     }
                     
+                    /* set the fitted value to 0 so that the nifti isn't empty */
+                    if ( fslioFitted != NULL ) {
+                        rsWriteTimeSeries(fslioFitted, emptybuffer, x, y, z, vDim);
+                    }
+                    
+                    if (verbose) fprintf(stdout, "..skipped\n");
+                    
                     continue;
                 }
+                if (verbose) fprintf(stdout, "\n");
                 
                 /* read out timecourse */
                 FslReadTimeSeries(fslio, buffer, x, y, z, vDim);
@@ -358,6 +389,12 @@ int main(int argc, char * argv[])
                     convertScaledDoubleToBuffer(fslioBetas->niftiptr->datatype, betasBuffer, betas, slope, inter, nRegressors+1L, 1, 1, FALSE);
                     rsWriteTimeSeries(fslioBetas, betasBuffer, x, y, z, nRegressors+1L);
                 }
+                
+                /* write out fitted values if desired */
+                if ( saveFittedPath != NULL ) {
+                    convertScaledDoubleToBuffer(fslioFitted->niftiptr->datatype, fittedBuffer, fitted, slope, inter, vDim, 1, 1, FALSE);
+                    rsWriteTimeSeries(fslioFitted, fittedBuffer, x, y, z, vDim);
+                }
             }
         }
     }
@@ -365,12 +402,17 @@ int main(int argc, char * argv[])
     if ( saveResidualsPath != NULL ) {
         FslClose(fslioResiduals);
         free(fslioResiduals);
-        free(residualsBuffer);    }
+        free(residualsBuffer);
+    }
     
     if ( saveBetasPath != NULL ) {
         FslClose(fslioBetas);
-        free(fslioBetas);
         free(betasBuffer);
+    }
+    
+    if ( saveFittedPath != NULL ) {
+        FslClose(fslioFitted);
+        free(fittedBuffer);
     }
     
     if ( maskpath != NULL ) {
@@ -379,7 +421,6 @@ int main(int argc, char * argv[])
     
     free(buffer);
     FslClose(fslio);
-    free(fslio);
     free(regressors);
     free(emptybuffer);
     
