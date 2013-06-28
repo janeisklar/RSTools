@@ -115,8 +115,11 @@ regression:
 	@echo "***************************"
 	@echo "*      RS Regression      *"
 	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsregression_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
 	$(CC) $(CFLAGS) -c rsregression.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(CC) $(CFLAGS) rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) -c rsregression2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsregression_common.o rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) rsregression_common.o rsregression2.o -o rsregression2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 bandpass:
 	@echo

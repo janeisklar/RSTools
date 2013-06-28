@@ -31,6 +31,8 @@ FloatPoint3D MakeFloatPoint3D(float x, float y, float z);
 Point3D*     ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
 double***    ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
 size_t       rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
+BOOL         rsExtractTimecourseFromBuffer(FSLIO *fslio, double *timecourse, void *buffer, float slope, float inter, Point3D p, int xh, int yh, int zh, int th);
+BOOL         rsWriteTimecourseToBuffer(FSLIO *fslio, double *timecourse, void *buffer, float slope, float inter, Point3D p, int xh, int yh, int zh, int th);
     
 BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);

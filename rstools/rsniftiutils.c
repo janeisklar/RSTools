@@ -248,6 +248,106 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
     return 0;
 }
 
+BOOL rsExtractTimecourseFromBuffer(FSLIO *fslio, double *timecourse, void *buffer, float slope, float inter, Point3D p, int xh, int yh, int zh, int th) {
+    
+    for (int t=0; t<th; t=t+1) {
+        
+        long address = t * (xh * yh * zh) + p.z * (xh * yh) + (p.y * xh) + p.x;
+        
+        switch (fslio->niftiptr->datatype) {
+            case NIFTI_TYPE_UINT8:
+                timecourse[t] = (double) ( *((THIS_UINT8 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT8:
+                timecourse[t] = (double) ( *((THIS_INT8 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT16:
+                timecourse[t] = (double) ( *((THIS_UINT16 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT16:
+                timecourse[t] = (double) ( *((THIS_INT16 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT64:
+                timecourse[t] = (double) ( *((THIS_UINT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT64:
+                timecourse[t] = (double) ( *((THIS_INT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT32:
+                timecourse[t] = (double) ( *((THIS_UINT32 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT32:
+                timecourse[t] = (double) ( *((THIS_INT32 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_FLOAT32:
+                timecourse[t] = (double) ( *((THIS_FLOAT32 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_FLOAT64:
+                timecourse[t] = (double) ( *((THIS_FLOAT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_FLOAT128:
+            case NIFTI_TYPE_COMPLEX128:
+            case NIFTI_TYPE_COMPLEX256:
+            case NIFTI_TYPE_COMPLEX64:
+            default:
+                return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
+BOOL rsWriteTimecourseToBuffer(FSLIO *fslio, double *timecourse, void *buffer, float slope, float inter, Point3D p, int xh, int yh, int zh, int th) {
+    
+    THIS_FLOAT32 *THIS_FLOAT32_BUFFER = (THIS_FLOAT32*)buffer;
+    
+    for (int t=0; t<th; t=t+1) {
+        
+        long address = t * (xh * yh * zh) + p.z * (xh * yh) + (p.y * xh) + p.x;
+        
+        switch (fslio->niftiptr->datatype) {
+            case NIFTI_TYPE_UINT8:
+                timecourse[t] = (double) ( *((THIS_UINT8 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT8:
+                timecourse[t] = (double) ( *((THIS_INT8 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT16:
+                timecourse[t] = (double) ( *((THIS_UINT16 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT16:
+                timecourse[t] = (double) ( *((THIS_INT16 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT64:
+                timecourse[t] = (double) ( *((THIS_UINT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT64:
+                timecourse[t] = (double) ( *((THIS_INT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_UINT32:
+                timecourse[t] = (double) ( *((THIS_UINT32 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_INT32:
+                timecourse[t] = (double) ( *((THIS_INT32 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_FLOAT32:
+                THIS_FLOAT32_BUFFER[address] = (THIS_FLOAT32) ((timecourse[t] - inter) / slope);
+                break;
+            case NIFTI_TYPE_FLOAT64:
+                timecourse[t] = (double) ( *((THIS_FLOAT64 *)(buffer)+address) * slope + inter);
+                break;
+            case NIFTI_TYPE_FLOAT128:
+            case NIFTI_TYPE_COMPLEX128:
+            case NIFTI_TYPE_COMPLEX256:
+            case NIFTI_TYPE_COMPLEX64:
+            default:
+                return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
 /*
  * This function will convert a given 3D matrix of scaled doubles into
  * a buffer using the supplied datatype.
