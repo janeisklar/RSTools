@@ -16,10 +16,30 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+    
+#define RSFFTFILTER_CUTOFF 1
+#define RSFFTFILTER_SIGMOID 2
+    
+struct rsFFTFilterParams {
+    int T;
+    double sampling_rate;
+    double f1;
+    double f2;
+    
+    double *frequencyBins;
+    double *binAttenuation;
+    
+    int verbose;
+    
+    int rolloff_method;
+    int rolloff;
+};
+    
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int verbose);
 void rsLinearRegressionFilter(const int nSamples, const double *signal, const int nRegressors, const double **regressors, const double sampling_rate, const double f1, const double f2, double *betas, double *residuals, double *fitted, const int verbose);
-void rsFFTFilter(double *data, const int T, const double sampling_rate, const double f1, const double f2, const int verbose);
+struct rsFFTFilterParams rsFFTFilterInit(const int T, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose);
+void rsFFTFilter(struct rsFFTFilterParams p, double *data);
+void rsFFTFilterFree(struct rsFFTFilterParams p);
 BOOL rsVoxelInSphere(FloatPoint3D point, FloatPoint3D center, double radius);
 BOOL rsVoxelInCube(FloatPoint3D point, FloatPoint3D center, FloatPoint3D dim);
 double rsCorrelation(const double* X, const double *Y, const size_t length);
@@ -27,8 +47,10 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length);
 double rsDistance(FloatPoint3D A, FloatPoint3D B);
 double rsSampleSineWave(const double sampling_rate, const double f, const int t);
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);
+double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
+double rsSigmoid(const double rolloff, const double x);
 double **d2matrix(int yh, int xh);
-
+    
 #ifdef __cplusplus
 }
 #endif

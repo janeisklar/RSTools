@@ -127,7 +127,7 @@ int main(int argc, char * argv[])
     
     double v[p.vDim];
     for (short t=0; t<emptyBufferLength; t=t+1) {
-        v[t] = 0.0;
+        v[t] = log(-1.0);
     }
     convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, emptybuffer, v, p.slope, p.inter, emptyBufferLength, 1, 1, FALSE);
     

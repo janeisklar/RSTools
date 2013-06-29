@@ -66,7 +66,7 @@ void rsRegressionPrintHelp() {
    );
     
    printf(
-      "   -threads <int>         : (rsregression2 only) number of threads used for processing\n"
+      "   -threads <int>         : (rsbandpass2 only) number of threads used for processing\n"
    );
    
    printf(

@@ -42,7 +42,6 @@ int main(int argc, char * argv[])
     
     /* prepare residuals file */
     FSLIO *fslioResiduals = NULL;
-   	void *residualsBuffer;
     
     if ( p.saveResidualsPath != NULL ) {
         
@@ -58,12 +57,6 @@ int main(int argc, char * argv[])
         FslSetDimensionality(fslioResiduals, 4);
         FslSetDataType(fslioResiduals, p.pixtype);
         FslWriteHeader(fslioResiduals);
-        
-        // prepare buffer
-        buffsize = (size_t)((size_t)p.vDim*(size_t)p.dt/(size_t)8);
-        residualsBuffer = malloc(buffsize);
-        
-        if (p.verbose) fprintf(stdout, "residualsbuffer: %lu\n", buffsize);
     }
     
     /* prepare betas file */
@@ -114,29 +107,23 @@ int main(int argc, char * argv[])
         fittedBuffer = malloc(buffsize);
     }
     
-    /*
-    // Prepare buffer
-    buffsize = p.vDim*p.dt/8;
-    buffer = malloc(buffsize);
-    double signal[p.vDim];
-    double betas[p.nAllRegressors];
-    double residuals[p.vDim];
-    double fitted[p.vDim];
-    
-    double v[p.vDim];
-    for (short t=0; t<emptyBufferLength; t=t+1) {
-        v[t] = 0.0;
-    }
-    convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, emptybuffer, v, p.slope, p.inter, emptyBufferLength, 1, 1, FALSE);
-    */
-    
-        // Prepare empty timecourse
+    // Prepare empty timecourse
     int emptyValuesLength = p.vDim > p.nRegressors ? p.vDim : p.nRegressors+1;
     double emptybuffer[emptyValuesLength];
     
+    for (int i=0; i<emptyValuesLength; i=i+1){
+        emptybuffer[i] = log(-1.0);
+    }
+    
     // Prepare buffer
-    buffsize = p.xDim*p.yDim*p.zDim*p.vDim*p.dt/8;
-    buffer = malloc(buffsize);
+    buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
+    buffer   = malloc(buffsize);
+    
+    if (buffer == NULL) {
+        fprintf(stdout, "Not enough free memory :-(\n");
+        return 1;
+    }
+    
     FslReadVolumes(p.fslio, buffer, p.vDim);
     short x,y,z;
     double *timecourse;
@@ -145,7 +132,7 @@ int main(int argc, char * argv[])
     double *fitted;
     Point3D point;
     
-    #pragma omp parallel num_threads(p.threads) private(y,x,timecourse,residuals,betas,fitted,point)
+    #pragma omp parallel num_threads(p.threads) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer,fslioResiduals,buffer,fslioBetas,fslioFitted)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<p.zDim; z=z+1) {
@@ -205,8 +192,6 @@ int main(int argc, char * argv[])
             }
         }
     }
-    
-    FslWriteVolumes(fslioResiduals, buffer, p.vDim);
     
     /* Iterate over all voxels that are to be regressed */
 //    for (short z=0; z<p.zDim; z=z+1) {
@@ -274,9 +259,10 @@ int main(int argc, char * argv[])
 //    }
     
     if ( p.saveResidualsPath != NULL ) {
+        fprintf(stdout, "Write out residuals to: %s\n", p.saveResidualsPath);
+        FslWriteVolumes(fslioResiduals, buffer, p.vDim);
         FslClose(fslioResiduals);
         free(fslioResiduals);
-        free(residualsBuffer);
     }
     
     if ( p.saveBetasPath != NULL ) {

@@ -126,8 +126,11 @@ bandpass:
 	@echo "***************************"
 	@echo "*       RS Bandpass       *"
 	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsbandpass_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
 	$(CC) $(CFLAGS) -c rsbandpass.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(CC) $(CFLAGS) rsbandpass.o -o rsbandpass $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) -c rsbandpass2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsbandpass_common.o rsbandpass.o -o rsbandpass $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) rsbandpass_common.o rsbandpass2.o -o rsbandpass2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 roi:
 	@echo

@@ -145,10 +145,12 @@ void rsLinearRegressionFilter(
     free(regressors2);
 }
 
-void rsFFTFilter(double *data, const int T, const double sampling_rate, const double f1, const double f2, const int verbose) {
+struct rsFFTFilterParams rsFFTFilterInit(const int T, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose) {
+    
+    struct rsFFTFilterParams p;
     
     /* Compute the frequency of the spectral bins */
-    double F[T];
+    double *F = malloc(T * sizeof(double));
     for (int i=0; i<T; i=i+1) {
         F[i] = 0.0;
         
@@ -156,7 +158,7 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
             i      = i+1; // skip the bin holding the real part
             F[i]   = i/(2 * T * sampling_rate); // set the frequency of the complex part's bin
             F[i-1] = F[i]; // copy it to the real part's bin
-        }        
+        }
     }
     
     /* Compute which bins to keep */
@@ -173,37 +175,71 @@ void rsFFTFilter(double *data, const int T, const double sampling_rate, const do
             break;
         }
     }
-    if ( i1 < 0 ) i1 = (T % 2==0) ? T-1 : T-2; /* in the even case the complex part */
-    if ( i2 < 0 ) i2 = (T % 2==0) ? T-1 : T-2; /* of the last bin is not stored     */
+    if ( i1 < 0 ) i1 = (T % 2==0) ? T-1 : T-2; /* in the even case the complex part.. */
+    if ( i2 < 0 ) i2 = (T % 2==0) ? T-1 : T-2; /* ..of the last bin is not stored     */
     
     if (verbose) printf("Bandpass range: %.4fHz(%d)..%.4fHz(%d)\n", F[i1], i1, F[i2], i2);
+    
+    /* Init attenuation of the bins */
+    double *attenuation = malloc(T*sizeof(double));
+    for (int i = 0; i<T; i=i+1) {
+        attenuation[i] = (i < i1 || i > i2) ? 0.0 : 1.0;
+    }
+    
+    if ( rolloff_method == RSFFTFILTER_SIGMOID ) {
+        for (int i = 0; i<i1; i=i+1) {
+            attenuation[i] = rsSigmoidRolloff(T, rolloff, i-i1);
+        }
+        
+        for (int i = i2+1; i<T; i=i+1) {
+            attenuation[i] = rsSigmoidRolloff(T, rolloff, i-i2);
+        }
+    }
+    
+    p.frequencyBins  = F;
+    p.binAttenuation = attenuation;
+    p.f1             = f1;
+    p.f2             = f2;
+    p.verbose        = verbose;
+    p.sampling_rate  = sampling_rate;
+    p.T              = T;
+    p.rolloff_method = rolloff_method;
+    p.rolloff        = rolloff;
+    
+    return p;
+}
+
+void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
     
     /* Prepare FFT Filtering */
     gsl_fft_real_wavetable        *real;
     gsl_fft_halfcomplex_wavetable *hc;
     gsl_fft_real_workspace        *work;
     
-    work = gsl_fft_real_workspace_alloc(T);
-    real = gsl_fft_real_wavetable_alloc(T);
-    hc   = gsl_fft_halfcomplex_wavetable_alloc(T);
+    work = gsl_fft_real_workspace_alloc(p.T);
+    real = gsl_fft_real_wavetable_alloc(p.T);
+    hc   = gsl_fft_halfcomplex_wavetable_alloc(p.T);
     
     /* FFT */
-    gsl_fft_real_transform(data, 1, T, real, work);
+    gsl_fft_real_transform(data, 1, p.T, real, work);
     
-    /* Remove undesired frequency bins */
-    for (int i = 0; i<T; i=i+1) {
-        if ( i < i1 || i > i2 ) {
-            data[i] = 0;
-        }
+    /* Multiply frequency bins with attenuation weight */
+    for (int i = 0; i<p.T; i=i+1) {
+        data[i] = data[i] * p.binAttenuation[i];
     }
     
     /* Inverse FFT */
-    gsl_fft_halfcomplex_inverse(data, 1, T, hc, work);
+    gsl_fft_halfcomplex_inverse(data, 1, p.T, hc, work);
     
     /* Free memory */
     gsl_fft_real_wavetable_free(real);
     gsl_fft_halfcomplex_wavetable_free(hc);
     gsl_fft_real_workspace_free(work);
+}
+
+void rsFFTFilterFree(struct rsFFTFilterParams p) {
+    free(p.frequencyBins);
+    free(p.binAttenuation);
 }
 
 double rsZCorrelation(const double* X, const double* Y, const size_t length)
@@ -292,6 +328,16 @@ double rsSampleSineWave(const double sampling_rate, const double f, const int t)
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t)
 {
     return cos((double)t * 2.0 * M_PI * f * sampling_rate);
+}
+
+double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin)
+{
+    return rsSigmoid(rolloff/nBins, bin);
+}
+
+double rsSigmoid(const double rolloff, const double x)
+{
+    return 1.0 - tanh(rolloff*M_PI*pow(x, 2.0));
 }
 
 double **d2matrix(int yh, int xh)
