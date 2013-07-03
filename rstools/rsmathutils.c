@@ -187,12 +187,21 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const double sampling_rate
     }
     
     if ( rolloff_method == RSFFTFILTER_SIGMOID ) {
-        for (int i = 0; i<i1; i=i+1) {
+        // Add sigmoid attenuation to the lower range
+        attenuation[0] = rsSigmoidRolloff(T, rolloff, -i1);
+        for (int i = 2; i<i1; i=i+2) {
             attenuation[i] = rsSigmoidRolloff(T, rolloff, i-i1);
+            attenuation[i-1] = attenuation[i];
         }
         
-        for (int i = i2+1; i<T; i=i+1) {
-            attenuation[i] = rsSigmoidRolloff(T, rolloff, i-i2);
+        // Add sigmoid attenuation to the upper range
+        for (int i = i2+2; i<T; i=i+2) {
+            attenuation[i]   = rsSigmoidRolloff(T, rolloff, i-i2);
+            attenuation[i-1] = attenuation[i];
+        }
+        
+        if ( T % 2==0 ) {
+            attenuation[T-1] = rsSigmoidRolloff(T, rolloff, T-i2-1);
         }
     }
     
