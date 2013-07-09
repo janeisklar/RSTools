@@ -145,8 +145,10 @@ correlation:
 	@echo "***************************"
 	@echo "*     RS Correlation      *"
 	@echo "***************************"
-	$(CC) $(CFLAGS) -c rscorrelation.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
-	$(CC) $(CFLAGS) rscorrelation.o -o rscorrelation $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) -c rscorrelation.c -c rscorrelation_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) -c rscorrelation2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation.o -o rscorrelation $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
+	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation2.o -o rscorrelation2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 help:
 	@echo "all:      make the rstools"
