@@ -63,7 +63,7 @@ void rsBandpassPrintHelp() {
       "   -sigmoidrolloff <double> : uses a sigmoid function for rolling of the passband. The\n"
       "                              specified number controls how fast it is rolled of with\n"
       "                              higher numbers corresponding to a quicker rolloff. A good\n"
-      "                              starting point would be 10, then double-check by saving\m"
+      "                              starting point would be 10, then double-check by saving\n"
       "                              the attenuation file.\n"
     );
 
@@ -85,6 +85,7 @@ struct rsBandpassParameters rsBandpassInitParameters() {
     p.yDim                 = 0;
     p.zDim                 = 0;
     p.vDim                 = 0;
+    p.paddedT              = 0;
     p.pixtype              = 0;
     p.dt                   = 4;
     p.inter                = 0.0;
@@ -157,6 +158,12 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
     			return p;
     		}
     		p.threads = atoi(argv[ac]);
+    	} else if ( ! strcmp(argv[ac], "-datalength") ) {
+    		if( ++ac >= argc ) {
+    			fprintf(stderr, "** missing argument for -datalength\n");
+    			return p;
+    		}
+    		p.paddedT = atol(argv[ac]);
     	} else if ( ! strcmp(argv[ac], "-saveattenuation") ) {
             if( ++ac >= argc ) {
     			fprintf(stderr, "** missing argument for -saveattenuation\n");
@@ -194,7 +201,7 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
 		fprintf(stderr, "Bandpass frequencies and sampling rate have to be specified!(-f1, -f2, -samplingrate)!\n");
 		return p;
 	}
-	
+    
     if ( p.verbose ) {
         fprintf(stdout, "Input file: %s\n", p.inputpath);
         fprintf(stdout, "Mask file: %s\n", p.maskpath);
@@ -215,6 +222,17 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
 	   
     if ( p.verbose ) {
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p.xDim, p.yDim, p.zDim, p.vDim);
+    }
+
+    if ( p.paddedT == 0 ) {
+        p.paddedT = p.vDim;
+    } else if ( p.verbose ) {
+        fprintf(stdout, "Padding data to have a sampling length of %ld\n", p.paddedT);
+    }
+    
+    if ( p.vDim > p.paddedT ) {
+        fprintf(stderr, "\nError, datalength(%ld) needs to be longer or equal to the temporal length(%d) of the supplied nifti file: %s.\n",p.paddedT, p.vDim, p.inputpath);
+        return p;
     }
     
     if (p.fslio->niftiptr->scl_slope != 0) {
@@ -242,7 +260,7 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
     }
     
     // Prepare FFT filter
-    p.fftParams = rsFFTFilterInit(p.vDim, p.sampling_rate, p.f1, p.f2, p.rolloff_method, p.rolloff, p.verbose);
+    p.fftParams = rsFFTFilterInit(p.vDim, p.paddedT, p.sampling_rate, p.f1, p.f2, p.rolloff_method, p.rolloff, p.verbose);
     
     if ( p.saveAttenuationPath != NULL ) {
         if ( p.verbose ) {
@@ -251,7 +269,7 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
         FILE *file;
         file = fopen(p.saveAttenuationPath, "wb");
         
-        for ( int i=0; i<p.fftParams.T; i=i+1 ) {
+        for ( int i=0; i<p.fftParams.paddedT; i=i+1 ) {
             fprintf(file,"%.10f\t%.10f\n", p.fftParams.frequencyBins[i], p.fftParams.binAttenuation[i]);
         }
         
@@ -283,7 +301,7 @@ void testFFTFilter() {
         fprintf(stdout, "%.10f\n", data[i]);
     }
     
-    struct rsFFTFilterParams fftParams = rsFFTFilterInit(T, sampling_rate, 0.01, 0.04, RSFFTFILTER_CUTOFF, 0.0, FALSE);
+    struct rsFFTFilterParams fftParams = rsFFTFilterInit(T, T, sampling_rate, 0.01, 0.04, RSFFTFILTER_CUTOFF, 0.0, FALSE);
     rsFFTFilter(fftParams, data);
     
     for (int i=0; i<T; i=i+1) {

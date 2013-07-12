@@ -49,6 +49,7 @@ struct rsBandpassParameters {
     struct rsFFTFilterParams fftParams;
     double rolloff;
     int rolloff_method;
+    long paddedT;
 };
 
 struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]);

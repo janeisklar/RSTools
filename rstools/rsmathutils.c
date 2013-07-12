@@ -145,63 +145,63 @@ void rsLinearRegressionFilter(
     free(regressors2);
 }
 
-struct rsFFTFilterParams rsFFTFilterInit(const int T, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose) {
+struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose) {
     
     struct rsFFTFilterParams p;
     
     /* Compute the frequency of the spectral bins */
-    double *F = malloc(T * sizeof(double));
-    for (int i=0; i<T; i=i+1) {
+    double *F = malloc(paddedT * sizeof(double));
+    for (int i=0; i<paddedT; i=i+1) {
         F[i] = 0.0;
         
         if ( i > 0 ) {
             i      = i+1; // skip the bin holding the real part
-            F[i]   = i/(2 * T * sampling_rate); // set the frequency of the complex part's bin
+            F[i]   = i/(2 * paddedT * sampling_rate); // set the frequency of the complex part's bin
             F[i-1] = F[i]; // copy it to the real part's bin
         }
     }
     
     /* Compute which bins to keep */
     int i1=-1, i2=-1;
-    for (int i=1; i<=T; i=i+2) {
+    for (int i=1; i<=paddedT; i=i+2) {
         if (F[i] > f1) {
             i1 = (i-2 < 0) ? 0 : i-2;
             break;
         }
     }
-    for (int i=1; i<=T; i=i+2) {
+    for (int i=1; i<=paddedT; i=i+2) {
         if (F[i] > f2) {
-            i2 = (i+1 >= T) ? T-1 : i+1;
+            i2 = (i+1 >= paddedT) ? paddedT-1 : i+1;
             break;
         }
     }
-    if ( i1 < 0 ) i1 = (T % 2==0) ? T-1 : T-2; /* in the even case the complex part.. */
-    if ( i2 < 0 ) i2 = (T % 2==0) ? T-1 : T-2; /* ..of the last bin is not stored     */
+    if ( i1 < 0 ) i1 = (paddedT % 2==0) ? paddedT-1 : paddedT-2; /* in the even case the complex part.. */
+    if ( i2 < 0 ) i2 = (paddedT % 2==0) ? paddedT-1 : paddedT-2; /* ..of the last bin is not stored     */
     
     if (verbose) printf("Bandpass range: %.4fHz(%d)..%.4fHz(%d)\n", F[i1], i1, F[i2], i2);
     
     /* Init attenuation of the bins */
-    double *attenuation = malloc(T*sizeof(double));
-    for (int i = 0; i<T; i=i+1) {
+    double *attenuation = malloc(paddedT*sizeof(double));
+    for (int i = 0; i<paddedT; i=i+1) {
         attenuation[i] = (i < i1 || i > i2) ? 0.0 : 1.0;
     }
     
     if ( rolloff_method == RSFFTFILTER_SIGMOID ) {
         // Add sigmoid attenuation to the lower range
-        attenuation[0] = rsSigmoidRolloff(T, rolloff, -i1);
+        attenuation[0] = rsSigmoidRolloff(paddedT, rolloff, -i1);
         for (int i = 2; i<i1; i=i+2) {
-            attenuation[i] = rsSigmoidRolloff(T, rolloff, i-i1);
+            attenuation[i] = rsSigmoidRolloff(paddedT, rolloff, i-i1);
             attenuation[i-1] = attenuation[i];
         }
         
         // Add sigmoid attenuation to the upper range
-        for (int i = i2+2; i<T; i=i+2) {
-            attenuation[i]   = rsSigmoidRolloff(T, rolloff, i-i2);
+        for (int i = i2+2; i<paddedT; i=i+2) {
+            attenuation[i]   = rsSigmoidRolloff(paddedT, rolloff, i-i2);
             attenuation[i-1] = attenuation[i];
         }
         
-        if ( T % 2==0 ) {
-            attenuation[T-1] = rsSigmoidRolloff(T, rolloff, T-i2-1);
+        if ( paddedT % 2==0 ) {
+            attenuation[paddedT-1] = rsSigmoidRolloff(paddedT, rolloff, paddedT-i2-1);
         }
     }
     
@@ -212,6 +212,7 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const double sampling_rate
     p.verbose        = verbose;
     p.sampling_rate  = sampling_rate;
     p.T              = T;
+    p.paddedT        = paddedT;
     p.rolloff_method = rolloff_method;
     p.rolloff        = rolloff;
     
@@ -225,20 +226,45 @@ void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
     gsl_fft_halfcomplex_wavetable *hc;
     gsl_fft_real_workspace        *work;
     
-    work = gsl_fft_real_workspace_alloc(p.T);
-    real = gsl_fft_real_wavetable_alloc(p.T);
-    hc   = gsl_fft_halfcomplex_wavetable_alloc(p.T);
+    work = gsl_fft_real_workspace_alloc(p.paddedT);
+    real = gsl_fft_real_wavetable_alloc(p.paddedT);
+    hc   = gsl_fft_halfcomplex_wavetable_alloc(p.paddedT);
+    
+    /* Pad data with zeros if desired */
+    double *unpaddedData;
+    if ( p.paddedT > p.T ) {
+        unpaddedData = data;
+        data = NULL;
+        data = malloc(p.paddedT*sizeof(double));
+        
+        for (int i=0; i<p.T; i=i+1) {
+            data[i] = unpaddedData[i];
+        }
+        
+        for (int i=p.T; i<p.paddedT; i=i+1) {
+            data[i] = 0.0;
+        }
+    }
     
     /* FFT */
-    gsl_fft_real_transform(data, 1, p.T, real, work);
+    gsl_fft_real_transform(data, 1, p.paddedT, real, work);
     
     /* Multiply frequency bins with attenuation weight */
-    for (int i = 0; i<p.T; i=i+1) {
+    for (int i = 0; i<p.paddedT; i=i+1) {
         data[i] = data[i] * p.binAttenuation[i];
     }
     
     /* Inverse FFT */
-    gsl_fft_halfcomplex_inverse(data, 1, p.T, hc, work);
+    gsl_fft_halfcomplex_inverse(data, 1, p.paddedT, hc, work);
+    
+    /* Remove padding */
+    if ( p.paddedT > p.T ) {
+        for (int i=0; i<p.T; i=i+1) {
+            unpaddedData[i] = data[i];
+        }
+        free(data);
+        data = unpaddedData;
+    }
     
     /* Free memory */
     gsl_fft_real_wavetable_free(real);
