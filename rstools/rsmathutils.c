@@ -148,9 +148,106 @@ void rsLinearRegressionFilter(
 struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose) {
     
     struct rsFFTFilterParams p;
-    
-    /* Compute the frequency of the spectral bins */
     double *F = malloc(paddedT * sizeof(double));
+    double *attenuation = malloc(paddedT*sizeof(double));
+
+#if RS_FFTW_ENABLED == 1
+    /* Compute the frequency of the spectral bins */
+    F[0] = 0.0;
+    
+    // set the frequency of the real part's bin
+    for (int i=1; i<=(int)(paddedT/2); i=i+1) {
+        F[i]   = i/(2 * paddedT * sampling_rate);
+    }
+    
+    // set the frequency of the complex part's bin
+    for (int i=1; i<=(int)((paddedT+1)/2-1); i=i+1) {
+        F[paddedT-i] = i/(2 * paddedT * sampling_rate);
+    }
+    
+    /* Compute which bins to keep */
+    
+    // real part left
+    int ri1=-1;
+    for (int i=1; i<=(int)(paddedT/2); i=i+2) {
+        if (F[i] > f1) {
+            ri1 = (i-1 < 0) ? 0 : i-1;
+            break;
+        }
+    }
+    
+    // real part right
+    int ri2=-1;
+    for (int i=1; i<=(int)(paddedT/2); i=i+2) {
+        if (F[i] > f2) {
+            ri2 = (i-1 < 0) ? 0 : i-1;
+            break;
+        }
+    }
+    
+    // complex part left
+    int ci1=-1;
+    for (int i=1; i<=(int)((paddedT+1)/2-1); i=i+2) {
+        int index = paddedT-i;
+        if (F[index] > f1) {
+            ci1 = (index+1 > paddedT-1) ? paddedT-1 : index+1;
+            break;
+        }
+    }
+    
+    // complex part right
+    int ci2=-1;
+    for (int i=1; i<=(int)((paddedT+1)/2-1); i=i+2) {
+        int index = paddedT-i;
+        if (F[index] > f2) {
+            ci2 = (index+1 > paddedT-1) ? paddedT-1 : index+1;
+            break;
+        }
+    }
+    
+    if (verbose) printf("Bandpass range: real %.4fHz(%d)..%.4fHz(%d) / complex %.4fHz(%d)..%.4fHz(%d) \n", F[ri1], ri1, F[ri2], ri2, F[ci1], ci1, F[ci2], ci2);
+    
+    /* Init attenuation of the bins */
+    for (int i = 0; i<=(int)(paddedT/2); i=i+1) {
+        attenuation[i] = (i < ri1 || i > ri2) ? 0.0 : 1.0;
+    }
+    for (int i = (int)(paddedT/2)+1; i<paddedT; i=i+1) {
+        attenuation[i] = (i > ci1 || i < ci2) ? 0.0 : 1.0;
+        //attenuation[i] = 1.0;
+    }
+
+    /*
+    if ( rolloff_method == RSFFTFILTER_SIGMOID ) {
+        // Add sigmoid attenuation to the lower range
+        attenuation[0] = rsSigmoidRolloff(paddedT, rolloff, -i1);
+        for (int i = 2; i<i1; i=i+2) {
+            attenuation[i] = rsSigmoidRolloff(paddedT, rolloff, i-i1);
+            attenuation[i-1] = attenuation[i];
+        }
+        
+        // Add sigmoid attenuation to the upper range
+        for (int i = i2+2; i<paddedT; i=i+2) {
+            attenuation[i]   = rsSigmoidRolloff(paddedT, rolloff, i-i2);
+            attenuation[i-1] = attenuation[i];
+        }
+        
+        if ( paddedT % 2==0 ) {
+            attenuation[paddedT-1] = rsSigmoidRolloff(paddedT, rolloff, paddedT-i2-1);
+        }
+    }
+    */
+    
+    /* Create FFTW transformation plan */
+    double *in  = (double*) fftw_malloc(sizeof(double) * paddedT);
+    double *out = (double*) fftw_malloc(sizeof(double) * paddedT);
+    
+    p.plan_r2hc = fftw_plan_r2r_1d(paddedT, in, out, FFTW_R2HC, FFTW_PATIENT);
+    p.plan_hc2r = fftw_plan_r2r_1d(paddedT, out, in, FFTW_HC2R, FFTW_PATIENT);
+
+    fftw_free(in);
+    fftw_free(out);
+#else
+    /* Compute the frequency of the spectral bins */
     for (int i=0; i<paddedT; i=i+1) {
         F[i] = 0.0;
         
@@ -181,7 +278,6 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
     if (verbose) printf("Bandpass range: %.4fHz(%d)..%.4fHz(%d)\n", F[i1], i1, F[i2], i2);
     
     /* Init attenuation of the bins */
-    double *attenuation = malloc(paddedT*sizeof(double));
     for (int i = 0; i<paddedT; i=i+1) {
         attenuation[i] = (i < i1 || i > i2) ? 0.0 : 1.0;
     }
@@ -204,6 +300,7 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
             attenuation[paddedT-1] = rsSigmoidRolloff(paddedT, rolloff, paddedT-i2-1);
         }
     }
+#endif
     
     p.frequencyBins  = F;
     p.binAttenuation = attenuation;
@@ -219,6 +316,50 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
     return p;
 }
 
+#if RS_FFTW_ENABLED == 1
+// FFT Filter Implementation using FFTW3
+void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
+    
+    /* Pad data with zeros if desired */
+    double *unpaddedData;
+    double *tmp;
+    
+    unpaddedData = data;
+    data = NULL;
+    data = (double*) fftw_malloc(p.paddedT*sizeof(double));
+    tmp  = (double*) fftw_malloc(p.paddedT*sizeof(double));
+    
+    for (int i=0; i<p.T; i=i+1) {
+        data[i] = unpaddedData[i];
+    }
+    
+    for (int i=p.T; i<p.paddedT; i=i+1) {
+        data[i] = 0.0;
+    }
+    
+    /* FFT */
+    fftw_execute_r2r(p.plan_r2hc, data, tmp);
+    
+    /* Multiply frequency bins with attenuation weight */
+    for (int i = 0; i<p.paddedT; i=i+1) {
+        tmp[i] = tmp[i] * p.binAttenuation[i];
+    }
+    
+    /* Inverse FFT */
+    fftw_execute_r2r(p.plan_hc2r, tmp, data);
+    
+    /* Remove padding and normalize */
+    for (int i=0; i<p.T; i=i+1) {
+        unpaddedData[i] = data[i] / p.paddedT;
+    }
+    
+    /* Free memory */
+    fftw_free(data);
+    fftw_free(tmp);
+    data = unpaddedData;
+}
+#else
+// FFT Filter Implementation using GSL
 void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
     
     /* Prepare FFT Filtering */
@@ -271,10 +412,16 @@ void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
     gsl_fft_halfcomplex_wavetable_free(hc);
     gsl_fft_real_workspace_free(work);
 }
+#endif
 
 void rsFFTFilterFree(struct rsFFTFilterParams p) {
     free(p.frequencyBins);
     free(p.binAttenuation);
+    
+#if RS_FFTW_ENABLED == 1
+    fftw_destroy_plan(p.plan_r2hc);
+    fftw_destroy_plan(p.plan_hc2r);
+#endif
 }
 
 double rsZCorrelation(const double* X, const double* Y, const size_t length)

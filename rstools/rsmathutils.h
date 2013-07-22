@@ -10,6 +10,14 @@
 #include <gsl/gsl_statistics_double.h>
 #include "rsniftiutils.h"
 
+#if !defined(RS_FFTW_ENABLED)
+#define RS_FFTW_ENABLED 0
+#endif
+
+#if RS_FFTW_ENABLED == 1
+#include <fftw3.h>
+#endif
+
 #if !defined(__MATHUTILS_H)
 #define __MATHUTILS_H
 
@@ -34,6 +42,10 @@ struct rsFFTFilterParams {
     
     int rolloff_method;
     int rolloff;
+    
+#if RS_FFTW_ENABLED == 1
+    fftw_plan plan_r2hc, plan_hc2r;
+#endif
 };
     
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int verbose);

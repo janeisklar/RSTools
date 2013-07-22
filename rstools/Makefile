@@ -2,7 +2,7 @@ cc		=	gcc
 CC		=	gcc
 AR		=	ar
 RANLIB  =	ranlib
-CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99 
+CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99 -DRS_FFTW_ENABLED=1
 
 FSLIO_INCS	=	-I../include
 NIFTI_INCS	=	-I../include
@@ -13,7 +13,7 @@ FSLIO_LIBS	    =	-L../lib -lfslio
 NIFTI_LIBS	    =	-L../lib -lniftiio
 ZNZ_LIBS	    =	-L/usr/lib -L../lib -lznz -lm -lz
 RSNIFTI_LIBS	=	-L. -lrsniftiutils
-RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas
+RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas -lfftw3
 
 ##############################################################
 # R integration
