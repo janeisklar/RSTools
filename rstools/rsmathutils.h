@@ -27,6 +27,9 @@ extern "C" {
     
 #define RSFFTFILTER_CUTOFF 1
 #define RSFFTFILTER_SIGMOID 2
+
+#define RSFFTFILTER_ENGINE_GSL 1
+#define RSFFTFILTER_ENGINE_FFTW 2
     
 struct rsFFTFilterParams {
     int T;
@@ -53,6 +56,7 @@ void rsLinearRegressionFilter(const int nSamples, const double *signal, const in
 struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose);
 void rsFFTFilter(struct rsFFTFilterParams p, double *data);
 void rsFFTFilterFree(struct rsFFTFilterParams p);
+void rsFFTSetEngine(int engine);
 BOOL rsVoxelInSphere(FloatPoint3D point, FloatPoint3D center, double radius);
 BOOL rsVoxelInCube(FloatPoint3D point, FloatPoint3D center, FloatPoint3D dim);
 double rsCorrelation(const double* X, const double *Y, const size_t length);

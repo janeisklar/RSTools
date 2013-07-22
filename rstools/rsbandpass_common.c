@@ -12,47 +12,53 @@
 void rsBandpassPrintHelp() {
 
     printf(
-       "basic usage:  rsbandpass -input <volume> -filtered <volume> -f1 <double> -f2 <double> -sampling_rate <double> [-savemask <mask>] [-verbose]\n"
-       "\n"
+      "basic usage:  rsbandpass -input <volume> -filtered <volume> -f1 <double> -f2 <double> -sampling_rate <double> [-savemask <mask>] [-verbose]\n"
+      "\n"
     );
 
     printf(
-       "options:\n"
+      "options:\n"
     );
 
     printf(
-       "   -input <volume>         : the volume to be regressed\n"
+      "   -input <volume>          : the volume to be regressed\n"
     );
 
     printf(
-       "   -filtered <volume>      : the volume in which the filtered data will be saved\n"
+      "   -filtered <volume>       : the volume in which the filtered data will be saved\n"
     );
 
     printf(
-       "   -f1 <double>            : the lower frequency of the bandpass filter\n"
+      "   -f1 <double>             : the lower frequency of the bandpass filter\n"
     );
 
     printf(
-       "   -f2 <double>            : the upper frequency of the bandpass filter\n"
+      "   -f2 <double>             : the upper frequency of the bandpass filter\n"
     );
 
     printf(
-       "   -samplingrate <double>  : the sampling_rate used for the FFT\n"
+      "   -samplingrate <double>   : the sampling_rate used for the FFT\n"
     );
 
     printf(
-       "   -mask <mask>            : a mask specifying the ROI for improved performance\n"
+      "   -mask <mask>             : a mask specifying the ROI for improved performance\n"
     );
 
     printf(
-       "   -savemask <mask>        : optional path where the rescaled mask specified with\n"
-       "                             -mask will be saved. The saved file with have the same\n"
-       "                             dimensions as the input volume.\n"
+      "   -savemask <mask>         : optional path where the rescaled mask specified with\n"
+      "                              -mask will be saved. The saved file with have the same\n"
+      "                              dimensions as the input volume.\n"
     );
 
     printf(
-      "   -threads <int>           : (rsregression2 only) number of threads used for processing\n"
+      "   -threads <int>           : (rsbandpass2 only) number of threads used for processing\n"
     );
+    
+#if RS_FFTW_ENABLED == 1
+    printf(
+      "   -fftw                    : use FFTW3 instead of GSL for FFT\n"
+    );
+#endif
     
     printf(
       "   -saveattenuation <file>  : save txt file that contains the bin's frequencies and the \n"
@@ -68,8 +74,8 @@ void rsBandpassPrintHelp() {
     );
 
     printf(
-       "   -v[erbose]              : show debug information\n"
-       "\n"
+      "   -v[erbose]               : show debug information\n"
+      "\n"
     );
 }
 
@@ -177,6 +183,8 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
     		}
     		p.rolloff_method = RSFFTFILTER_SIGMOID;
             p.rolloff = atof(argv[ac]);
+        } else if ( ! strcmp(argv[ac], "-fftw") ) {
+            rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
         } else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			p.verbose = TRUE;
 		} else if ( ! strcmp(argv[ac], "-test") ) {
