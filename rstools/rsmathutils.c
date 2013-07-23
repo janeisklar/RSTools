@@ -8,7 +8,7 @@
 
 #include "rsmathutils.h"
 
-static rsFFTFilterEngine = RSFFTFILTER_ENGINE_GSL;
+static int rsFFTFilterEngine = RSFFTFILTER_ENGINE_GSL;
 
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int verbose)
 {

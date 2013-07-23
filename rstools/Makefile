@@ -2,7 +2,6 @@ cc		=	gcc
 CC		=	gcc
 AR		=	ar
 RANLIB  =	ranlib
-CFLAGS	=	-ansi -pedantic -Woverlength-strings -g -std=gnu99 -DRS_FFTW_ENABLED=1
 
 FSLIO_INCS	=	-I../include
 NIFTI_INCS	=	-I../include
@@ -13,37 +12,14 @@ FSLIO_LIBS	    =	-L../lib -lfslio
 NIFTI_LIBS	    =	-L../lib -lniftiio
 ZNZ_LIBS	    =	-L/usr/lib -L../lib -lznz -lm -lz
 RSNIFTI_LIBS	=	-L. -lrsniftiutils
+
+ifndef NOFFTW
 RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas -lfftw3
-
-##############################################################
-# R integration
-R_HOME        = $(shell R RHOME)
-
-ifeq ($(ARCH),X86_64) ## 64-bit Linux
-	R_HOME        = $(shell /usr/local/rsTools/lib/R/bin/R RHOME)
+CFLAGS	        = 	-ansi -pedantic -Woverlength-strings -g -std=gnu99 -DRS_FFTW_ENABLED=1
+else
+RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas
+CFLAGS	        = 	-ansi -pedantic -Woverlength-strings -g -std=gnu99
 endif
-
-## include headers and libraries for R 
-RCPPFLAGS     = $(shell $(R_HOME)/bin/R CMD config --cppflags)
-RLDFLAGS      = $(shell $(R_HOME)/bin/R CMD config --ldflags)
-RBLAS         = $(shell $(R_HOME)/bin/R CMD config BLAS_LIBS)
-RLAPACK       = $(shell $(R_HOME)/bin/R CMD config LAPACK_LIBS)
-
-## include headers and libraries for Rcpp interface classes
-RCPPINCL      =	$(shell echo 'Rcpp:::CxxFlags()' | $(R_HOME)/bin/R --vanilla --slave)
-RCPPLIBS      =	$(shell echo 'Rcpp:::LdFlags()'  | $(R_HOME)/bin/R --vanilla --slave)
-
-## include headers and libraries for RInside embedding classes
-RINSIDEINCL   =	$(shell echo 'RInside:::CxxFlags()' | $(R_HOME)/bin/R --vanilla --slave)
-RINSIDELIBS   =	$(shell echo 'RInside:::LdFlags()'  | $(R_HOME)/bin/R --vanilla --slave)
-
-## compiler etc settings used in default make rules
-CXX           = $(shell $(R_HOME)/bin/R CMD config CXX)
-CPPFLAGS      =	-O3 -Wall $(shell $(R_HOME)/bin/R CMD config CPPFLAGS)
-CXXFLAGS      = $(RCPPFLAGS) $(RCPPINCL) $(RINSIDEINCL) $(shell $(R_HOME)/bin/R CMD config CXXFLAGS)
-
-##############################################################
-# platform specific redefines (to use, set ARCH appropriately)
 
 ## ARCH = X86_64
 
