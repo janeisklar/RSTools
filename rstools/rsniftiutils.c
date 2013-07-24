@@ -423,6 +423,94 @@ BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double *inbuf, floa
             return FALSE;
             
     }
+    
+    return TRUE;
+}
+
+BOOL rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const int threads, const double value) {
+    
+    switch (datatype) {
+        case NIFTI_TYPE_UINT8:
+        case NIFTI_TYPE_INT8:
+        case NIFTI_TYPE_UINT16:
+        case NIFTI_TYPE_INT16:
+        case NIFTI_TYPE_UINT32:
+        case NIFTI_TYPE_INT32:
+        case NIFTI_TYPE_UINT64:
+        case NIFTI_TYPE_INT64:
+        case NIFTI_TYPE_FLOAT32:
+        case NIFTI_TYPE_FLOAT64:
+            break;
+        case NIFTI_TYPE_FLOAT128:
+        case NIFTI_TYPE_COMPLEX128:
+        case NIFTI_TYPE_COMPLEX256:
+        case NIFTI_TYPE_COMPLEX64:
+        default:
+            return FALSE;
+    }
+
+    
+    THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)buffer;
+    THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)buffer;
+    THIS_UINT16  *THIS_UINT16_BUFFER  = (THIS_UINT16*)buffer;
+    THIS_INT16   *THIS_INT16_BUFFER   = (THIS_INT16*)buffer;
+    THIS_UINT32  *THIS_UINT32_BUFFER  = (THIS_UINT32*)buffer;
+    THIS_INT32   *THIS_INT32_BUFFER   = (THIS_INT32*)buffer;
+    THIS_UINT64  *THIS_UINT64_BUFFER  = (THIS_UINT64*)buffer;
+    THIS_INT64   *THIS_INT64_BUFFER   = (THIS_INT64*)buffer;
+    THIS_FLOAT32 *THIS_FLOAT32_BUFFER = (THIS_FLOAT32*)buffer;
+    THIS_FLOAT64 *THIS_FLOAT64_BUFFER = (THIS_FLOAT64*)buffer;
+    
+    double scaled_value = (value - inter) / slope;
+    
+    #pragma omp parallel num_threads(threads) shared(buffer,THIS_UINT8_BUFFER,THIS_INT8_BUFFER,THIS_UINT16_BUFFER,THIS_INT16_BUFFER,THIS_UINT32_BUFFER,THIS_INT32_BUFFER,THIS_UINT64_BUFFER,THIS_INT64_BUFFER,THIS_FLOAT32_BUFFER,THIS_FLOAT64_BUFFER)
+    {
+        #pragma omp for schedule(guided)
+        for (int x=0; x<xh; x=x+1) {
+            for (int y=0; y<yh; y=y+1) {
+                for (int z=0; z<zh; z=z+1) {
+                    for (int t=0; t<th; t=t+1) {
+                        long address = t * (xh * yh * zh) + z * (xh * yh) + (y * xh) + x;
+                        
+                        switch (datatype) {
+                            case NIFTI_TYPE_UINT8:
+                                THIS_UINT8_BUFFER[address]   = (THIS_UINT8)   scaled_value;
+                                break;
+                            case NIFTI_TYPE_INT8:
+                                THIS_INT8_BUFFER[address]    = (THIS_INT8)    scaled_value;
+                                break;
+                            case NIFTI_TYPE_UINT16:
+                                THIS_UINT16_BUFFER[address]  = (THIS_UINT16)  scaled_value;
+                                break;
+                            case NIFTI_TYPE_INT16:
+                                THIS_INT16_BUFFER[address]   = (THIS_INT16)   scaled_value;
+                                break;
+                            case NIFTI_TYPE_UINT32:
+                                THIS_UINT32_BUFFER[address]  = (THIS_UINT32)  scaled_value;
+                                break;
+                            case NIFTI_TYPE_INT32:
+                                THIS_INT32_BUFFER[address]   = (THIS_INT32)   scaled_value;
+                                break;
+                            case NIFTI_TYPE_UINT64:
+                                THIS_UINT64_BUFFER[address]  = (THIS_UINT64)  scaled_value;
+                                break;
+                            case NIFTI_TYPE_INT64:
+                                THIS_INT64_BUFFER[address]   = (THIS_INT64)   scaled_value;
+                                break;
+                            case NIFTI_TYPE_FLOAT32:
+                                THIS_FLOAT32_BUFFER[address] = (THIS_FLOAT32) scaled_value;
+                                break;
+                            case NIFTI_TYPE_FLOAT64:
+                                THIS_FLOAT64_BUFFER[address] = (THIS_FLOAT64) scaled_value;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return TRUE;
 }
 
 

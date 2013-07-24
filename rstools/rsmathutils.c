@@ -560,6 +560,51 @@ double rsSigmoid(const double rolloff, const double x)
     return 1.0 - tanh(rolloff*M_PI*pow(x, 2.0));
 }
 
+gsl_vector *rsFirstEigenvector(gsl_matrix* A, long maxIterations, double precision)
+{
+    // Power iteration method
+    // http://en.wikipedia.org/wiki/Power_iteration
+    
+    const long n = A->size1;
+    gsl_vector *tmp  = gsl_vector_alloc(n);
+    
+    // initialize seed eigenvector
+    gsl_rng *r    = gsl_rng_alloc (gsl_rng_taus);
+    gsl_vector *b = gsl_vector_alloc(n);
+    for (long i=0; i<n; i=i+1) {
+        gsl_vector_set(b, i, gsl_rng_get(r));
+    }
+    gsl_rng_free(r);
+    
+    BOOL converged = FALSE;
+    
+    // run power iteration
+    for (long iteration=0L; iteration<maxIterations; iteration=iteration+1) {
+        
+        // calculate the matrix-by-vector product tmp=Ab
+        gsl_blas_dsymv(CblasUpper, 1.0, A, b, 0.0, tmp);
+        
+        // calculate the vector norm(euclidean)
+        double norm = gsl_blas_dnrm2(tmp);
+        
+        // normalize it for the next iteration
+        gsl_vector_scale(tmp, 1.0/norm);
+        
+        // check if it has converged
+        gsl_vector_swap(b, tmp);
+        gsl_vector_sub(tmp, b);
+        double mean = fabs(gsl_stats_mean(tmp->data, 1, n));
+
+        if ( mean < precision ) {
+            break;
+        }
+    }
+    
+    gsl_vector_free(tmp);
+    
+    return b;
+}
+
 double **d2matrix(int yh, int xh)
 {
     int j;

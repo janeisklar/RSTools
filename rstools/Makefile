@@ -51,7 +51,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -74,7 +74,7 @@ niftiutils:
 	@echo "***************************"
 	@echo "*     RS Nifti Utils      *"
 	@echo "***************************"
-	$(CC) $(CFLAGS) -o rsniftiutils.o -c rsniftiutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) -o rsniftiutils.o -c rsniftiutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(AR) rcs librsniftiutils.a rsniftiutils.o
 	$(RANLIB) librsniftiutils.a
 
@@ -125,6 +125,14 @@ correlation:
 	$(CC) $(CFLAGS) -c rscorrelation2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation.o -o rscorrelation $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
 	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation2.o -o rscorrelation2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
+centrality:
+	@echo
+	@echo "***************************"
+	@echo "*     RS Centrality       *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rscentrality2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rscentrality2.o -o rscentrality2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 help:
 	@echo "all:      make the rstools"

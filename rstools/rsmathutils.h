@@ -8,6 +8,8 @@
 #include <gsl/gsl_fft_real.h>
 #include <gsl/gsl_fft_halfcomplex.h>
 #include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_rng.h>
 #include "rsniftiutils.h"
 
 #if !defined(RS_FFTW_ENABLED)
@@ -66,6 +68,7 @@ double rsSampleSineWave(const double sampling_rate, const double f, const int t)
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
+gsl_vector *rsFirstEigenvector(gsl_matrix* A, long maxIterations, double precision);
 double **d2matrix(int yh, int xh);
     
 #ifdef __cplusplus
