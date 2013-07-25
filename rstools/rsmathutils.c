@@ -568,13 +568,18 @@ gsl_vector *rsFirstEigenvector(gsl_matrix* A, long maxIterations, double precisi
     const long n = A->size1;
     gsl_vector *tmp  = gsl_vector_alloc(n);
     
-    // initialize seed eigenvector
+    /*
     gsl_rng *r    = gsl_rng_alloc (gsl_rng_taus);
     gsl_vector *b = gsl_vector_alloc(n);
     for (long i=0; i<n; i=i+1) {
         gsl_vector_set(b, i, gsl_rng_get(r));
     }
     gsl_rng_free(r);
+    */
+    
+    // initialize seed eigenvector
+    gsl_vector *b = gsl_vector_alloc(n);
+    gsl_vector_set_all(b, 1.0);
     
     BOOL converged = FALSE;
     

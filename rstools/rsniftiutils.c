@@ -248,6 +248,12 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
     return 0;
 }
 
+void rsScaleValues(double *timecourse, const int th, const double slope, const double inter) {
+    for (int t=0; t<th; t=t+1) {
+        timecourse[t] = timecourse[t] * slope + inter;
+    }
+}
+
 /*
  * Takes in a buffer obtained from fsl and reads
  * out a timecourse for a single voxel that is
@@ -258,40 +264,43 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
  */
 BOOL rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th) {
     
+    const long voxeLOffset = p.z * (xh * yh) + (p.y * xh) + p.x;
+    const long timeOffset  = xh * yh * zh;
+    
     for (int t=0; t<th; t=t+1) {
         
-        long address = t * (xh * yh * zh) + p.z * (xh * yh) + (p.y * xh) + p.x;
+        const long address = t * timeOffset + voxeLOffset;
         
         switch (fslio->niftiptr->datatype) {
             case NIFTI_TYPE_UINT8:
-                timecourse[t] = (double) ( *((THIS_UINT8 *)(buffer)+address)   * slope + inter);
+                timecourse[t] = (double) *((THIS_UINT8 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_INT8:
-                timecourse[t] = (double) ( *((THIS_INT8 *)(buffer)+address)    * slope + inter);
+                timecourse[t] = (double) *((THIS_INT8 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_UINT16:
-                timecourse[t] = (double) ( *((THIS_UINT16 *)(buffer)+address)  * slope + inter);
+                timecourse[t] = (double) *((THIS_UINT16 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_INT16:
-                timecourse[t] = (double) ( *((THIS_INT16 *)(buffer)+address)   * slope + inter);
+                timecourse[t] = (double) *((THIS_INT16 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_UINT64:
-                timecourse[t] = (double) ( *((THIS_UINT64 *)(buffer)+address)  * slope + inter);
+                timecourse[t] = (double) *((THIS_UINT64 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_INT64:
-                timecourse[t] = (double) ( *((THIS_INT64 *)(buffer)+address)   * slope + inter);
+                timecourse[t] = (double) *((THIS_INT64 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_UINT32:
-                timecourse[t] = (double) ( *((THIS_UINT32 *)(buffer)+address)  * slope + inter);
+                timecourse[t] = (double) *((THIS_UINT32 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_INT32:
-                timecourse[t] = (double) ( *((THIS_INT32 *)(buffer)+address)   * slope + inter);
+                timecourse[t] = (double) *((THIS_INT32 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_FLOAT32:
-                timecourse[t] = (double) ( *((THIS_FLOAT32 *)(buffer)+address) * slope + inter);
+                timecourse[t] = (double) *((THIS_FLOAT32 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_FLOAT64:
-                timecourse[t] = (double) ( *((THIS_FLOAT64 *)(buffer)+address) * slope + inter);
+                timecourse[t] = (double) *((THIS_FLOAT64 *)(buffer)+address);
                 break;
             case NIFTI_TYPE_FLOAT128:
             case NIFTI_TYPE_COMPLEX128:
@@ -301,6 +310,8 @@ BOOL rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecourse, const
                 return FALSE;
         }
     }
+    
+    rsScaleValues(timecourse, th, slope, inter);
     
     return TRUE;
 }
