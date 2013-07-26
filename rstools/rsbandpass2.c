@@ -34,7 +34,6 @@ int main(int argc, char * argv[])
 
     /* prepare filtered file */
     FSLIO *fslioFiltered;
-   	void *filteredBuffer;
     fslioFiltered = FslOpen(p.saveFilteredPath, "wb");
         
     if (fslioFiltered == NULL) {
@@ -107,7 +106,6 @@ int main(int argc, char * argv[])
     FslWriteVolumes(fslioFiltered, buffer, p.vDim);
     FslClose(fslioFiltered);
     free(fslioFiltered);
-    free(filteredBuffer);
     
     if ( p.maskpath != NULL ) {
         free(p.mask);
