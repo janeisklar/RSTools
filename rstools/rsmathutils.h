@@ -68,8 +68,21 @@ double rsSampleSineWave(const double sampling_rate, const double f, const int t)
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
-gsl_vector *rsFirstEigenvector(gsl_matrix* A, long maxIterations, double precision);
+long double *rsFirstEigenvector(const double** A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
+long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
+long double rsEuclideanNorm(const long double *x, const long n);
+void rsScaleVector(long double *x, const long n, const long double factor, const int threads);
+void rsVectorSub(long double *x, const long double *y, const long n, const int threads);
+void rsVectorSwap(long double *x, long double *y, const long n, const int threads);
+long double rsVectorMean(const long double *x, const long n);
+
 double **d2matrix(int yh, int xh);
+int rs_gsl_matrix_fprintf(FILE *stream,gsl_matrix *m,char *fmt);
+void rs_matrix_fprintf(FILE *stream, const double **A, const long m, const long n, const char* fmt);
+void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const char* fmt);
+void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* fmt);
+BOOL rsSaveMatrix(const char *filename, const double** A, const long m, const long n);
+BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n);
     
 #ifdef __cplusplus
 }

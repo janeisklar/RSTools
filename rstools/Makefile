@@ -56,16 +56,21 @@ all:	mathutils niftiutils timecourse regression bandpass roi correlation central
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
 	rm -f rsregression
+	rm -f rsregression2
 	rm -f rstimecourse
 	rm -f rsroi
 	rm -f rscorrelation
+	rm -f rscorrelation2
+	rm -f rsbandpass
+	rm -f rsbandpass2
+	rm -f rscentrality2
 
 mathutils:
 	@echo 
 	@echo "***************************"
 	@echo "*      RS Math Utils      *"
 	@echo "***************************"
-	$(CC) $(CFLAGS) -o rsmathutils.o -c rsmathutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) -o rsmathutils.o -c rsmathutils.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(AR) rcs librsmathutils.a rsmathutils.o
 	$(RANLIB) librsmathutils.a
 

@@ -21,25 +21,35 @@ void rsCentralityPrintHelp() {
     );
     
     printf(
-        "   -input <volume>      : a 4D volume for which the centrality will be computed\n"
+        "   -input <volume>        : a 4D volume for which the centrality will be computed\n"
     );
     
     printf(
-        "   -output <volume>     : the volume in which the result will be saved\n"
+        "   -output <volume>       : the volume in which the result will be saved\n"
     );
     
     printf(
-        "   -mask <mask>         : a mask specifying the ROI\n"
+        "   -mask <mask>           : a mask specifying the ROI\n"
     );
     
     printf(
-        "   -savemask <mask>     : optional path where the rescaled mask specified with -mask\n"
-        "                          will be saved. The saved file with have the same dimensions\n"
-        "                          as the input volume.\n"
+        "   -savemask <mask>       : optional path where the rescaled mask specified with -mask\n"
+        "                            will be saved. The saved file with have the same dimensions\n"
+        "                            as the input volume.\n"
     );
     
     printf(
-        "   -v[erbose]           : show debug information\n"
+        "   -savesimilarity <file> : optional path to a file where the similarity matrix will be \n"
+        "                            saved to.\n"
+    );
+    
+    printf(
+        "   -similarity <file>     : optional path to use an existing similarity matrix instead of\n"
+        "                            creating it file where the similarity matrix will be \n"
+    );
+    
+    printf(
+        "   -v[erbose]             : show debug information\n"
         "\n"
     );
 }
@@ -55,6 +65,8 @@ int main(int argc, char * argv[]) {
 	char *outputpath = NULL;
 	char *maskpath = NULL;
     char *savemaskpath = NULL;
+    char *savesimilaritypath = NULL;
+    char *similaritypath = NULL;
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
@@ -89,7 +101,7 @@ int main(int argc, char * argv[]) {
 				return 1;
 			}
 			maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-s", 2) ) {
+		} else if ( ! strcmp(argv[ac], "-savemask") ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -savemask\n");
 				return 1;
@@ -103,6 +115,18 @@ int main(int argc, char * argv[]) {
 				return 1;
 			}
 			outputpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-savesimilarity") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -savesimilarity\n");
+				return 1;
+			}
+			savesimilaritypath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-similarity") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -similarity\n");
+				return 1;
+			}
+			similaritypath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strcmp(argv[ac], "-threads") ) {
   			if( ++ac >= argc ) {
            		fprintf(stderr, "** missing argument for -threads\n");
@@ -136,6 +160,10 @@ int main(int argc, char * argv[]) {
         fprintf(stdout, "Input file:  %s\n", inputpath);
         fprintf(stdout, "Mask file:   %s\n", maskpath);
         fprintf(stdout, "Output file: %s\n", outputpath);
+        if (savesimilaritypath)
+            fprintf(stdout, "Similarity matrix output file: %s\n", savesimilaritypath);
+        if (similaritypath)
+            fprintf(stdout, "Similarity matrix file: %s\n", similaritypath);
     }
     
     // Load file
@@ -189,64 +217,99 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     
-    // Prepare buffer
-    buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
-    buffer   = malloc(buffsize);
+    double **similarity = d2matrix(nPoints, nPoints);
     
-    if (buffer == NULL) {
-        fprintf(stdout, "Not enough free memory :-(\n");
-        return 1;
+    if (similaritypath) {
+        /* If similarity matrix exists load it */
+        
+        if ( rsLoadMatrix(similaritypath, similarity, nPoints, nPoints) != TRUE ) {
+            fprintf(stderr, "Error while saving similarity matrix '%s'\n", savesimilaritypath);
+            FslClose(fslio);
+            FslClose(fslioCentrality);
+            return 1;
+        }
+        
+        // Prepare buffer
+        buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)dt/(size_t)8;
+        buffer   = malloc(buffsize);
+        
+        if (buffer == NULL) {
+            fprintf(stdout, "Not enough free memory :-(\n");
+            return 1;
+        }
+        
+    } else {
+        /* If similarity matrix doesn't exist yet, create it */
+        
+        // Prepare buffer
+        buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
+        buffer   = malloc(buffsize);
+        
+        if (buffer == NULL) {
+            fprintf(stdout, "Not enough free memory :-(\n");
+            return 1;
+        }
+        
+        FslReadVolumes(fslio, buffer, vDim);
+        
+        /* create similarity matrix */
+        if ( verbose ) fprintf(stdout, "Creating the similarity matrix for %lu voxels..\n", nPoints);
+        double *signal1;
+        double *signal2;
+        long p1, p2;
+        long processedPoints = 0L;
+        
+        #pragma omp parallel num_threads(threads) private(p1,p2,signal1,signal2) shared(buffer,fslio,similarity)
+        {
+            #pragma omp for schedule(guided, 1)
+            for (p1 = 0L; p1<nPoints; p1=p1+1L) {
+                for (p2 = p1; p2<nPoints; p2=p2+1L) {
+                    
+                    const Point3D point1 = maskPoints[p1];
+                    const Point3D point2 = maskPoints[p2];
+                    
+                    /* read out timecourses from buffer */
+                    signal1 = malloc(vDim*sizeof(double));
+                    signal2 = malloc(vDim*sizeof(double));
+                    rsExtractTimecourseFromBuffer(fslio, signal1, buffer, slope, inter, point1, xDim, yDim, zDim, vDim);
+                    rsExtractTimecourseFromBuffer(fslio, signal2, buffer, slope, inter, point2, xDim, yDim, zDim, vDim);
+                    
+                    /* compute correlation */
+                    const double correlation = rsZCorrelation(signal1, signal2, vDim);
+                    similarity[p1][p2] = correlation;
+                    similarity[p2][p1] = correlation;
+                    
+                    /* cleanup */
+                    free(signal1);
+                    free(signal2);
+                }
+                
+                /* show progress */
+                #pragma omp atomic
+                processedPoints += 1L;
+                
+                if (verbose && processedPoints > 0 && processedPoints % (long)(nPoints / 10) == 0) {
+                    fprintf(stdout, "..%.0f%%\n", ceil((float)processedPoints*100.0 / (float)nPoints));
+                }
+            }
+        }
     }
     
-    FslReadVolumes(fslio, buffer, vDim);
-    
-    /* create similarity matrix */
-    if ( verbose ) fprintf(stdout, "Creating the similarity matrix for %lu voxels..\n", nPoints);
-    double *signal1;
-    double *signal2;
-    long p1, p2;
-    gsl_matrix *similarity = gsl_matrix_alloc(nPoints, nPoints);
-    long processedPoints = 0L;
-    
-    #pragma omp parallel num_threads(threads) private(p1,p2,signal1,signal2) shared(buffer,fslio,similarity)
-    {
-        #pragma omp for schedule(guided, 1)
-        for (p1 = 0L; p1<nPoints; p1=p1+1L) {
-            for (p2 = p1; p2<nPoints; p2=p2+1L) {
-                
-                const Point3D point1 = maskPoints[p1];
-                const Point3D point2 = maskPoints[p2];
-                
-                /* read out timecourses from buffer */
-                signal1 = malloc(vDim*sizeof(double));
-                signal2 = malloc(vDim*sizeof(double));
-                rsExtractTimecourseFromBuffer(fslio, signal1, buffer, slope, inter, point1, xDim, yDim, zDim, vDim);
-                rsExtractTimecourseFromBuffer(fslio, signal2, buffer, slope, inter, point2, xDim, yDim, zDim, vDim);
-                
-                /* compute correlation */
-                const double correlation = rsCorrelation(signal1, signal2, vDim);
-                gsl_matrix_set(similarity, p1, p2, correlation);
-                
-                /* cleanup */
-                free(signal1);
-                free(signal2);
-            }
-            
-            /* show progress */
-            #pragma omp atomic
-            processedPoints += 1L;
-            
-            if (verbose && processedPoints > 0 && processedPoints % (long)(nPoints / 10) == 0) {
-                fprintf(stdout, "..%.0f%%\n", ceil((float)processedPoints*100.0 / (float)nPoints));
-            }
+    if ( savesimilaritypath != NULL ) {
+        if ( verbose )
+            fprintf(stdout, "Saving the similarity matrix..\n");
+        
+        if ( rsSaveMatrix(savesimilaritypath, (const double **)similarity, nPoints, nPoints) != TRUE ) {
+            fprintf(stderr, "Error while saving similarity matrix '%s'\n", savesimilaritypath);
         }
     }
     
     /* compute first eigenvector */
     if ( verbose ) fprintf(stdout, "Computing eigenvector centrality..\n");
     
-    gsl_vector *eigenvector = rsFirstEigenvector(similarity, 10000, 0.000001);
-    gsl_matrix_free(similarity);
+    long double *eigenvector = rsFirstEigenvector((const double**)similarity, nPoints, 10000, 0.000001, threads, verbose);
+    free(similarity[0]);
+    free(similarity);
     
     /* write back to file */
     if ( verbose ) fprintf(stdout, "Writing output..\n");
@@ -255,7 +318,7 @@ int main(int argc, char * argv[]) {
     
     for (unsigned long p = 0L; p<nPoints; p=p+1L) {
         Point3D point     = maskPoints[p];
-        double centrality = fabs(gsl_vector_get(eigenvector, p));
+        double centrality = fabs(eigenvector[p]);
         
         rsWriteTimecourseToBuffer(fslioCentrality, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);
     }
@@ -264,12 +327,11 @@ int main(int argc, char * argv[]) {
     FslClose(fslioCentrality);
     free(fslioCentrality);
     free(buffer);
-    gsl_vector_free(eigenvector);
+    free(eigenvector);
     free(maskPoints);
 }
 
 void rsTestPowerIteration() {
-    gsl_matrix *m = gsl_matrix_alloc(5,5);
     
     /*
      >> a = rand(5);
@@ -283,37 +345,44 @@ void rsTestPowerIteration() {
      0.8407    0.2543    0.8143    0.2435    0.9293
     */
     
+    double **m = d2matrix(5,5);
+    
     // 1st row
-    gsl_matrix_set(m, 0, 0, 0.2760);
-    gsl_matrix_set(m, 0, 1, 0.4984); gsl_matrix_set(m, 1, 0, 0.4984);
-    gsl_matrix_set(m, 0, 2, 0.7513); gsl_matrix_set(m, 2, 0, 0.7513);
-    gsl_matrix_set(m, 0, 3, 0.9593); gsl_matrix_set(m, 3, 0, 0.9593);
-    gsl_matrix_set(m, 0, 4, 0.8407); gsl_matrix_set(m, 4, 0, 0.8407);
+    m[0][0] = 0.2760;
+    m[0][1] = 0.4984; m[1][0] = 0.4984;
+    m[0][2] = 0.7513; m[2][0] = 0.7513;
+    m[0][3] = 0.9593; m[3][0] = 0.9593;
+    m[0][4] = 0.8407; m[4][0] = 0.8407;
     
     // 2nd row
-    gsl_matrix_set(m, 1, 1, 0.9597);
-    gsl_matrix_set(m, 1, 2, 0.2551); gsl_matrix_set(m, 2, 1, 0.2551);
-    gsl_matrix_set(m, 1, 3, 0.5472); gsl_matrix_set(m, 3, 1, 0.5472);
-    gsl_matrix_set(m, 1, 4, 0.2543); gsl_matrix_set(m, 4, 1, 0.2543);
+    m[1][1] = 0.9597;
+    m[1][2] = 0.2551; m[2][1] = 0.2551;
+    m[1][3] = 0.5472; m[3][1] = 0.5472;
+    m[1][4] = 0.2543; m[4][1] = 0.2543;
     
     // 3rd row
-    gsl_matrix_set(m, 2, 2, 0.5060);
-    gsl_matrix_set(m, 2, 3, 0.1386); gsl_matrix_set(m, 3, 2, 0.1386);
-    gsl_matrix_set(m, 2, 4, 0.8143); gsl_matrix_set(m, 4, 2, 0.8143);
+    m[2][2] = 0.5060;
+    m[2][3] = 0.1386; m[3][2] = 0.1386;
+    m[2][4] = 0.8143; m[4][2] = 0.8143;
     
     // 4th row
-    gsl_matrix_set(m, 3, 3, 0.1493);
-    gsl_matrix_set(m, 3, 4, 0.2435); gsl_matrix_set(m, 4, 3, 0.2435);
+    m[3][3] = 0.1493;
+    m[3][4] = 0.2435; m[4][3] = 0.2435;
     
     // 5th row
-    gsl_matrix_set(m, 4, 4, 0.9293);
+    m[4][4] = 0.9293;
     
-    gsl_matrix_fprintf(stdout, m, "%.4f");
+    fprintf(stdout, "Input Matrix:\n");
+    rs_matrix_fprintf(stdout, (const double**)m, 4, 4, "%.4f");
+    fprintf(stdout, "\n");
     
-    gsl_vector *b = rsFirstEigenvector(m, 100000, 0.000001);
+    long double *b = rsFirstEigenvector((const double **)m, 4, 100000, 0.000001, 1, TRUE);
     
+    fprintf(stdout, "\n");
     fprintf(stdout, "Eigenvector:\n");
-    gsl_vector_fprintf(stdout, b, "%.10f");
+    rs_vector_fprintfl(stdout, b, 4, "%.4Lf");
     
-    gsl_vector_free(b);
+    free(m[0]);
+    free(m);
+    free(b);
 }

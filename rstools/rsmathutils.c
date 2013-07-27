@@ -473,6 +473,7 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length)
     
     const long double N = length;
     const long double Nm1 = length - 1;
+    const long double epsilon = 0.0000000001;
     
     // compute means
     long double meanX = 0.0;
@@ -497,15 +498,20 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length)
     
     // compute correlation coeeficient
     long double r = 0.0;
-    const long double norm = sX * sY * Nm1;
+    const long double norm = fmaxl(sX, epsilon) * fmaxl(sY, epsilon) * Nm1;
     
     for (unsigned int i=0; i<length; i=i+1) {
         r = r + (long double)((long double)X[i]-meanX) * ((long double)Y[i]-meanY) / norm;
     }
     
     // Fisher's r-to-z transformation
-    const long double one = 1.0;
-    const long double half = 0.5;
+    const long double half     = 0.5;
+    const long double one      = 1.0;
+    const long double minusone = -1.0;
+    
+    r=fminl(r, one-epsilon);
+    r=fmaxl(r, minusone+epsilon);
+    
     return half * logl( (one + r) / (one - r) );
 }
 
@@ -560,52 +566,52 @@ double rsSigmoid(const double rolloff, const double x)
     return 1.0 - tanh(rolloff*M_PI*pow(x, 2.0));
 }
 
-gsl_vector *rsFirstEigenvector(gsl_matrix* A, long maxIterations, double precision)
+long double *rsFirstEigenvector(const double** A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose)
 {
     // Power iteration method
     // http://en.wikipedia.org/wiki/Power_iteration
     
-    const long n = A->size1;
-    gsl_vector *tmp  = gsl_vector_alloc(n);
-    
-    /*
-    gsl_rng *r    = gsl_rng_alloc (gsl_rng_taus);
-    gsl_vector *b = gsl_vector_alloc(n);
-    for (long i=0; i<n; i=i+1) {
-        gsl_vector_set(b, i, gsl_rng_get(r));
-    }
-    gsl_rng_free(r);
-    */
-    
+    long double *tmp = malloc(n*sizeof(long double));
+        
     // initialize seed eigenvector
-    gsl_vector *b = gsl_vector_alloc(n);
-    gsl_vector_set_all(b, 1.0);
+    long double *b = malloc(n*sizeof(long double));
+    for (long i=0; i<n; i=i+1) {
+        b[i] = 1.0;
+    }
+    
+    //gsl_vector_fprintf(stdout, b, "%f");
     
     BOOL converged = FALSE;
     
     // run power iteration
-    for (long iteration=0L; iteration<maxIterations; iteration=iteration+1) {
-        
+    for (long iteration=1L; iteration<maxIterations; iteration=iteration+1) {
+                
         // calculate the matrix-by-vector product tmp=Ab
-        gsl_blas_dsymv(CblasUpper, 1.0, A, b, 0.0, tmp);
+        free(tmp);
+        tmp = rsMatrixByVectorProduct(A, b, n, n, threads);
         
         // calculate the vector norm(euclidean)
-        double norm = gsl_blas_dnrm2(tmp);
+        const long double norm = rsEuclideanNorm(tmp, n);
+        long double invNorm = ((long double)1) / norm;
         
         // normalize it for the next iteration
-        gsl_vector_scale(tmp, 1.0/norm);
+        rsScaleVector(tmp, n, invNorm, threads);
         
         // check if it has converged
-        gsl_vector_swap(b, tmp);
-        gsl_vector_sub(tmp, b);
-        double mean = fabs(gsl_stats_mean(tmp->data, 1, n));
-
-        if ( mean < precision ) {
+        rsVectorSwap(b, tmp, n, threads);
+        rsVectorSub(tmp, b, n, threads);
+        long double mean = fabsl(rsVectorMean(tmp, n));
+        
+        if (verbose) {
+            fprintf(stdout, "Iteration %ld/%ld Mean Difference: %.10Lf Target: %.10f\n", iteration, maxIterations, mean, precision);
+        }
+        
+        if ( mean <= precision ) {
             break;
         }
     }
     
-    gsl_vector_free(tmp);
+    free(tmp);
     
     return b;
 }
@@ -628,4 +634,189 @@ double **d2matrix(int yh, int xh)
     for(j=1;j<nrow;j++) t[j]=t[j-1]+ncol;
     
     return t;
+}
+
+/*
+ * Computes the matrix by vector product
+ * y = A*x
+ * n..width of the matrix and vector length
+ * m..height of the matrix
+ * The matrix is assumed to be in the following format A[m][n]
+ */
+long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads) {
+    long double *y = malloc(m*sizeof(long double));
+    long i,j;
+    
+    #pragma omp parallel num_threads(threads) private(i,j) shared(y)
+    {
+        #pragma omp for schedule(guided)
+        for (i=0; i<m; i=i+1L) {
+            long double product = 0.0;
+            
+            for (j=0; j<n; j=j+1) {
+                product += (long double)A[i][j] * (long double)x[j];
+            }
+            
+            y[i] = (double)product;
+        }
+    }
+    
+    return y;
+}
+
+long double rsEuclideanNorm(const long double *x, const long n)
+{
+    long double tss = 0.0;
+    
+    for (long i=0; i<n; i=i+1) {
+        tss += x[i];
+    }
+    
+    return sqrtl(tss);
+}
+
+void rsScaleVector(long double *x, const long n, const long double factor, const int threads)
+{
+    long i;
+    
+    #pragma omp parallel num_threads(threads) private(i) shared(x)
+    {
+        #pragma omp for schedule(guided)
+        for (i=0L; i<n; i=i+1L) {
+            x[i] *= factor;
+        }
+    }
+}
+
+void rsVectorSub(long double *x, const long double *y, const long n, const int threads)
+{
+    long i;
+    
+    #pragma omp parallel num_threads(threads) private(i) shared(x,y)
+    {
+        #pragma omp for schedule(guided)
+        for (i=0L; i<n; i=i+1L) {
+            x[i] -= y[i];
+        }
+    }
+}
+
+void rsVectorSwap(long double *x, long double *y, const long n, const int threads)
+{
+    long double tmp;
+    long i;
+    
+    #pragma omp parallel num_threads(threads) private(i,tmp) shared(x,y)
+    {
+        #pragma omp for schedule(guided)
+        for (i=0L; i<n; i=i+1L) {
+            tmp  = x[i];
+            x[i] = y[i];
+            y[i] = tmp;
+        }
+    }
+}
+
+long double rsVectorMean(const long double *x, const long n)
+{
+    long double mean = 0.0;
+    
+    for (long i=0L; i<n; i=i+1L) {
+        mean += x[i];
+    }
+    
+    return (double) (mean/(unsigned long)n);
+}
+
+void rs_matrix_fprintf(FILE *stream, const double **A, const long m, const long n, const char* fmt)
+{
+    for (long i=0; i<m; i=i+1) {
+        for (long j=0; j<n; j=j+1) {
+            fprintf(stream, fmt, A[i][j]);
+            fprintf(stream, " ");
+        }
+        fprintf(stream, "\n");
+    }
+}
+
+void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* fmt)
+{
+    for (long j=0; j<n; j=j+1) {
+        fprintf(stream, fmt, x[j]);
+        fprintf(stream, " ");
+    }
+    fprintf(stream, "\n");
+}
+
+void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const char* fmt)
+{
+        for (long j=0; j<n; j=j+1) {
+            fprintf(stream, fmt, x[j]);
+            fprintf(stream, " ");
+        }
+        fprintf(stream, "\n");
+}
+
+int rs_gsl_matrix_fprintf(FILE *stream,gsl_matrix *m,char *fmt)
+{
+    size_t rows=m->size1;
+    size_t cols=m->size2;
+    size_t row,col,ml;
+    int fill;
+    char buf[100];
+    gsl_vector *maxlen;
+    
+    maxlen=gsl_vector_alloc(cols);
+    for (col=0;col<cols;++col) {
+        ml=0;
+        for (row=0;row<rows;++row) {
+            sprintf(buf,fmt,gsl_matrix_get(m,row,col));
+            if (strlen(buf)>ml)
+                ml=strlen(buf);
+        }
+        gsl_vector_set(maxlen,col,ml);
+    }
+    
+    for (row=0;row<rows;++row) {
+        for (col=0;col<cols;++col) {
+            sprintf(buf,fmt,gsl_matrix_get(m,row,col));
+            fprintf(stream,"%s",buf);
+            fill=gsl_vector_get(maxlen,col)+1-strlen(buf);
+            while (--fill>=0)
+                fprintf(stream," ");
+        }
+        fprintf(stream,"\n");
+    }
+    gsl_vector_free(maxlen);
+    return 0;
+}
+
+BOOL rsSaveMatrix(const char *filename, const double** A, const long m, const long n)
+{
+    FILE *file;
+    file = fopen(filename, "wb");
+    BOOL success = TRUE;
+    const size_t blockSize = sizeof(double);
+    
+    for (long row=0L; row<m && success; row=row+1) {
+        success = success && fwrite(A[row], blockSize, n, file) == n;
+    }
+    fclose(file);
+    
+    return success;
+}
+
+BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n)
+{
+    FILE *file;
+    file = fopen(filename, "r");
+    BOOL success = TRUE;
+    const size_t blockSize = sizeof(double);
+    
+    for (long row=0L; row<m && success; row=row+1) {
+        success = success && fread(A[row], blockSize, n, file) == n;
+    }
+    fclose(file);
+    
+    return success;
 }
