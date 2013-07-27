@@ -33,6 +33,12 @@ void rsCentralityPrintHelp() {
     );
     
     printf(
+        "   -correlation <mode>    : specifies how the correlation coefficients are converted before\n"
+        "                            the eigenvalue computation. <mode> can be on of the following:\n"
+        "                            pos, neg, abs(default)"
+    );
+    
+    printf(
         "   -savemask <mask>       : optional path where the rescaled mask specified with -mask\n"
         "                            will be saved. The saved file with have the same dimensions\n"
         "                            as the input volume.\n"
@@ -74,6 +80,7 @@ int main(int argc, char * argv[]) {
 	size_t dt;
     float inter = 0.0, slope = 1.0;
     int threads = 1;
+    int correlationMode = RSMATRIXCONVERSION_ABSOLUTE;
     
     BOOL verbose = FALSE;
 	
@@ -133,6 +140,20 @@ int main(int argc, char * argv[]) {
            		return 1;
            	}
            	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-correlation") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -correlation\n");
+           		return 1;
+           	} else if ( ! strcmp(argv[ac], "abs") ) {
+                correlationMode = RSMATRIXCONVERSION_ABSOLUTE;
+            } else if ( ! strcmp(argv[ac], "pos") ) {
+                correlationMode = RSMATRIXCONVERSION_POSITIVE;
+            } else if ( ! strcmp(argv[ac], "neg") ) {
+                correlationMode = RSMATRIXCONVERSION_NEGATIVE;
+            } else {
+                fprintf(stderr, "** invalid argument for -correlation(must be abs, pos or neg)\n");
+           		return 1;
+            }
         } else if ( ! strcmp(argv[ac], "-test") ) {
             rsTestPowerIteration();
             return 0;
@@ -295,14 +316,24 @@ int main(int argc, char * argv[]) {
         }
     }
     
+    /* save similarity matrix */
     if ( savesimilaritypath != NULL ) {
-        if ( verbose )
-            fprintf(stdout, "Saving the similarity matrix..\n");
+        if ( verbose ) fprintf(stdout, "Saving the similarity matrix..\n");
         
         if ( rsSaveMatrix(savesimilaritypath, (const double **)similarity, nPoints, nPoints) != TRUE ) {
             fprintf(stderr, "Error while saving similarity matrix '%s'\n", savesimilaritypath);
         }
     }
+    
+    /* convert correlation coefficients in the similarity matrix */
+    if ( verbose ) {
+        fprintf(
+            stdout,
+            "Converting correlation coefficients to %s values..\n",
+            (correlationMode == RSMATRIXCONVERSION_ABSOLUTE ? "absolute" : (correlationMode == RSMATRIXCONVERSION_POSITIVE ? "strictly positive" : "strictly negative" ))
+        );
+    }
+    rsMatrixConversion(similarity, nPoints, nPoints, correlationMode, threads);
     
     /* compute first eigenvector */
     if ( verbose ) fprintf(stdout, "Computing eigenvector centrality..\n");

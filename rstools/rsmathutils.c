@@ -715,6 +715,37 @@ void rsVectorSwap(long double *x, long double *y, const long n, const int thread
     }
 }
 
+void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads)
+{
+    long i,j;
+    
+    #pragma omp parallel num_threads(threads) private(i,j) shared(A)
+    {
+        #pragma omp for schedule(guided)
+        for (i=0; i<m; i=i+1L) {
+            if ( mode == RSMATRIXCONVERSION_ABSOLUTE ) {
+                for (j=0; j<n; j=j+1) {
+                    A[i][j] = fabs(A[i][j]);
+                }
+            } else if ( mode == RSMATRIXCONVERSION_POSITIVE ) {
+                for (j=0; j<n; j=j+1) {
+                    if ( A[i][j] < 0.0 ) {
+                        A[i][j] = 0.0;
+                    }
+                }
+            } else if ( mode == RSMATRIXCONVERSION_NEGATIVE ) {
+                for (j=0; j<n; j=j+1) {
+                    if ( A[i][j] >= 0.0 ) {
+                        A[i][j] = 0.0;
+                    } else {
+                        A[i][j] = fabs(A[i][j]);
+                    }
+                }
+            }
+        }
+    }
+}
+
 long double rsVectorMean(const long double *x, const long n)
 {
     long double mean = 0.0;

@@ -33,6 +33,10 @@ extern "C" {
 #define RSFFTFILTER_ENGINE_GSL 1
 #define RSFFTFILTER_ENGINE_FFTW 2
     
+#define RSMATRIXCONVERSION_ABSOLUTE 1
+#define RSMATRIXCONVERSION_POSITIVE 2
+#define RSMATRIXCONVERSION_NEGATIVE 3
+    
 struct rsFFTFilterParams {
     int T;
     long paddedT;
@@ -68,13 +72,14 @@ double rsSampleSineWave(const double sampling_rate, const double f, const int t)
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
-long double *rsFirstEigenvector(const double** A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
+long double *rsFirstEigenvector(const double **A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
 long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
 long double rsEuclideanNorm(const long double *x, const long n);
 void rsScaleVector(long double *x, const long n, const long double factor, const int threads);
 void rsVectorSub(long double *x, const long double *y, const long n, const int threads);
 void rsVectorSwap(long double *x, long double *y, const long n, const int threads);
 long double rsVectorMean(const long double *x, const long n);
+void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads);
 
 double **d2matrix(int yh, int xh);
 int rs_gsl_matrix_fprintf(FILE *stream,gsl_matrix *m,char *fmt);
