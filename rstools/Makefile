@@ -14,12 +14,19 @@ ZNZ_LIBS	    =	-L/usr/lib -L../lib -lznz -lm -lz
 RSNIFTI_LIBS	=	-L. -lrsniftiutils
 
 ifndef NOFFTW
-RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas -lfftw3
-CFLAGS	        = 	-ansi -pedantic -Woverlength-strings -g -std=gnu99 -DRS_FFTW_ENABLED=1
+FFTW_LIBS       =   -lfftw3
+FFTW_CFLAGS     = 	-DRS_FFTW_ENABLED=1
 else
-RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas
-CFLAGS	        = 	-ansi -pedantic -Woverlength-strings -g -std=gnu99
+FFTW_LIBS	    =
+FFTW_CFLAGS     = 	
 endif
+
+ifdef NATIVE
+NATIVE_CFLAGS   =   -march=native
+endif
+
+CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(NATIVE_CFLAGS)
+RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas $(FFTW_LIBS)
 
 ## ARCH = X86_64
 

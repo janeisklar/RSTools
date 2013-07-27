@@ -579,8 +579,6 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
         b[i] = 1.0;
     }
     
-    //gsl_vector_fprintf(stdout, b, "%f");
-    
     BOOL converged = FALSE;
     
     // run power iteration
