@@ -741,6 +741,15 @@ void rsMatrixConversion(double **A, const long m, const long n, const int mode, 
                         A[i][j] = fabs(A[i][j]);
                     }
                 }
+            } else if ( mode == RSMATRIXCONVERSION_SCALED ) {
+                // This is used to shift z-transformed correlations so that they're all positive.
+                // Therefore the smallest possible(as implemented) correlation coefficient is computed.
+                const double epsilon = 0.0000000001;
+                const double shiftingConstant = fabs(log(epsilon / (2.0 - epsilon))) + epsilon;
+                
+                for (j=0; j<n; j=j+1) {
+                    A[i][j] = A[i][j] + shiftingConstant;
+                }
             }
         }
     }

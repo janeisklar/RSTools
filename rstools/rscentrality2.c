@@ -35,7 +35,7 @@ void rsCentralityPrintHelp() {
     printf(
         "   -correlation <mode>    : specifies how the correlation coefficients are converted before\n"
         "                            the eigenvalue computation. <mode> can be on of the following:\n"
-        "                            pos, neg, abs(default)"
+        "                            pos, neg, abs(default), scaled\n"
     );
     
     printf(
@@ -150,6 +150,8 @@ int main(int argc, char * argv[]) {
                 correlationMode = RSMATRIXCONVERSION_POSITIVE;
             } else if ( ! strcmp(argv[ac], "neg") ) {
                 correlationMode = RSMATRIXCONVERSION_NEGATIVE;
+            } else if ( ! strcmp(argv[ac], "scaled") ) {
+                correlationMode = RSMATRIXCONVERSION_SCALED;
             } else {
                 fprintf(stderr, "** invalid argument for -correlation(must be abs, pos or neg)\n");
            		return 1;
@@ -330,7 +332,7 @@ int main(int argc, char * argv[]) {
         fprintf(
             stdout,
             "Converting correlation coefficients to %s values..\n",
-            (correlationMode == RSMATRIXCONVERSION_ABSOLUTE ? "absolute" : (correlationMode == RSMATRIXCONVERSION_POSITIVE ? "strictly positive" : "strictly negative" ))
+            (correlationMode == RSMATRIXCONVERSION_ABSOLUTE ? "absolute" : (correlationMode == RSMATRIXCONVERSION_POSITIVE ? "strictly positive" : (correlationMode == RSMATRIXCONVERSION_NEGATIVE ? "strictly negative" : "rescaled" )))
         );
     }
     rsMatrixConversion(similarity, nPoints, nPoints, correlationMode, threads);
