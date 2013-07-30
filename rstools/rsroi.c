@@ -63,6 +63,12 @@ int show_help( void )
     );
     
     printf(
+        "  -randomsample <n>   : randomly sample <n> voxels from the file specified\n"
+        "                        using -input(through -keepVolume) or the other ROI\n"
+        "                        commands(-sphere, -cube)\n"
+    );
+    
+    printf(
        "   -v[erbose]          : show debug information\n"
        "\n"
     );
@@ -89,6 +95,7 @@ int main(int argc, char * argv[])
     FloatPoint3D cubeDim   = MakeFloatPoint3D(-9999.9, -9999.9, -9999.9);
     BOOL resetVolume       = TRUE;
     BOOL verbose           = FALSE;
+    long nSamples          = -1;
 	
 	int ac;
     
@@ -133,7 +140,13 @@ int main(int argc, char * argv[])
 				fprintf(stderr, "** missing argument for -sphere\n");
 				return 1;
 			}
-			sphereradius = atof(argv[ac]);  /* no string copy, just pointer assignment */
+			sphereradius = atof(argv[ac]);
+		} else if ( ! strcmp(argv[ac], "-randomsample") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -randomsample\n");
+				return 1;
+			}
+			nSamples = atol(argv[ac]);
 		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -m\n");
@@ -161,19 +174,20 @@ int main(int argc, char * argv[])
     
     BOOL inputEqualsOutput = ! strcmp(inputpath, maskpath);
 	
-	if ( center.x < -9999.0 ) {
+	if ( center.x < -9999.0 && nSamples < 0 ) {
 		fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
 		return 1;
 	}
     
-    if ( sphereradius <= 0 && cubeDim.x < 0 ) {
-        fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(-center)!\n");
+    if ( sphereradius <= 0 && cubeDim.x < 0 && nSamples < 0 ) {
+        fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(-sphere, -cube)!\n");
 		return 1;
     }
 	
     if ( verbose ) {
         fprintf(stdout, "Input file: %s\n", inputpath);
         fprintf(stdout, "Mask file: %s\n", maskpath);
+        if ( sphereradius > 0 || cubeDim.x > -9999.9 )
         fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center.x, center.y, center.z);
         if ( sphereradius > 0) {
             fprintf(stdout, "Sphere radius: %.4fmm\n", sphereradius);
@@ -272,11 +286,52 @@ int main(int argc, char * argv[])
                     mask[z][y][x] = 1.0;
                 } else if(cubeDim.x > -9999.9 && rsVoxelInCube(point, center, cubeDim)) {
                     mask[z][y][x] = 1.0;                    
-                }else if ( resetVolume ) {
+                } else if ( resetVolume ) {
                     mask[z][y][x] = 0.0;
                 }
             }
         }
+    }
+    
+    /* If sampling is requested sample nSamples voxels from the mask */
+    if (nSamples > 0) {
+        if ( verbose ) fprintf(stdout, "Sampling %ld voxels\n", nSamples);
+        
+        // Create a new empty mask
+        double ***oldMask = mask;
+        mask = NULL;
+        mask = d3matrix(zDim-1, yDim-1, xDim-1);
+        
+        for (short z=0; z<zDim; z=z+1) {
+            for (short y=0; y<yDim; y=y+1) {
+                for (short x=0; x<xDim; x=x+1) {
+                    mask[z][y][x] = 0.0;
+                }
+            }
+        }
+
+        // Randomly take sample points and copy them from the original mask
+        gsl_rng *r = gsl_rng_alloc(gsl_rng_taus);
+        
+        while (nSamples > 0) {
+            unsigned short x = gsl_rng_uniform_int(r, xDim);
+            unsigned short y = gsl_rng_uniform_int(r, yDim);
+            unsigned short z = gsl_rng_uniform_int(r, zDim);
+            
+            if (oldMask[z][y][x] <= 0.01) {
+                continue;
+            }
+            
+            if (mask[z][y][x] > 0.01) {
+                continue;
+            }
+            
+            mask[z][y][x] = oldMask[z][y][x];
+            nSamples = nSamples - 1L;
+        }
+        
+        gsl_rng_free(r);
+        free(oldMask);
     }
     
     convertScaledDoubleToBuffer(fslioMask->niftiptr->datatype, buffer, mask[0][0], slope, inter, xDim, yDim, zDim, FALSE);
