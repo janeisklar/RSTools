@@ -624,9 +624,11 @@ double **d2matrix(int yh, int xh)
     
     /** allocate pointers to ydim */
     t=(double **) malloc((size_t)((nrow)*sizeof(double*)));
+    if (!t) RSIOERR("d2matrix: allocation failure");
     
     /** allocate pointers for zdim */
     t[0]=(double *) malloc((size_t)((ncol*nrow)*sizeof(double)));
+    if (!t[0]) RSIOERR("d2matrix: allocation failure");
     
     /** point everything to the data blob */
     for(j=1;j<nrow;j++) t[j]=t[j-1]+ncol;
