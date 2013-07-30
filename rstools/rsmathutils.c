@@ -616,9 +616,9 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
 
 double **d2matrix(int yh, int xh)
 {
-    int j;
-    int nrow = yh+1;
-    int ncol = xh+1;
+    long int j;
+    long int nrow = yh+1;
+    long int ncol = xh+1;
     double **t;
     
     
@@ -631,7 +631,7 @@ double **d2matrix(int yh, int xh)
     if (!t[0]) RSIOERR("d2matrix: allocation failure");
     
     /** point everything to the data blob */
-    for(j=1;j<nrow;j++) t[j]=t[j-1]+ncol;
+    for(j=1L;j<nrow;j++) t[j]=t[j-1]+ncol;
     
     return t;
 }
