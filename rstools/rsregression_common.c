@@ -365,9 +365,22 @@ double *rsParseRegressorLine(char *line, long *nRegressors) {
     char delimiter[] = " \t";
     char *ptr;
     *nRegressors = 0L;
+    BOOL endsWithSeparator = TRUE;
     
-    char lineCpy[strlen(line)];
+    size_t lineLength = strlen(line);
+    
+    // if it doesn't end with a tab or space we need to add one for strtok to work
+    if (line[lineLength-1] != '\t' || line[lineLength-1] != ' ') {
+        lineLength = lineLength + 1;
+        endsWithSeparator = FALSE;
+    }
+    
+    char lineCpy[lineLength];
     strcpy(lineCpy, line);
+    
+    if ( !endsWithSeparator ) {
+        lineCpy[lineLength-1] = '\t';
+    }
     
     ptr = strtok(lineCpy, delimiter);
     while (ptr != NULL) {
@@ -378,6 +391,10 @@ double *rsParseRegressorLine(char *line, long *nRegressors) {
     regressors = malloc(sizeof(double)*(*nRegressors));
     
     strcpy(lineCpy, line);
+    
+    if ( !endsWithSeparator ) {
+        lineCpy[lineLength-1] = '\t';
+    }
     
     long n=0L;
     ptr = strtok(lineCpy, delimiter);
