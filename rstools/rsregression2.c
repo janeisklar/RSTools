@@ -103,7 +103,7 @@ int main(int argc, char * argv[])
         FslWriteHeader(fslioFitted);
         
         // prepare buffer
-        buffsize = (size_t)((size_t)p.vDim*(size_t)p.dt/(size_t)8);
+        buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
         fittedBuffer = malloc(buffsize);
     }
     
@@ -118,25 +118,24 @@ int main(int argc, char * argv[])
     // Prepare buffer
     buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
     buffer   = malloc(buffsize);
-    
+        
     if (buffer == NULL) {
         fprintf(stdout, "Not enough free memory :-(\n");
         return 1;
     }
     
     FslReadVolumes(p.fslio, buffer, p.vDim);
-    short x,y,z;
+    short x,y,z, processedSlices = 0;
     double *timecourse;
     double *residuals;
     double *betas;
     double *fitted;
     Point3D point;
     
-    #pragma omp parallel num_threads(p.threads) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer,fslioResiduals,buffer,fslioBetas,fslioFitted)
+    #pragma omp parallel num_threads(p.threads) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer,fslioResiduals,buffer,fslioBetas,fslioFitted,betasBuffer,fittedBuffer)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<p.zDim; z=z+1) {
-            fprintf(stdout, "Regressing slice Z%03hd/%03hd\n", z+1, p.zDim);        
             for (y=0; y<p.yDim; y=y+1) {
                 for (x=0; x<p.xDim; x=x+1) {
                     
@@ -152,12 +151,12 @@ int main(int argc, char * argv[])
                     
                         /* set the value in the betas to 0 so that the nifti isn't empty */
                         if ( fslioBetas != NULL ) {
-                            // tbd
+                            rsWriteTimecourseToBuffer(fslioBetas, emptybuffer, betasBuffer, p.slope, p.inter, point, p.xDim, p.yDim, p.zDim, p.nRegressors+1L);
                         }
                     
                         /* set the fitted value to 0 so that the nifti isn't empty */
                         if ( fslioFitted != NULL ) {
-                            // tbd
+                            rsWriteTimecourseToBuffer(fslioFitted, emptybuffer, fittedBuffer, p.slope, p.inter, point, p.xDim, p.yDim, p.zDim, p.vDim);
                         }
                         
                         continue;
@@ -182,7 +181,9 @@ int main(int argc, char * argv[])
                         p.verbose
                     );
                     
-                    rsWriteTimecourseToBuffer(p.fslio, residuals, buffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    rsWriteTimecourseToBuffer(p.fslio,     residuals, buffer,       p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    rsWriteTimecourseToBuffer(fslioBetas,  betas,     betasBuffer,  p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.nRegressors+1);
+                    rsWriteTimecourseToBuffer(fslioFitted, fitted,    fittedBuffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
                     
                     free(timecourse);
                     free(residuals);
@@ -190,87 +191,35 @@ int main(int argc, char * argv[])
                     free(fitted);
                 }
             }
+            
+            /* show progress */
+            #pragma omp atomic
+            processedSlices += 1;
+            
+            if (p.verbose && processedSlices > 0 && processedSlices % (short)(p.zDim / 10) == 0) {
+                fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p.zDim));
+            }
         }
     }
     
-    /* Iterate over all voxels that are to be regressed */
-//    for (short z=0; z<p.zDim; z=z+1) {
-//        fprintf(stdout, "Regressing slice Z%03hd/%03hd\n", z+1, p.zDim);
-//        for (short y=0; y<p.yDim; y=y+1) {
-//            for (short x=0; x<p.xDim; x=x+1) {
-//                
-//                /* If it's not in the mask skip it to improve the performance */
-//                if (p.mask != NULL && p.mask[z][y][x] < 0.1) {
-//                    
-//                    /* set the value in the residuals to 0 so that the nifti isn't empty */
-//                    if ( fslioResiduals != NULL ) {
-//                        rsWriteTimeSeries(fslioResiduals, emptybuffer, x, y, z, p.vDim);
-//                    }
-//                    
-//                    /* set the value in the betas to 0 so that the nifti isn't empty */
-//                    if ( fslioBetas != NULL ) {
-//                        rsWriteTimeSeries(fslioBetas, emptybuffer, x, y, z, p.nRegressors+1L);
-//                    }
-//                    
-//                    /* set the fitted value to 0 so that the nifti isn't empty */
-//                    if ( fslioFitted != NULL ) {
-//                        rsWriteTimeSeries(fslioFitted, emptybuffer, x, y, z, p.vDim);
-//                    }
-//                    
-//                    continue;
-//                }
-//                if (p.verbose) fprintf(stdout, "\n");
-//                
-//                /* read out timecourse */
-//                FslReadTimeSeries(p.fslio, buffer, x, y, z, p.vDim);
-//                convertBufferToScaledDouble(signal, buffer, (long)p.vDim, p.slope, p.inter, p.fslio->niftiptr->datatype);
-//                
-//                /* run the regression */
-//                rsLinearRegression(
-//                    (int)p.vDim,
-//                    signal,
-//                    p.nAllRegressors,
-//                    (const double**)p.allRegressors,
-//                    betas,
-//                    residuals,
-//                    fitted,
-//                    p.verbose
-//                );
-//                
-//                /* write out residuals if desired */
-//                if ( p.saveResidualsPath != NULL ) {
-//                    convertScaledDoubleToBuffer(fslioResiduals->niftiptr->datatype, residualsBuffer, residuals, p.slope, p.inter, p.vDim, 1, 1, FALSE);
-//                    rsWriteTimeSeries(fslioResiduals, residualsBuffer, x, y, z, p.vDim);
-//                }
-//                
-//                /* write out betas if desired */
-//                if ( p.saveBetasPath != NULL ) {
-//                    convertScaledDoubleToBuffer(fslioBetas->niftiptr->datatype, betasBuffer, betas, p.slope, p.inter, p.nRegressors+1L, 1, 1, FALSE);
-//                    rsWriteTimeSeries(fslioBetas, betasBuffer, x, y, z, p.nRegressors+1L);
-//                }
-//                
-//                /* write out fitted values if desired */
-//                if ( p.saveFittedPath != NULL ) {
-//                    convertScaledDoubleToBuffer(fslioFitted->niftiptr->datatype, fittedBuffer, fitted, p.slope, p.inter, p.vDim, 1, 1, FALSE);
-//                    rsWriteTimeSeries(fslioFitted, fittedBuffer, x, y, z, p.vDim);
-//                }
-//            }
-//        }
-//    }
-    
+    /* Write out buffers to the corresponding files */
     if ( p.saveResidualsPath != NULL ) {
-        fprintf(stdout, "Write out residuals to: %s\n", p.saveResidualsPath);
+        if (p.verbose) fprintf(stdout, "Write out residuals to: %s\n", p.saveResidualsPath);
         FslWriteVolumes(fslioResiduals, buffer, p.vDim);
         FslClose(fslioResiduals);
         free(fslioResiduals);
     }
     
     if ( p.saveBetasPath != NULL ) {
+        if (p.verbose) fprintf(stdout, "Write out betas to: %s\n", p.saveBetasPath);
+        FslWriteVolumes(fslioBetas, betasBuffer, p.nRegressors+1);
         FslClose(fslioBetas);
         free(betasBuffer);
     }
     
     if ( p.saveFittedPath != NULL ) {
+        if (p.verbose) fprintf(stdout, "Write out fitted values to: %s\n", p.saveFittedPath);
+        FslWriteVolumes(fslioFitted, fittedBuffer, p.vDim);
         FslClose(fslioFitted);
         free(fittedBuffer);
     }
