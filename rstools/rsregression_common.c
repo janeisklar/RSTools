@@ -351,7 +351,7 @@ BOOL rsReadline(FILE *f, char *line, int *length) {
         *length = *length+1;
     }
     
-    *(*line+length) = '\0';
+    line[*length] = '\0';
     
     return c!=EOF;
 }
@@ -434,16 +434,20 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double c
     rewind(f);
     
     long n = 0L;
+    double *regressors = NULL;
     while( rsReadline(f, line, &length) ) {
         if ( length < 1 ) {
             continue;
         }
         
-        double *regressors = rsParseRegressorLine(line, &n);
+        regressors = rsParseRegressorLine(line, &n);
         if (*nRegressors < 0) {
             *nRegressors = n;
         }
-        free(regressors);
+        
+        if (regressors != NULL) {
+            free(regressors);
+        }
         *nValues = *nValues+1L;
     }
     
@@ -463,12 +467,15 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double c
             continue;
         }
         
-        double *regressors = rsParseRegressorLine(line, &n);
+        regressors = rsParseRegressorLine(line, &n);
         
         for( long l=0L; l<n; l=l+1L ) {
             result[l+1L][v] = regressors[l];
         }
-        free(regressors);
+        
+        if (regressors != NULL) {
+            free(regressors);
+        }
         v=v+1L;
     };
     
