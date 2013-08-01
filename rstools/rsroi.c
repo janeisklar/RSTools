@@ -318,11 +318,11 @@ int main(int argc, char * argv[])
             unsigned short y = gsl_rng_uniform_int(r, yDim);
             unsigned short z = gsl_rng_uniform_int(r, zDim);
             
-            if (oldMask[z][y][x] <= 0.01) {
+            if (oldMask[z][y][x] <= 0.5) {
                 continue;
             }
             
-            if (mask[z][y][x] > 0.01) {
+            if (mask[z][y][x] > 0.5) {
                 continue;
             }
             

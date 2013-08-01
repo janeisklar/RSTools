@@ -181,9 +181,17 @@ int main(int argc, char * argv[])
                         p.verbose
                     );
                     
-                    rsWriteTimecourseToBuffer(p.fslio,     residuals, buffer,       p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
-                    rsWriteTimecourseToBuffer(fslioBetas,  betas,     betasBuffer,  p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.nRegressors+1);
-                    rsWriteTimecourseToBuffer(fslioFitted, fitted,    fittedBuffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    if ( fslioResiduals != NULL ) {
+                        rsWriteTimecourseToBuffer(fslioResiduals, residuals, buffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    }
+                    
+                    if ( fslioBetas != NULL ) {
+                        rsWriteTimecourseToBuffer(fslioBetas, betas, betasBuffer,  p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.nRegressors+1);
+                    }
+                    
+                    if ( fslioFitted != NULL ) {
+                        rsWriteTimecourseToBuffer(fslioFitted, fitted, fittedBuffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    }
                     
                     free(timecourse);
                     free(residuals);

@@ -426,7 +426,7 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double c
     }
     
     /* Read regressor file to get the number of regressors and samples */
-    char *line = malloc(sizeof(char)*1000);
+    char *line = malloc(sizeof(char)*10000);
     int length = 0;
     *nRegressors = -1L;
     *nValues = 0L;
