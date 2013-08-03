@@ -54,6 +54,11 @@ void rsCentralityPrintHelp() {
         "                            creating it file where the similarity matrix will be \n"
     );
     
+    
+    printf(
+        "   -precise               : uses long double instead of double for internal computations\n"
+    );
+    
     printf(
         "   -v[erbose]             : show debug information\n"
         "\n"
@@ -83,6 +88,7 @@ int main(int argc, char * argv[]) {
     int correlationMode = RSMATRIXCONVERSION_ABSOLUTE;
     
     BOOL verbose = FALSE;
+    BOOL precise = FALSE;
 	
 	int ac;
     
@@ -116,6 +122,8 @@ int main(int argc, char * argv[]) {
 			savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
+		} else if ( ! strcmp(argv[ac], "-precise") ) {
+			precise = TRUE;
 		} else if ( ! strcmp(argv[ac], "-output") ) {
             if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -output\n");
@@ -298,7 +306,13 @@ int main(int argc, char * argv[]) {
                     rsExtractTimecourseFromBuffer(fslio, signal2, buffer, slope, inter, point2, xDim, yDim, zDim, vDim);
                     
                     /* compute correlation */
-                    const double correlation = rsZCorrelation(signal1, signal2, vDim);
+                    double correlation;
+                    
+                    if ( precise ) {
+                        correlation = rsZCorrelation(signal1, signal2, vDim);
+                    } else {
+                        correlation = rsFastZCorrelation(signal1, signal2, vDim);
+                    }
                     similarity[p1][p2] = correlation;
                     similarity[p2][p1] = correlation;
                     

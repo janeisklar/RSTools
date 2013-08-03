@@ -515,6 +515,59 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length)
     return half * logl( (one + r) / (one - r) );
 }
 
+double rsFastZCorrelation(const double* X, const double* Y, const size_t length)
+{
+    /*
+     * This implementation is based on:
+     * Weissenbacher, Andreas, et al.
+     * "Correlations and anticorrelations in resting-state functional connectivity MRI: a quantitative comparison of preprocessing strategies."
+     * Neuroimage 47.4 (2009): 1408-1416.
+     */
+    
+    const double N = length;
+    const double Nm1 = length - 1;
+    const double epsilon = 0.0000000001;
+    
+    // compute means
+    double meanX = 0.0;
+    double meanY = 0.0;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        meanX = meanX + X[i] / N;
+        meanY = meanY + Y[i] / N;
+    }
+    
+    // compute standard scores(std. dev)
+    double sX = 0.0;
+    double sY = 0.0;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        sX = sX + pow(X[i]-meanX, 2.0) / Nm1;
+        sY = sY + pow(Y[i]-meanY, 2.0) / Nm1;
+    }
+    
+    sX = sqrt(sX);
+    sY = sqrt(sY);
+    
+    // compute correlation coeeficient
+    double r = 0.0;
+    const double norm = fmax(sX, epsilon) * fmax(sY, epsilon) * Nm1;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        r = r + (X[i]-meanX) * (Y[i]-meanY) / norm;
+    }
+    
+    // Fisher's r-to-z transformation
+    const double half     = 0.5;
+    const double one      = 1.0;
+    const double minusone = -1.0;
+    
+    r=fmin(r, one-epsilon);
+    r=fmax(r, minusone+epsilon);
+    
+    return half * log( (one + r) / (one - r) );
+}
+
 double rsTCorrelation(const double* X, const double* Y, const size_t length)
 {
     const double r = rsCorrelation(X, Y, length);
