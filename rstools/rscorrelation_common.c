@@ -43,6 +43,18 @@ void rsCorrelationPrintHelp() {
     printf(
        "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
     );
+    
+    
+    printf(
+       "   -conversion <mode>     : <mode> specifies what is stored in the output file, it can\n"
+       "                            take the follwing values: \n"
+       "                             * none: the correlation coefficients will be stored without\n"
+       "                                     converting them\n"
+       "                             * z:    the correlation coefficients will be converted to\n"
+       "                                     z-values before being stored(default)\n"
+       "                             * t:    the correlation coefficients will be converted to\n"
+       "                                     values of the T-statistic\n"
+    );
 
     printf(
        "   -threads <int>         : (rscorrelation2 only) number of threads used for processing\n"
@@ -78,6 +90,7 @@ struct rsCorrelationParameters rsCorrelationInitParameters() {
     p.nRegressorValues     = 0;
     p.regressor            = NULL;
     p.threads              = 1;
+    p.conversionMode       = RSTOOLS_CORRELATION_CONVERSION_Z;
     
     return p;
 }
@@ -114,6 +127,22 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 				return p;
 			}
 			p.savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-conversion") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -conversion\n");
+				return p;
+			}
+            
+            if ( ! strcmp(argv[ac], "none") ) {
+                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_NONE;
+            } else if ( ! strcmp(argv[ac], "z") ) {
+                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_Z;
+            } else if ( ! strcmp(argv[ac], "t") ) {
+                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_T;
+            } else {
+                fprintf(stderr, "** invalid value for -conversion\n");
+				return p;
+            }
 		} else if ( ! strcmp(argv[ac], "-threads") ) {
   			if( ++ac >= argc ) {
            		fprintf(stderr, "** missing argument for -threads\n");

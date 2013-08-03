@@ -15,6 +15,10 @@
 #include "rsniftiutils.h"
 #include "rsmathutils.h"
 
+#define RSTOOLS_CORRELATION_CONVERSION_NONE 1
+#define RSTOOLS_CORRELATION_CONVERSION_Z    2
+#define RSTOOLS_CORRELATION_CONVERSION_T    3
+
 struct rsCorrelationParameters {
     char *inputpath;
 	char *maskpath;
@@ -34,6 +38,8 @@ struct rsCorrelationParameters {
     
     float inter;
     float slope;
+    
+    short conversionMode;
     
     BOOL verbose;
     BOOL parametersValid;

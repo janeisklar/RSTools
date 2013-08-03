@@ -515,6 +515,12 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length)
     return half * logl( (one + r) / (one - r) );
 }
 
+double rsTCorrelation(const double* X, const double* Y, const size_t length)
+{
+    const double r = rsCorrelation(X, Y, length);
+    return r * sqrt( (length-2.0) / (1.0-r*r));
+}
+
 double rsCorrelation(const double* X, const double* Y, const size_t length)
 {
     return gsl_stats_correlation(X, 1,

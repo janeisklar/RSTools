@@ -59,7 +59,13 @@ int main(int argc, char * argv[]) {
                     rsExtractTimecourseFromBuffer(p.fslio, timecourse, buffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
                     
                     /* compute correlation */
-                    p.correlation[z][y][x] = rsZCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                    if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_Z ) {
+                        p.correlation[z][y][x] = rsZCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                    } else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE ) {
+                        p.correlation[z][y][x] = rsCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                    } else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_T ) {
+                        p.correlation[z][y][x] = rsTCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                    }
                     
                     free(timecourse);
                 }
