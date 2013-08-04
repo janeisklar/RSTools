@@ -1,0 +1,198 @@
+_rsroi() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-help -input -sphere -cube -center -mask -keepVolume -randomsample -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -mask)
+	        _filedir
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rsroi rsroi
+
+_rstimecourse() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-help -input -p -mask -savemask -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -mask)
+	        _filedir
+            ;;
+        -savemask)
+	        _filedir
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rstimecourse rstimecourse
+
+_rsregression() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-input -residuals -fitted -betas -mask -savemask -regressors -f1 -f2 -samplingrate -threads -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -mask)
+	        _filedir
+            ;;
+        -savemask)
+	        _filedir
+            ;;
+	    -residuals)
+            _filedir
+            ;;
+        -fitted)
+	        _filedir
+            ;;
+        -betas)
+	        _filedir
+            ;;
+        -regressors)
+	        _filedir
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rsregression rsregression
+complete -F _rsregression rsregression2
+
+_rscorrelation() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-input -output -mask -savemask -threads -verbose -conversion"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -mask)
+	        _filedir
+            ;;
+        -savemask)
+	        _filedir
+            ;;
+	    -output)
+            _filedir
+            ;;
+	    -conversion)
+            COMPREPLY=( $(compgen -W "none z t" -- ${cur}) )
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rscorrelation rscorrelation
+complete -F _rscorrelation rscorrelation2
+
+_rsbandpass() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-input -filtered -f1 -f2 -samplingrate -mask -savemask -threads -fftw -saveattenuation -sigmoidrolloff -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -filtered)
+	        _filedir
+            ;;
+        -savemask)
+	        _filedir
+            ;;
+	    -mask)
+            _filedir
+            ;;
+	    -saveattenuation)
+            _filedir
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rsbandpass rsbandpass
+complete -F _rsbandpass rsbandpass2
+
+_rscentrality() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-input -output -mask -savemask -threads -savesimilarity -similarity -precise -correlation -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -output)
+	        _filedir
+            ;;
+        -savemask)
+	        _filedir
+            ;;
+	    -mask)
+            _filedir
+            ;;
+	    -savesimilarity)
+            _filedir
+            ;;
+	    -similarity)
+            _filedir
+            ;;
+	    -correlation)
+            COMPREPLY=( $(compgen -W "pos neg abs scaled" -- ${cur}) )
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rscentrality rscentrality
+complete -F _rscentrality rscentrality2
