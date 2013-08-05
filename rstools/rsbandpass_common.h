@@ -40,6 +40,8 @@ struct rsBandpassParameters {
     BOOL verbose;
     BOOL parametersValid;
     
+    BOOL keepMean;
+    
     FSLIO *fslio;
     double ***mask;
 

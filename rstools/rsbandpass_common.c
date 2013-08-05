@@ -49,6 +49,11 @@ void rsBandpassPrintHelp() {
       "                              -mask will be saved. The saved file with have the same\n"
       "                              dimensions as the input volume.\n"
     );
+    
+    printf(
+      "   -keepMean                : keeps the first bin of the FFT(the mean) independent of\n"
+      "                              tbe selected frequency range\n"
+    );
 
     printf(
       "   -threads <int>           : (rsbandpass2 only) number of threads used for processing\n"
@@ -106,6 +111,7 @@ struct rsBandpassParameters rsBandpassInitParameters() {
     p.threads              = 1;
     p.rolloff_method       = RSFFTFILTER_CUTOFF;
     p.rolloff              = 10.0;
+    p.keepMean             = FALSE;
     
     return p;
 }
@@ -187,6 +193,8 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
             rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
         } else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			p.verbose = TRUE;
+		} else if ( ! strcmp(argv[ac], "-keepMean") ) {
+			p.keepMean = TRUE;
 		} else if ( ! strcmp(argv[ac], "-test") ) {
             testFFTFilter();
 			return p;
@@ -268,7 +276,7 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
     }
     
     // Prepare FFT filter
-    p.fftParams = rsFFTFilterInit(p.vDim, p.paddedT, p.sampling_rate, p.f1, p.f2, p.rolloff_method, p.rolloff, p.verbose);
+    p.fftParams = rsFFTFilterInit(p.vDim, p.paddedT, p.sampling_rate, p.f1, p.f2, p.rolloff_method, p.rolloff, p.keepMean, p.verbose);
     
     if ( p.saveAttenuationPath != NULL ) {
         if ( p.verbose ) {
@@ -309,7 +317,7 @@ void testFFTFilter() {
         fprintf(stdout, "%.10f\n", data[i]);
     }
     
-    struct rsFFTFilterParams fftParams = rsFFTFilterInit(T, T, sampling_rate, 0.01, 0.04, RSFFTFILTER_CUTOFF, 0.0, FALSE);
+    struct rsFFTFilterParams fftParams = rsFFTFilterInit(T, T, sampling_rate, 0.01, 0.04, RSFFTFILTER_CUTOFF, 0.0, FALSE, FALSE);
     rsFFTFilter(fftParams, data);
     
     for (int i=0; i<T; i=i+1) {

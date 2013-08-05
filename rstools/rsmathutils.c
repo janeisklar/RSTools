@@ -147,7 +147,7 @@ void rsLinearRegressionFilter(
     free(regressors2);
 }
 
-struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const int verbose) {
+struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose) {
     
     struct rsFFTFilterParams p;
     double *F = malloc(paddedT * sizeof(double));
@@ -305,9 +305,18 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
                 attenuation[paddedT-1] = rsSigmoidRolloff(paddedT, rolloff, paddedT-i2-1);
             }
         }
+        
+        if ( keepMean ) {
+            attenuation[0] = 1.0;
+        }
+        
 #if RS_FFTW_ENABLED == 1
     }
 #endif
+    
+    if ( keepMean ) {
+        attenuation[0] = 1.0;
+    }
     
     p.frequencyBins  = F;
     p.binAttenuation = attenuation;

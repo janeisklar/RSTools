@@ -130,7 +130,7 @@ _rsbandpass()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    opts="-input -filtered -f1 -f2 -samplingrate -mask -savemask -threads -fftw -saveattenuation -sigmoidrolloff -verbose"
+    opts="-input -filtered -f1 -f2 -samplingrate -mask -savemask -keepMean -threads -fftw -saveattenuation -sigmoidrolloff -verbose"
 
     case "${prev}" in
 	    -input)
