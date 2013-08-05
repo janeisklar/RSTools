@@ -60,6 +60,10 @@ void rsCentralityPrintHelp() {
     );
     
     printf(
+        "   -threads <int>         : (rsregression2 only) number of threads used for processing\n"
+    );
+    
+    printf(
         "   -v[erbose]             : show debug information\n"
         "\n"
     );

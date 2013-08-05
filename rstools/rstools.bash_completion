@@ -194,5 +194,31 @@ _rscentrality()
     esac
    return 0
 }
-complete -F _rscentrality rscentrality
 complete -F _rscentrality rscentrality2
+
+_rsfillholes() 
+{
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    opts="-input -output -mask -kernel -threads -verbose"
+
+    case "${prev}" in
+	    -input)
+            _filedir
+            ;;
+        -output)
+	        _filedir
+            ;;
+	    -mask)
+            _filedir
+            ;;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            ;;
+    esac
+   return 0
+}
+complete -F _rsfillholes rsfillholes2

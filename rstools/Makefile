@@ -58,7 +58,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -71,6 +71,7 @@ clean:
 	rm -f rsbandpass
 	rm -f rsbandpass2
 	rm -f rscentrality2
+	rm -f rsfillholes2
 
 mathutils:
 	@echo 
@@ -145,6 +146,14 @@ centrality:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rscentrality2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rscentrality2.o -o rscentrality2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
+fillholes:
+	@echo
+	@echo "***************************"
+	@echo "*     RS Fill holes       *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsfillholes2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsfillholes2.o -o rsfillholes2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 help:
 	@echo "all:      make the rstools"
