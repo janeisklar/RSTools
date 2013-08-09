@@ -188,9 +188,7 @@ int main(int argc, char * argv[]) {
         FslClose(fslioCentrality);
         return 1;
     }
-    
-    double **similarity = d2matrix(nPoints, nPoints);
-    
+        
     // Prepare buffer
     buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
     buffer   = malloc(buffsize);
