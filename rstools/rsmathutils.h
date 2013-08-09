@@ -10,6 +10,8 @@
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_sort_vector.h>
 #include "rsniftiutils.h"
 
 #if !defined(RS_FFTW_ENABLED)
@@ -58,7 +60,7 @@ struct rsFFTFilterParams {
 #endif
 };
     
-void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int verbose);
+void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
 void rsLinearRegressionFilter(const int nSamples, const double *signal, const int nRegressors, const double **regressors, const double sampling_rate, const double f1, const double f2, double *betas, double *residuals, double *fitted, const int verbose);
 struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose);
 void rsFFTFilter(struct rsFFTFilterParams p, double *data);
@@ -91,6 +93,12 @@ void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const 
 void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* fmt);
 BOOL rsSaveMatrix(const char *filename, const double** A, const long m, const long n);
 BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n);
+    
+float  rsFastErfInv(float x);
+double rsErfInv(const double x);
+    
+void rsRankingResolveTies(double *ranks, const size_t *tiesTrace, const size_t n_ties);
+void rsSpearmannRank(double *ranks, const double *data, const size_t n);
     
 #ifdef __cplusplus
 }

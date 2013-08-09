@@ -44,6 +44,7 @@ struct rsRegressionParameters {
     BOOL verbose;
     BOOL filterActive;
     BOOL parametersValid;
+    BOOL zScoreRegression;
     
     long nRegressors;
     long nRegressorValues;

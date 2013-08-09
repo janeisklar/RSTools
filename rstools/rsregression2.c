@@ -178,6 +178,7 @@ int main(int argc, char * argv[])
                         betas,
                         residuals,
                         fitted,
+                        p.zScoreRegression,
                         p.verbose
                     );
                     

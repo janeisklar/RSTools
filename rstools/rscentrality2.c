@@ -336,6 +336,9 @@ int main(int argc, char * argv[]) {
         }
     }
     
+    FslClose(fslio);
+    free(fslio);
+    
     /* save similarity matrix */
     if ( savesimilaritypath != NULL ) {
         if ( verbose ) fprintf(stdout, "Saving the similarity matrix..\n");

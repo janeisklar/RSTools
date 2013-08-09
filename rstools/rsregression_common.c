@@ -51,6 +51,12 @@ void rsRegressionPrintHelp() {
    );
     
    printf(
+      "   -zscore                : comuptes a z-score based linear regression, i.e. the mean and\n"
+      "                            standard deviation are removed from the input data and the\n"
+      "                            regressors."
+   );
+    
+   printf(
       "   -f1 <double>           : (optional) the lower frequency of the bandpass\n"
       "                            filter\n"
    );
@@ -98,6 +104,7 @@ struct rsRegressionParameters rsRegressionInitParameters() {
     p.sampling_rate        = -1.0;
     p.verbose              = FALSE;
     p.filterActive         = FALSE;
+    p.zScoreRegression     = FALSE;
     p.nRegressors          = 0;
     p.nRegressorValues     = 0;
     p.regressors           = NULL;
@@ -190,6 +197,8 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
 				return p;
 			}
 			p.sampling_rate = atof(argv[ac]);  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-zscore") ) {
+			p.zScoreRegression = TRUE;
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			p.verbose = TRUE;
 		} else {
