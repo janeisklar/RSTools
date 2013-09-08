@@ -61,6 +61,11 @@ void rsCorrelationPrintHelp() {
     );
     
     printf(
+       "   -delay <int>           : (rscorrelation2 only) delay the regressor by the defined\n"
+       "                            volumes(or TR)"
+    );
+    
+    printf(
        "   -v[erbose]             : show debug information\n"
        "\n"
     );
@@ -77,6 +82,7 @@ struct rsCorrelationParameters rsCorrelationInitParameters() {
     p.yDim                 = 0;
     p.zDim                 = 0;
     p.vDim                 = 0;
+    p.delay                = 0;
     p.pixtype              = 0;
     p.dt                   = 4;
     p.inter                = 0.0;
@@ -149,6 +155,12 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
            		return p;
            	}
            	p.threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-delay") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -delay\n");
+           		return p;
+           	}
+           	p.delay = atoi(argv[ac]);
         } else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			p.verbose = TRUE;
 		} else {
@@ -173,6 +185,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
         fprintf(stdout, "Input file: %s\n", p.inputpath);
         fprintf(stdout, "Mask file: %s\n", p.maskpath);
         fprintf(stdout, "Seed length: %u\n", p.nRegressorValues);
+        fprintf(stdout, "Seed delay: %u\n", p.delay);
     }
     
     /* open input file */

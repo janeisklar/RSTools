@@ -55,19 +55,24 @@ int main(int argc, char * argv[]) {
                     }
                     
                     /* read out timecourse */
-                    timecourse = malloc(p.vDim*sizeof(double));
-                    rsExtractTimecourseFromBuffer(p.fslio, timecourse, buffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    double *fullTimecourse = malloc(p.vDim*sizeof(double));
+                    rsExtractTimecourseFromBuffer(p.fslio, fullTimecourse, buffer, p.slope, p.inter, MakePoint3D(x, y, z), p.xDim, p.yDim, p.zDim, p.vDim);
+                    
+                    /* add the defined delay to the regressor and adjust the timecourse */
+                    double *regressor = &p.regressor[(short)fmax(0, -1*p.delay)];
+                    timecourse = &fullTimecourse[(short)fmin(0, p.delay)*-1];
+                    const size_t regressorLength = p.nRegressorValues - fabs(p.delay);
                     
                     /* compute correlation */
                     if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_Z ) {
-                        p.correlation[z][y][x] = rsZCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                        p.correlation[z][y][x] = rsZCorrelation(timecourse, regressor, regressorLength);
                     } else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE ) {
-                        p.correlation[z][y][x] = rsCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                        p.correlation[z][y][x] = rsCorrelation(timecourse, regressor, regressorLength);
                     } else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_T ) {
-                        p.correlation[z][y][x] = rsTCorrelation(timecourse, p.regressor, (size_t)p.nRegressorValues);
+                        p.correlation[z][y][x] = rsTCorrelation(timecourse, regressor, regressorLength);
                     }
                     
-                    free(timecourse);
+                    free(fullTimecourse);
                 }
             }
         }

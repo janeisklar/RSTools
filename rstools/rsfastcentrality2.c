@@ -213,7 +213,7 @@ int main(int argc, char * argv[]) {
     
     gsl_matrix *M  = gsl_matrix_alloc(vDim, nPoints);
     
-    const double epsilon = 1.0e-5;
+    const double epsilon = 2.0e-16;
     long n;
     const double corrnorm = sqrt(vDim-1);
     
@@ -283,7 +283,7 @@ int main(int argc, char * argv[]) {
         gsl_vector_memcpy(vOld, vNew);
         
         iteration = iteration + 1;
-        if ( verbose ) fprintf(stdout, "Iteration %03d/%03d Norm Difference: %.10f Target: %.10f\n", iteration, maxIterations, diffNorm, norm);
+        if ( verbose ) fprintf(stdout, "Iteration %03d/%03d Norm Difference: %.17f Target: %.17f\n", iteration, maxIterations, diffNorm, norm);
         
         if (norm > diffNorm) {
             break;

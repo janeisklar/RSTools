@@ -33,6 +33,8 @@ struct rsCorrelationParameters {
     short zDim;
     short vDim;
     
+    short delay;
+    
 	short pixtype;
 	size_t dt;
     
