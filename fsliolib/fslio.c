@@ -2390,30 +2390,30 @@ double ***d3matrix(int zh,  int yh, int xh)
 double ****d4matrix(int th, int zh,  int yh, int xh)
 {
 
-        int j;
-        int nvol = th+1;
-        int nslice = zh+1;
-        int nrow = yh+1;
-        int ncol = xh+1;
+        size_t j;
+        size_t nvol = th+1;
+        size_t nslice = zh+1;
+        size_t nrow = yh+1;
+        size_t ncol = xh+1;
         double ****t;
 
 
         /** allocate pointers to vols */
         t=(double ****) malloc((size_t)((nvol)*sizeof(double***)));
-        if (!t) FSLIOERR("d4matrix: allocation failure");
+        if (!t) FSLIOERR("d4matrix: allocation failure (1st dim)");
 
         /** allocate pointers to slices */
         t[0]=(double ***) malloc((size_t)((nvol*nslice)*sizeof(double**)));
-        if (!t[0]) FSLIOERR("d4matrix: allocation failure");
+        if (!t[0]) FSLIOERR("d4matrix: allocation failure (2nd dim)");
 
         /** allocate pointers for ydim */
         t[0][0]=(double **) malloc((size_t)((nvol*nslice*nrow)*sizeof(double*)));
-        if (!t[0][0]) FSLIOERR("d4matrix: allocation failure");
+        if (!t[0][0]) FSLIOERR("d4matrix: allocation failure (3rd dim)");
 
 
         /** allocate the data blob */
         t[0][0][0]=(double *) malloc((size_t)((nvol*nslice*nrow*ncol)*sizeof(double)));
-        if (!t[0][0][0]) FSLIOERR("d4matrix: allocation failure");
+        if (!t[0][0][0]) FSLIOERR("d4matrix: allocation failure (4th dim)");
 
 
         /** point everything to the data blob */

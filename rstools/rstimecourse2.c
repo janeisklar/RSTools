@@ -245,7 +245,7 @@ int main(int argc, char * argv[])
         FslReadVolumes(fslio, buffer, vDim);
         
         /* Read in volume */
-        double ****volume = d4matrix(vDim-1, zDim-1, yDim, xDim-1);
+        double ****volume = d4matrix(vDim-1, zDim-1, yDim-1, xDim-1);
         convertBufferToScaledDouble(volume[0][0][0], buffer, xDim*yDim*zDim*vDim, slope, inter, fslio->niftiptr->datatype);
         free(buffer);
         
