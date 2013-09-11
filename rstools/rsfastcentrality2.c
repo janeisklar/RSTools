@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include "rsmathutils.h"
 
+void rsTestPowerIteration();
+void rsTestInvErr();
+
 void rsCentralityPrintHelp() {
     printf(
         "basic usage:  rsfastcentrality2 -input <volume> -output <volume> -mask <volume>\n"
@@ -112,6 +115,12 @@ int main(int argc, char * argv[]) {
            		return 1;
            	}
            	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-testPowerIteration") ) {
+            rsTestPowerIteration();
+            return 0;
+        } else if ( ! strcmp(argv[ac], "-testInvErr") ) {
+            rsTestInvErr();
+            return 0;
         } else {
 			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
 		}
@@ -307,7 +316,7 @@ int main(int argc, char * argv[]) {
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
-            vScaled[n] = scale*vScaled[n] - 1; // uniform [1,N] to ]-1,2[
+            vScaled[n] = scale*vScaled[n] - 1; // uniform [1,N] to ]0,2[ and then to ]-1,1[
         }
     }
     
@@ -315,7 +324,7 @@ int main(int argc, char * argv[]) {
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
-            vScaled[n] = rsErfInv(vScaled[n]) * sigma * sqrt(2.0) + mu; // uniform ]-1,2[ to N(mu,sigma)
+            vScaled[n] = rsErfInv(vScaled[n]) * sigma * sqrt(2.0) + mu; // uniform ]-1,1[ to N(mu,sigma)
         }
     }
     
@@ -401,4 +410,11 @@ void rsTestPowerIteration() {
     free(m[0]);
     free(m);
     free(b);
+}
+
+void rsTestInvErr()
+{
+    for (double i=-1; i<=1; i=i+0.25) {
+        fprintf(stdout, "%.2f -> %.5f\n", i, rsErfInv(i));
+    }
 }

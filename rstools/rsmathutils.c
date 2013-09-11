@@ -33,6 +33,7 @@ void rsLinearRegression(const int nSamples, const double *signal, const int nReg
     }
     
     // transform to z-scores if requested
+    // according to http://www.personal.kent.edu/~jortiz/earthstats/topic06notes.html#defining
     if ( zScoreRegression ) {
         
         // transform the input signal

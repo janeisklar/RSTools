@@ -19,23 +19,23 @@ void rsRegressionPrintHelp() {
    );
  
    printf(
-      "   -input <volume>      : the volume to be regressed\n"
+      "   -input <volume>        : the volume to be regressed\n"
    );
     
    printf(
-      "   -residuals <volume>  : the volume in which the residuals will be saved\n"
+      "   -residuals <volume>    : the volume in which the residuals will be saved\n"
    );
     
    printf(
-      "   -fitted <volume>     : the volume in which the fitted volumes will be saved\n"
+      "   -fitted <volume>       : the volume in which the fitted volumes will be saved\n"
    );
    
    printf(
-      "   -betas <volume>      : the volume to be regressed\n"
+      "   -betas <volume>        : the volume to be regressed\n"
    );
     
    printf(
-      "   -mask <mask>         : a mask specifying the ROI for improved performance\n"
+      "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
    );
     
    printf(
@@ -53,7 +53,7 @@ void rsRegressionPrintHelp() {
    printf(
       "   -zscore                : comuptes a z-score based linear regression, i.e. the mean and\n"
       "                            standard deviation are removed from the input data and the\n"
-      "                            regressors."
+      "                            regressors.\n"
    );
     
    printf(
