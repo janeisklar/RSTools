@@ -246,7 +246,7 @@ int main(int argc, char * argv[])
         
         /* Read in volume */
         double ****volume = d4matrix(vDim-1, zDim-1, yDim-1, xDim-1);
-        convertBufferToScaledDouble(volume[0][0][0], buffer, xDim*yDim*zDim*vDim, slope, inter, fslio->niftiptr->datatype);
+        convertBufferToScaledDouble(volume[0][0][0], buffer, (long)xDim*(long)yDim*(long)zDim*(long)vDim, slope, inter, fslio->niftiptr->datatype);
         free(buffer);
         
         int t;
