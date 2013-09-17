@@ -60,7 +60,7 @@ int main(int argc, char * argv[]) {
                     
                     /* add the defined delay to the regressor and adjust the timecourse */
                     double *regressor = &p.regressor[(short)fmax(0, -1*p.delay)];
-                    timecourse = &fullTimecourse[(short)fmin(0, p.delay)*-1];
+                    timecourse = &fullTimecourse[(short)fmax(0, p.delay)];
                     const size_t regressorLength = p.nRegressorValues - fabs(p.delay);
                     
                     /* compute correlation */
