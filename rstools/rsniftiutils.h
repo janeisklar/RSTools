@@ -32,6 +32,7 @@ Point3D*     ReadMask(char *path, unsigned short newX, unsigned short newY, unsi
 double***    ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
 size_t       rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
 BOOL         rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th);
+BOOL         rsExtractPointsFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
 BOOL         rsWriteTimecourseToBuffer(const FSLIO *fslio, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th);
 BOOL         rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const int threads, const double value);
     

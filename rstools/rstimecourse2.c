@@ -240,14 +240,10 @@ int main(int argc, char * argv[])
         
         double timecourse[vDim];
         
+        /* Read in volume */
         buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
         buffer = malloc(buffsize);
         FslReadVolumes(fslio, buffer, vDim);
-        
-        /* Read in volume */
-        double ****volume = d4matrix(vDim-1, zDim-1, yDim-1, xDim-1);
-        convertBufferToScaledDouble(volume[0][0][0], buffer, (long)xDim*(long)yDim*(long)zDim*(long)vDim, slope, inter, fslio->niftiptr->datatype);
-        free(buffer);
         
         int t;
 
@@ -259,21 +255,22 @@ int main(int argc, char * argv[])
             
                 double sum = 0;
                 
+                /* Read out datapoints from the buffer */
+                double *pointValues = malloc(nPoints*sizeof(double));
+                rsExtractPointsFromBuffer(fslio, pointValues, buffer, slope, inter, maskPoints, nPoints, t, xDim, yDim, zDim, vDim);
+                
                 /* Iterate over all points in the mask */
                 for ( unsigned long i=0; i<nPoints; i=i+1) {
-                    Point3D p = maskPoints[i];
-                    sum = sum + volume[t][p.z][p.y][p.x];
+                    sum = sum + pointValues[i];
                 }
+                
+                free(pointValues);
                 
                 /* Create average */
                 timecourse[t] = sum / nPoints;
             }
         }
         
-        free(volume[0][0][0]);
-        free(volume[0][0]);
-        free(volume[0]);
-        free(volume);
         free(maskPoints);
         
         for ( t = 0; t<vDim; t=t+1 ) {

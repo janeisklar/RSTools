@@ -317,6 +317,69 @@ BOOL rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecourse, const
 }
 
 /*
+ * Takes in a buffer obtained from fsl and reads
+ * out the values for all the voxels that are
+ * specified by the parameter points for a
+ * certain timepoint t.
+ * The variables xh, yh, zh, and th correspond
+ * to the dimensions of the nifti file.
+ *
+ */
+BOOL rsExtractPointsFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th) {
+    
+    for (unsigned long iPoint=0; iPoint<nPoints; iPoint=iPoint+1) {
+        
+        const Point3D p = points[iPoint];
+        const long voxeLOffset = p.z * (xh * yh) + (p.y * xh) + p.x;
+        const long timeOffset  = xh * yh * zh;
+        const long address = t * timeOffset + voxeLOffset;
+        
+        switch (fslio->niftiptr->datatype) {
+            case NIFTI_TYPE_UINT8:
+                data[iPoint] = (double) *((THIS_UINT8 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_INT8:
+                data[iPoint] = (double) *((THIS_INT8 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_UINT16:
+                data[iPoint] = (double) *((THIS_UINT16 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_INT16:
+                data[iPoint] = (double) *((THIS_INT16 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_UINT64:
+                data[iPoint] = (double) *((THIS_UINT64 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_INT64:
+                data[iPoint] = (double) *((THIS_INT64 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_UINT32:
+                data[iPoint] = (double) *((THIS_UINT32 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_INT32:
+                data[iPoint] = (double) *((THIS_INT32 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_FLOAT32:
+                data[iPoint] = (double) *((THIS_FLOAT32 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_FLOAT64:
+                data[iPoint] = (double) *((THIS_FLOAT64 *)(buffer)+address);
+                break;
+            case NIFTI_TYPE_FLOAT128:
+            case NIFTI_TYPE_COMPLEX128:
+            case NIFTI_TYPE_COMPLEX256:
+            case NIFTI_TYPE_COMPLEX64:
+            default:
+                return FALSE;
+        }
+    }
+    
+    rsScaleValues(data, nPoints, slope, inter);
+    
+    return TRUE;
+}
+
+/*
  * Takes a timecourse and re-scales it before writing
  * it into a buffer that than later can be written out
  * into a nifti.
