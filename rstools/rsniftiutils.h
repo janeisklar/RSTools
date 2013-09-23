@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <strings.h>
+#include <ctype.h>
 
 #include <nifti1.h>
 #include <fslio.h>
@@ -48,6 +49,10 @@ void convertScaledDoubleToBuffer_INT32(  THIS_INT32 *outbuf,   double *inbuf, fl
 void convertScaledDoubleToBuffer_FLOAT32(THIS_FLOAT32 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 
+char *rsLeftTrimString(char *s);
+char *rsRightTrimString(char *s);
+char *rsTrimString(char *s);
+    
 #ifdef __cplusplus
 }
 #endif

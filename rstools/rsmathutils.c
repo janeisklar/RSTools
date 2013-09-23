@@ -955,6 +955,30 @@ BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// See: http://en.wikipedia.org/wiki/Student's_t-test#One-sample_t-test                                     //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+double rsOneSampleTTest(const double *data, const unsigned int length, const double mu)
+{
+    // compute mean
+    double mean = 0.0;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        mean = mean + data[i] / length;
+    }
+    
+    // compute standard scores(std. dev)
+    double std = 0.0;
+    
+    for (unsigned int i=0; i<length; i=i+1) {
+        std = std + pow(data[i]-mean, 2.0) / ((double)length-1.0);
+    }
+    
+    std = sqrt(std);
+    
+    return (mean - mu) / (std / sqrt(length));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The following two functions are taken from:                                                              //
 // http://www.spraak.org/documentation/doxygen/src/lib/math/erfinv.c/view                                   //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

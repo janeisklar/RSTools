@@ -96,6 +96,7 @@ BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n);
     
 float  rsFastErfInv(float x);
 double rsErfInv(const double x);
+double rsOneSampleTTest(const double *data, const unsigned int length, const double mu);
     
 void rsRankingResolveTies(double *ranks, const size_t *tiesTrace, const size_t n_ties);
 void rsSpearmannRank(double *ranks, const double *data, const size_t n);

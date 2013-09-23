@@ -726,3 +726,22 @@ void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double *inbuf, fl
         }
     }
 }
+
+char *rsLeftTrimString(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+char *rsRightTrimString(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+char *rsTrimString(char *s)
+{
+    return rsRightTrimString(rsLeftTrimString(s));
+}
