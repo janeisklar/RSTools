@@ -228,20 +228,18 @@ int main(int argc, char * argv[]) {
     
     void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*nOutputVolumes*(size_t)refFile.dt/(size_t)8);
     
-    if ( nFiles > 1 ) {
-        
-        short t,x,y,z;
-        
-        #pragma omp parallel num_threads(threads) private(x,y,t) shared(buffer,nFiles,files)
-        {
-            #pragma omp for schedule(guided)
-            for (z=0; z<refFile.zDim; z=z+1) {
-                for (y=0; y<refFile.yDim; y=y+1) {
-                    for (x=0; x<refFile.xDim; x=x+1) {
-                        Point3D point = MakePoint3D(x, y, z);
-                        
-                        double *tValues = (double*)malloc(sizeof(double)*refFile.vDim);
-                        
+    short t,x,y,z;
+    
+    #pragma omp parallel num_threads(threads) private(x,y,t) shared(buffer,nFiles,files)
+    {
+        #pragma omp for schedule(guided)
+        for (z=0; z<refFile.zDim; z=z+1) {
+            for (y=0; y<refFile.yDim; y=y+1) {
+                for (x=0; x<refFile.xDim; x=x+1) {
+                    Point3D point = MakePoint3D(x, y, z);
+                    double *tValues = (double*)malloc(sizeof(double)*nOutputVolumes);
+                    
+                    if ( nFiles > 1 ) {
                         for (t=0; t<refFile.vDim; t=t+1) {
                             double *series = (double*)malloc(sizeof(double)*nFiles);
 
@@ -265,12 +263,34 @@ int main(int argc, char * argv[]) {
                             
                             tValues[t] = rsOneSampleTTest(series, nFiles, 0.0);
                             free(series);
+                        }                            
+                    } else {
+                        double *series = (double*)malloc(sizeof(double)*refFile.vDim);
+                        
+                        for (t=0; t<refFile.vDim; t=t+1) {
+                            
+                            rsExtractPointsFromBuffer(
+                                refFile.fslio,
+                                &series[t],
+                                refFile.data,
+                                refFile.slope,
+                                refFile.inter,
+                                &point,
+                                1L,
+                                t,
+                                refFile.xDim,
+                                refFile.yDim,
+                                refFile.zDim,
+                                refFile.vDim
+                                );
                         }
                         
-                        rsWriteTimecourseToBuffer(fslioOutput, tValues, buffer, refFile.slope, refFile.inter, point, refFile.xDim, refFile.yDim, refFile.zDim, refFile.vDim);
-                        
-                        free(tValues);
+                        tValues[0] = rsOneSampleTTest(series, refFile.vDim, 0.0);
+                        free(series);                            
                     }
+                    
+                    rsWriteTimecourseToBuffer(fslioOutput, tValues, buffer, refFile.slope, refFile.inter, point, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
+                    free(tValues);
                 }
             }
         }
