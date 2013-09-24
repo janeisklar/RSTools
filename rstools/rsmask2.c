@@ -200,7 +200,7 @@ int main(int argc, char * argv[]) {
             double *pointValues = (double*)malloc(sizeof(double)*vDim);
             
             rsExtractTimecourseFromBuffer(fslio, pointValues, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
-            rsWriteTimecourseToBuffer(fslioOutput, pointValues, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+            rsWriteTimecourseToBuffer(fslioOutput, pointValues, outputBuffer, slope, inter, point, xDim, yDim, zDim, vDim);
             
             free(pointValues);
         }
