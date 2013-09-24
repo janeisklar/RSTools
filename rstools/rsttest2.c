@@ -282,7 +282,7 @@ int main(int argc, char * argv[]) {
                                 refFile.yDim,
                                 refFile.zDim,
                                 refFile.vDim
-                                );
+                            );
                         }
                         
                         tValues[0] = rsOneSampleTTest(series, refFile.vDim, 0.0);

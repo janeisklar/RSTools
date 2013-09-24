@@ -58,7 +58,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -75,6 +75,7 @@ clean:
 	rm -f rsfillholes2
 	rm -f rsfastcentrality2
 	rm -f rsttest2
+	rm -f rsmask2
 
 mathutils:
 	@echo 
@@ -175,7 +176,14 @@ ttest:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsttest2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rsttest2.o -o rsttest2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
-
+    
+mask:
+	@echo
+	@echo "***************************"
+	@echo "*        RS Mask          *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsmask2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsmask2.o -o rsmask2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 help:
 	@echo "all:      make the rstools"
