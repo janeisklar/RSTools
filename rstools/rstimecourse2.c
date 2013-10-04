@@ -220,9 +220,9 @@ int main(int argc, char * argv[])
             int ret = convertBufferToScaledDouble(&v, newV, 1, slope, inter, fslio->niftiptr->datatype);
          
             if ( verbose ) {
-                fprintf(stdout, "%d: %.2f(%d)\n", t, v, ret);
+                fprintf(stdout, "%d: %.10f(%d)\n", t, v, ret);
             } else {
-                fprintf(stdout, "%.2f\n", v);
+                fprintf(stdout, "%.10f\n", v);
             }
         }
         
