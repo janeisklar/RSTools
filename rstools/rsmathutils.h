@@ -84,6 +84,7 @@ void rsScaleVector(long double *x, const long n, const long double factor, const
 void rsVectorSub(long double *x, const long double *y, const long n, const int threads);
 void rsVectorSwap(long double *x, long double *y, const long n, const int threads);
 long double rsVectorMean(const long double *x, const long n);
+BOOL rsVectorContains(const long *x, const long n, const long element);
 void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads);
 
 double **d2matrix(int yh, int xh);

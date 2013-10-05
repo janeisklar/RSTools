@@ -810,6 +810,17 @@ void rsVectorSwap(long double *x, long double *y, const long n, const int thread
     }
 }
 
+BOOL rsVectorContains(const long *x, const long n, const long element) {
+	int i;
+	for ( i=0; i<n; i=i+1 ) {
+		if ( x[i] == element ) {
+			return TRUE;
+		}
+	}
+	
+	return FALSE;
+}
+
 void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads)
 {
     long i,j;

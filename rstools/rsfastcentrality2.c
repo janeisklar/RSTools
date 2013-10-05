@@ -212,6 +212,50 @@ int main(int argc, char * argv[]) {
     FslClose(fslio);
     free(fslio);
     
+    long n;
+	long nNanPoints = 0;
+	long *nanPoints = malloc(sizeof(long)*nPoints);
+	
+	/* search for voxels that are nan */
+	if ( verbose ) fprintf(stdout, "Removing voxels that are NaN..\n");
+  	
+	for (n=0; n<nPoints; n=n+1) {
+        const Point3D point = maskPoints[n];
+		
+        // load signal
+        double *signalData = malloc(sizeof(double) * vDim);
+        rsExtractTimecourseFromBuffer(fslioCentrality, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+        
+        for ( int t=0; t<vDim; t=t+1 ) {
+			if ( signalData[t] != signalData[t] ) {
+				nanPoints[nNanPoints] = n;
+				nNanPoints = nNanPoints + 1;
+				break;
+			}
+        }
+        
+        free(signalData);
+	}
+	
+	/* remove voxels that are nan */
+	
+	long newIndex = 0;
+	Point3D *newMaskPoints = malloc(sizeof(Point3D)*(nPoints-nNanPoints));
+	
+	for ( n=0; n<nPoints; n=n+1 ) {
+		
+		if ( ! rsVectorContains(nanPoints, nNanPoints, n) ) {
+			newMaskPoints[newIndex] = maskPoints[n];
+			newIndex = newIndex + 1;
+		}
+	}
+	free(maskPoints);
+	maskPoints = newMaskPoints;
+	nPoints = nPoints-nNanPoints;
+	
+	if ( verbose ) fprintf(stdout, "%lu voxels removed..\n", nNanPoints);
+
+    
     // Implementation according to
     // Wink, Alle Meije, et al.
     // "Fast eigenvector centrality mapping of voxel-wise connectivity in functional magnetic resonance imaging: implementation, validation, and interpretation."
@@ -223,7 +267,6 @@ int main(int argc, char * argv[]) {
     gsl_matrix *M  = gsl_matrix_alloc(vDim, nPoints);
     
     const double epsilon = 2.0e-16;
-    long n;
     const double corrnorm = sqrt(vDim-1);
     
     #pragma omp parallel num_threads(threads) private(n)
@@ -248,7 +291,6 @@ int main(int argc, char * argv[]) {
             free(signalData);
         }
     }
-    
     free(buffer);
 
     // run power iteration method to get the first eigenvector
