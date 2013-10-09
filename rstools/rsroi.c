@@ -47,6 +47,10 @@ int show_help( void )
        "   -cube <x> <y> <z>   : use this option if the ROI that is to be added is\n"
        "                         a cube. The height/width/depth should be given in mm.\n"
     );
+
+    printf(
+       "   -roiValue <float>  : intensity value that will be used for the ROI\n"
+    );
     
     printf(
        "   -center <x> <y> <z> : this option specifies the center of the ROI. \n"
@@ -56,6 +60,11 @@ int show_help( void )
        "   -mask <mask>        : a mask specifying the ROI for improved performance\n"
     );
     
+	printf(
+       "   -useImageSpace      : values supplied with -sphere, -cube and -center will\n"
+       "                         be interpreted as image space coordinates rather than mm\n"
+    );
+	
     printf(
        "   -keepVolume         : keep values from the input volume. Use this option\n"
        "                         if you want to add ROIs to a mask that you specified\n"
@@ -96,6 +105,9 @@ int main(int argc, char * argv[])
     BOOL resetVolume       = TRUE;
     BOOL verbose           = FALSE;
     long nSamples          = -1;
+	double roiValue        = 1;
+	
+	BOOL useImageSpaceCoordinates = FALSE;
 	
 	int ac;
     
@@ -117,11 +129,11 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			ac++;
-			float x = atoi(argv[ac]);
+			float x = atof(argv[ac]);
 			ac++;
-			float y = atoi(argv[ac]);
+			float y = atof(argv[ac]);
 			ac++;
-			float z = atoi(argv[ac]);
+			float z = atof(argv[ac]);
             center = MakeFloatPoint3D(x,y,z);
 		} else if ( ! strcmp(argv[ac], "-cube") ) {
 			if( ac+3 >= argc ) {
@@ -129,11 +141,11 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			ac++;
-			float x = atoi(argv[ac]);
+			float x = atof(argv[ac]);
 			ac++;
-			float y = atoi(argv[ac]);
+			float y = atof(argv[ac]);
 			ac++;
-			float z = atoi(argv[ac]);
+			float z = atof(argv[ac]);
             cubeDim = MakeFloatPoint3D(x,y,z);
 		} else if ( ! strcmp(argv[ac], "-sphere") ) {
 			if( ++ac >= argc ) {
@@ -141,6 +153,12 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			sphereradius = atof(argv[ac]);
+		} else if ( ! strcmp(argv[ac], "-roiValue") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -roiValue\n");
+				return 1;
+			}
+			roiValue = atof(argv[ac]);
 		} else if ( ! strcmp(argv[ac], "-randomsample") ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -randomsample\n");
@@ -155,6 +173,8 @@ int main(int argc, char * argv[])
 			maskpath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strcmp(argv[ac], "-keepVolume") ) {
 			resetVolume = FALSE;
+		} else if ( ! strcmp(argv[ac], "-useImageSpace") ) {
+			useImageSpaceCoordinates = TRUE;
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
 		} else {
@@ -195,6 +215,7 @@ int main(int argc, char * argv[])
         if ( cubeDim.x > -9999.9 ) {
             fprintf(stdout, "Cube: %.2fmm %.2fmm %.2fmm\n", cubeDim.x, cubeDim.y, cubeDim.z);
         }
+        fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center.x, center.y, center.z);
     }
     
     fslio = FslOpen(inputpath, "rb");
@@ -263,7 +284,7 @@ int main(int argc, char * argv[])
     fslioMask = FslOpen(maskpath, "wb");
     FslCloneHeader(fslioMask, fslio);
     FslSetDim(fslioMask, xDim, yDim, zDim, 1);
-    FslSetDimensionality(fslioMask, 4);
+    FslSetDimensionality(fslioMask, 3);
     FslSetDataType(fslioMask, pixtype);
     FslWriteHeader(fslioMask);
     free(fslio);
@@ -277,15 +298,19 @@ int main(int argc, char * argv[])
         for (short y=0; y<yDim; y=y+1) {
             for (short x=0; x<xDim; x=x+1) {
                 
-                /* Convert current coordinate to MM space */
-                float mmx = 0.0, mmy = 0.0, mmz = 0.0;
-                FslGetMMCoord(stdmat44, x, y, z, &mmx, &mmy, &mmz);
-                FloatPoint3D point = MakeFloatPoint3D(mmx, mmy, mmz);
-                
+				float mmx = x, mmy = y, mmz = z;
+
+				if ( ! useImageSpaceCoordinates ) {
+                	/* Convert current coordinate to MM space */
+					FslGetMMCoord(stdmat44, x, y, z, &mmx, &mmy, &mmz);
+                }
+				
+				FloatPoint3D point = MakeFloatPoint3D(mmx, mmy, mmz);
+				
                 if ( sphereradius > 0 && rsVoxelInSphere(point, center, sphereradius) ) {
-                    mask[z][y][x] = 1.0;
+                    mask[z][y][x] = roiValue;
                 } else if(cubeDim.x > -9999.9 && rsVoxelInCube(point, center, cubeDim)) {
-                    mask[z][y][x] = 1.0;                    
+                    mask[z][y][x] = roiValue;                    
                 } else if ( resetVolume ) {
                     mask[z][y][x] = 0.0;
                 }
