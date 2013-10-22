@@ -20,7 +20,7 @@ void rsMaskPrintHelp() {
     );
     
     printf(
-        "   -input <volume>        : a 3D volume in which the holes will be filled\n"
+        "   -input <volume>        : a 3D/4D volume to which the mask will be applied\n"
     );
     
     printf(
