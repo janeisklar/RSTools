@@ -448,6 +448,89 @@ BOOL rsWriteTimecourseToBuffer(const FSLIO *fslio, const double *timecourse, voi
     return TRUE;
 }
 
+size_t rsWordLength(const int datatype) {
+	switch (datatype) {
+        case NIFTI_TYPE_UINT8:
+            return sizeof(THIS_UINT8);
+            break;
+        case NIFTI_TYPE_INT8:
+            return sizeof(THIS_INT8);
+            break;
+        case NIFTI_TYPE_UINT16:
+            return sizeof(THIS_UINT16);
+            break;
+        case NIFTI_TYPE_INT16:
+            return sizeof(THIS_INT16);
+            break;
+        case NIFTI_TYPE_UINT32:
+            return sizeof(THIS_UINT32);
+            break;
+        case NIFTI_TYPE_INT32:
+            return sizeof(THIS_INT32);
+            break;
+        case NIFTI_TYPE_UINT64:
+            return sizeof(THIS_UINT64);
+            break;
+        case NIFTI_TYPE_INT64:
+			return sizeof(THIS_INT64);
+            break;
+        case NIFTI_TYPE_FLOAT32:
+            return sizeof(THIS_FLOAT32);
+            break;
+        case NIFTI_TYPE_FLOAT64:
+			return sizeof(THIS_FLOAT64);
+            break;
+        case NIFTI_TYPE_FLOAT128:
+        case NIFTI_TYPE_COMPLEX128:
+        case NIFTI_TYPE_COMPLEX256:
+        case NIFTI_TYPE_COMPLEX64:
+        default:
+            return 0;
+    }
+}
+
+size_t rsVolumeOffset(const int xh, const int yh, const int zh, const int t) {
+	return t * (xh * yh * zh);
+}
+
+size_t rsVolumeLength(const int xh, const int yh, const int zh) {
+	return rsVolumeOffset(xh, yh, zh, 1);
+}
+
+/*
+ * Takes in a buffer obtained from fsl and reads
+ * out the values for one volume.
+ *
+ */
+BOOL rsExtractVolumeFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+	
+	const int nifti_datatype  = fslio->niftiptr->datatype;
+	const size_t wordlength   = rsWordLength(nifti_datatype);
+	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
+	const size_t volumeLength = rsVolumeLength(xh, yh, zh);
+	
+	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
+	
+	return convertBufferToScaledDouble(data, volBuffer, volumeLength, slope, inter, nifti_datatype);
+}
+
+/*
+ * Takes in a buffer obtained from fsl and reads
+ * out the values for one volume.
+ *
+ */
+BOOL rsWriteVolumeToBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+	
+	const int nifti_datatype  = fslio->niftiptr->datatype;
+	const size_t wordlength   = rsWordLength(nifti_datatype);
+	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
+	
+	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
+	
+	return convertScaledDoubleToBuffer(nifti_datatype, volBuffer, data, slope, inter, xh, yh, zh, FALSE);
+}
+
+
 /*
  * This function will convert a given 3D matrix of scaled doubles into
  * a buffer using the supplied datatype.
@@ -586,7 +669,6 @@ BOOL rsResetBufferToValue(const int datatype, void *buffer, const float slope, c
     
     return TRUE;
 }
-
 
 void convertScaledDoubleToBuffer_UINT8(THIS_UINT8 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim) {
     int x, y, z;
