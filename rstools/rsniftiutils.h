@@ -27,15 +27,25 @@ typedef struct {
     float x, y, z;
 } FloatPoint3D;
 
+typedef BOOL (*rsReadMaskCustomThresholdCallback) (double, void *userData);
+
 Point3D      MakePoint3D(unsigned int x, unsigned int y, unsigned int z);
 FloatPoint3D MakeFloatPoint3D(float x, float y, float z);
-Point3D*     ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
+Point3D*     rsReadMask(const char *path, const unsigned short newX, const unsigned short newY, const unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
+Point3D*     rsReadMaskCustomThreshold(const char *path, const unsigned short newX, const unsigned short newY, const unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn, rsReadMaskCustomThresholdCallback thresholdCallback, void *userData);
+BOOL         rsPositiveThreshold(double v, void *userData);
+BOOL         rsNegativeThreshold(double v, void *userData);
 double***    ResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
 size_t       rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
 BOOL         rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th);
 BOOL         rsExtractPointsFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
 BOOL         rsWriteTimecourseToBuffer(const FSLIO *fslio, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th);
 BOOL         rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const int threads, const double value);
+BOOL         rsWriteVolumeToBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+BOOL         rsExtractVolumeFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+size_t       rsWordLength(const int datatype);
+size_t       rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
+size_t       rsVolumeLength(const int xh, const int yh, const int zh);
     
 BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);

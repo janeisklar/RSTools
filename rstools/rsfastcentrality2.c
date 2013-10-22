@@ -190,7 +190,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim, yDim, xDim);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
@@ -211,7 +211,7 @@ int main(int argc, char * argv[]) {
     FslReadVolumes(fslio, buffer, vDim);
     FslClose(fslio);
     free(fslio);
-    
+
     long n;
 	long nNanPoints = 0;
 	long *nanPoints = malloc(sizeof(long)*nPoints);

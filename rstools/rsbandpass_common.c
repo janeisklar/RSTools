@@ -266,7 +266,7 @@ struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
     if ( p.maskpath != NULL ) {
         unsigned long nPoints = 0L;
         p.mask = d3matrix(p.zDim, p.yDim, p.xDim);
-        Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
+        Point3D *maskPoints = rsReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
             FslClose(p.fslio);

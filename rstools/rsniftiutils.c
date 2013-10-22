@@ -33,7 +33,20 @@ FloatPoint3D MakeFloatPoint3D(float x, float y, float z)
  * mask is appropriate for the orientation of the file
  * that it is later applied to.
  */
-Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn)
+Point3D* rsReadMask(const char *path, const unsigned short newX, const unsigned short newY, const unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn)
+
+{
+	const double threshold = 0.01;
+	void *thresholdPointer = (void*) &threshold;
+	return rsReadMaskCustomThreshold(path, newX, newY, newZ, nPoints, resampledMaskPath, maskPrototype, resampledMaskReturn, rsPositiveThreshold, thresholdPointer);
+}
+
+/*
+ * See rsReadMask with an additional callback
+ * function that can be used to supply a custom
+ * thresholding function.
+ */
+Point3D* rsReadMaskCustomThreshold(const char *path, const unsigned short newX, const unsigned short newY, const unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn, rsReadMaskCustomThresholdCallback thresholdCallback, void *userData)
 {
     FSLIO *fslio;
 	void *buffer;
@@ -90,7 +103,7 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     for (unsigned int x=0; x<newX; x=x+1) {
         for (unsigned int y=0; y<newY; y=y+1) {
             for (unsigned int z=0; z<newZ; z=z+1) {
-                if ( resampledMask[z][y][x] > 0.01 ) {
+                if ( thresholdCallback(resampledMask[z][y][x], userData) ) {
                     *nPoints = *nPoints + ((unsigned long)1L);
                 }
                 
@@ -109,7 +122,7 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     for (unsigned int x=0; x<newX; x=x+1) {
         for (unsigned int y=0; y<newY; y=y+1) {
             for (unsigned int z=0; z<newZ; z=z+1) {
-                if ( resampledMask[z][y][x] > 0.01 ) {
+                if ( thresholdCallback(resampledMask[z][y][x], userData) ) {
                     points[i] = MakePoint3D(x,y,z);
                     i = i+1;
                 }
@@ -164,6 +177,17 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     free(fslioResampled);
     
     return points;
+}
+
+
+BOOL rsPositiveThreshold(double v, void *userData)
+{
+	return v > ((double*)userData)[0];
+}
+
+BOOL rsNegativeThreshold(double v, void *userData)
+{
+	return v < ((double*)userData)[0];
 }
 
 /*
@@ -446,6 +470,88 @@ BOOL rsWriteTimecourseToBuffer(const FSLIO *fslio, const double *timecourse, voi
     }
     
     return TRUE;
+}
+
+size_t rsWordLength(const int datatype) {
+	switch (datatype) {
+        case NIFTI_TYPE_UINT8:
+            return sizeof(THIS_UINT8);
+            break;
+        case NIFTI_TYPE_INT8:
+            return sizeof(THIS_INT8);
+            break;
+        case NIFTI_TYPE_UINT16:
+            return sizeof(THIS_UINT16);
+            break;
+        case NIFTI_TYPE_INT16:
+            return sizeof(THIS_INT16);
+            break;
+        case NIFTI_TYPE_UINT32:
+            return sizeof(THIS_UINT32);
+            break;
+        case NIFTI_TYPE_INT32:
+            return sizeof(THIS_INT32);
+            break;
+        case NIFTI_TYPE_UINT64:
+            return sizeof(THIS_UINT64);
+            break;
+        case NIFTI_TYPE_INT64:
+			return sizeof(THIS_INT64);
+            break;
+        case NIFTI_TYPE_FLOAT32:
+            return sizeof(THIS_FLOAT32);
+            break;
+        case NIFTI_TYPE_FLOAT64:
+			return sizeof(THIS_FLOAT64);
+            break;
+        case NIFTI_TYPE_FLOAT128:
+        case NIFTI_TYPE_COMPLEX128:
+        case NIFTI_TYPE_COMPLEX256:
+        case NIFTI_TYPE_COMPLEX64:
+        default:
+            return 0;
+    }
+}
+
+size_t rsVolumeOffset(const int xh, const int yh, const int zh, const int t) {
+	return t * (xh * yh * zh);
+}
+
+size_t rsVolumeLength(const int xh, const int yh, const int zh) {
+	return rsVolumeOffset(xh, yh, zh, 1);
+}
+
+/*
+ * Takes in a buffer obtained from fsl and reads
+ * out the values for one volume.
+ *
+ */
+BOOL rsExtractVolumeFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+	
+	const int nifti_datatype  = fslio->niftiptr->datatype;
+	const size_t wordlength   = rsWordLength(nifti_datatype);
+	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
+	const size_t volumeLength = rsVolumeLength(xh, yh, zh);
+	
+	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
+	
+	return convertBufferToScaledDouble(data, volBuffer, volumeLength, slope, inter, nifti_datatype);
+}
+
+/*
+ * Takes in a buffer obtained from fsl and reads
+ * out the values for one volume.
+ *
+ */
+BOOL rsWriteVolumeToBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+	
+	const int nifti_datatype  = fslio->niftiptr->datatype;
+	const size_t wordlength   = rsWordLength(nifti_datatype);
+	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
+	
+	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
+	
+	return convertScaledDoubleToBuffer(nifti_datatype, volBuffer, data, slope, inter, xh, yh, zh, FALSE);
 }
 
 /*

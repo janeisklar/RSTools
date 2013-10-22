@@ -228,7 +228,7 @@ int main(int argc, char * argv[])
     } else {
         /*** Extract timecourse for a mask ***/
         unsigned long nPoints = 0L;
-        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, NULL);
+        Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, NULL);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
             FslClose(fslio);

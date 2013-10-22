@@ -58,7 +58,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask clustering
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -76,6 +76,7 @@ clean:
 	rm -f rsfastcentrality2
 	rm -f rsttest2
 	rm -f rsmask2
+	rm -f rsclustering2
 
 mathutils:
 	@echo 
@@ -184,6 +185,15 @@ mask:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsmask2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rsmask2.o -o rsmask2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
+clustering:
+	@echo
+	@echo "***************************"
+	@echo "*     RS Clustering       *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsclustering2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsclustering2.o -o rsclustering2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
 
 help:
 	@echo "all:      make the rstools"

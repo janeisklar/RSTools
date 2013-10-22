@@ -189,7 +189,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim, yDim, xDim);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
