@@ -36,6 +36,11 @@ BOOL         rsExtractTimecourseFromBuffer(const FSLIO *fslio, double *timecours
 BOOL         rsExtractPointsFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
 BOOL         rsWriteTimecourseToBuffer(const FSLIO *fslio, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D p, const int xh, const int yh, const int zh, const int th);
 BOOL         rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const int threads, const double value);
+BOOL         rsWriteVolumeToBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+BOOL         rsExtractVolumeFromBuffer(const FSLIO *fslio, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+size_t       rsWordLength(const int datatype);
+size_t       rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
+size_t       rsVolumeLength(const int xh, const int yh, const int zh);
     
 BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
