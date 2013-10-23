@@ -294,32 +294,28 @@ int main(int argc, char * argv[]) {
 	
 	/* get value range */
 	double min=9999999999999999, max=-9999999999999999;
-	#pragma omp parallel num_threads(threads) private(t) shared(buffer,fslio)
-    {
-        #pragma omp for schedule(guided, 1)
-		for (t=5; t<vDim; t=t+1) {
-			double ***data = d3matrix(zDim-1,  yDim-1, xDim-1);
-			rsExtractVolumeFromBuffer(fslio, data[0][0], buffer, slope, inter, t, xDim, yDim, zDim);
+	for (t=5; t<vDim; t=t+1) {
+		double ***data = d3matrix(zDim-1,  yDim-1, xDim-1);
+		rsExtractVolumeFromBuffer(fslio, data[0][0], buffer, slope, inter, t, xDim, yDim, zDim);
+		
+		for (long p = 0L; p<nPoints; p=p+1L) {
+			const Point3D point  = maskPoints[p];
+			const double intensity = data[point.z][point.y][point.x];
 			
-			for (long p = 0L; p<nPoints; p=p+1L) {
-				const Point3D point  = maskPoints[p];
-				const double intensity = data[point.z][point.y][point.x];
-				
-				if ( intensity != intensity ) {
-					continue;
-				}
-				
-				if ( min > intensity ) {
-					min = intensity;
-				}
-				
-				if ( max < intensity ) {
-					max = intensity;
-				}
+			if ( intensity != intensity ) {
+				continue;
 			}
 			
-			free(data[0][0]); free(data[0]); free(data);
+			if ( min > intensity ) {
+				min = intensity;
+			}
+			
+			if ( max < intensity ) {
+				max = intensity;
+			}
 		}
+		
+		free(data[0][0]); free(data[0]); free(data);
 	}
 	
 	fprintf(stdout, "min: %.2f, max: %.2f\n", min, max);
@@ -327,7 +323,7 @@ int main(int argc, char * argv[]) {
 	/* compute dvars */
 	double dvars[vDim];
 	dvars[0]=0;
-    #pragma omp parallel num_threads(threads) private(t) shared(buffer,fslio,dvars)
+    #pragma omp parallel num_threads(threads) private(t) shared(buffer,fslio,dvars,nPoints,xDim,yDim,zDim,max,min,maskPoints)
     {
         #pragma omp for schedule(guided, 1)
 		for (t=1; t<vDim; t=t+1) {

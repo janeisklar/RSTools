@@ -490,7 +490,7 @@ size_t rsWordLength(const int datatype) {
 }
 
 size_t rsVolumeOffset(const int xh, const int yh, const int zh, const int t) {
-	return t * (xh * yh * zh);
+	return (size_t)t * ((size_t)xh * (size_t)yh * (size_t)zh);
 }
 
 size_t rsVolumeLength(const int xh, const int yh, const int zh) {
