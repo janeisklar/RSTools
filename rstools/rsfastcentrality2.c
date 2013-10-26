@@ -266,7 +266,8 @@ int main(int argc, char * argv[]) {
     
     gsl_matrix *M  = gsl_matrix_alloc(vDim, nPoints);
     
-    const double epsilon = 2.0e-16;
+    const double epsilon  = 2.0e-16;
+    const double epsilon2 = 2.0e-8;
     const double corrnorm = sqrt(vDim-1);
     
     #pragma omp parallel num_threads(threads) private(n)
@@ -329,7 +330,7 @@ int main(int argc, char * argv[]) {
         gsl_vector_sub(vOld, vNew);
         const double diffNorm = gsl_blas_dnrm2(vOld);
         gsl_vector_memcpy(vOld, vNew);
-        gsl_vector_scale(vOld, epsilon);
+        gsl_vector_scale(vOld, epsilon2);
         const double norm = gsl_blas_dnrm2(vOld);
         gsl_vector_memcpy(vOld, vNew);
         
