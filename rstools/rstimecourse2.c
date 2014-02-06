@@ -13,6 +13,7 @@
 #include <nifti1.h>
 #include <fslio.h>
 #include "rsniftiutils.h"
+#include "rsmathutils.h"
 
 int show_help( void )
 {
@@ -245,7 +246,44 @@ int main(int argc, char * argv[])
         buffer = malloc(buffsize);
         FslReadVolumes(fslio, buffer, vDim);
         
+		/* Identify irrelevant voxels */
+		if ( verbose ) {
+			fprintf(stdout, "Removing voxels that are either NaN or have a StdDev of 0\n");
+		}
+		
+		long n;
+		long nNanPoints = 0;
+		int isNanPoint[nPoints];
+		
+		for (n=0; n<nPoints; n=n+1) {
+	        const Point3D point = maskPoints[n];
+			isNanPoint[n] = FALSE;
+
+	        // load signal
+	        double *signalData = malloc(sizeof(double) * vDim);
+	        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+
+	        for ( int t=0; t<vDim; t=t+1 ) {
+				if ( signalData[t] != signalData[t] ) {
+					isNanPoint[n] = TRUE;
+					nNanPoints = nNanPoints + 1;
+					break;
+				}
+	        }
+
+			if ( gsl_stats_sd(signalData, 1, vDim) < 0.000001 ) {
+				isNanPoint[n] = TRUE;
+				nNanPoints = nNanPoints + 1;
+			}
+
+	        free(signalData);
+		}
+
         int t;
+
+		if ( verbose ) {
+			fprintf(stdout, "Coputing mean ROI timecourse\n");
+		}
 
         /* Iterate over all timepoints */
         #pragma omp parallel num_threads(threads) private(t) shared(timecourse,nPoints)
@@ -261,13 +299,16 @@ int main(int argc, char * argv[])
                 
                 /* Iterate over all points in the mask */
                 for ( unsigned long i=0; i<nPoints; i=i+1) {
+					if ( isNanPoint[i] ) {
+						continue;
+					}
                     sum = sum + pointValues[i];
                 }
                 
                 free(pointValues);
                 
                 /* Create average */
-                timecourse[t] = sum / nPoints;
+                timecourse[t] = sum / (nPoints - nNanPoints);
             }
         }
         

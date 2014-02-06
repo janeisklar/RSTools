@@ -230,6 +230,7 @@ int main(int argc, char * argv[]) {
 			if ( signalData[t] != signalData[t] ) {
 				nanPoints[nNanPoints] = n;
 				nNanPoints = nNanPoints + 1;
+		        free(signalData);
 				break;
 			}
         }
