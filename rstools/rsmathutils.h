@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <math.h>
+#include <assert.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_multifit.h>
@@ -12,6 +13,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
+#include <gsl/gsl_eigen.h>
+
 #include "rsniftiutils.h"
 
 #if !defined(RS_FFTW_ENABLED)
@@ -78,6 +81,7 @@ double rsSampleCosineWave(const double sampling_rate, const double f, const int 
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
 long double *rsFirstEigenvector(const double **A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
+gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance);
 long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
 long double rsEuclideanNorm(const long double *x, const long n);
 void rsScaleVector(long double *x, const long n, const long double factor, const int threads);

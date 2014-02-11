@@ -15,6 +15,9 @@
 #include "rsniftiutils.h"
 #include "rsmathutils.h"
 
+#define RSTIMECOURSE_ALGORITHM_MEAN 1
+#define RSTIMECOURSE_ALGORITHM_PCA  2
+
 int show_help( void )
 {
    printf(
@@ -32,7 +35,7 @@ int show_help( void )
    printf(
       "options:\n"
       "              -a <algorithm>   : the algorithm used to aggregate the data within\n"
-      "                                 a ROI, e.g. mean\n"
+      "                                 a ROI, e.g. mean or pca\n"
    );
 
    printf(
@@ -56,6 +59,12 @@ int show_help( void )
       "              -savemask <mask> : optional path where the rescaled mask specified with -mask\n"
       "                                 will be saved. The saved file with have the same dimensions\n"
       "                                 as the input volume.\n"
+   );
+
+   printf(
+	  "              -retainVariance  : (use only with -a pca) percentage of explained variance\n"
+	  "                                 that will be retained. keep in mind that a higher percentage\n"
+	  "                                 will result in more variables are to be returned."
    );
    
    printf(
@@ -82,6 +91,8 @@ int main(int argc, char * argv[])
 	size_t dt;
     float inter = 0.0, slope = 1.0;
     int threads = 1;
+	float minVariance = 0.8;
+	short algorithm = RSTIMECOURSE_ALGORITHM_MEAN;
     
     BOOL verbose = FALSE;
 	
@@ -111,7 +122,26 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
+		} else if ( ! strncmp(argv[ac], "-a", 2) ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -a[lgorithm]\n");
+				return 1;
+			}
+			if ( ! strcmp(argv[ac], "mean") ) {
+				algorithm = RSTIMECOURSE_ALGORITHM_MEAN;	
+			} else if ( ! strcmp(argv[ac], "pca") ) {
+				algorithm = RSTIMECOURSE_ALGORITHM_PCA;	
+			} else {
+				fprintf(stderr, "** the requested algorithm is not supported\n");
+				return 1;
+			}
+		} else if ( ! strcmp(argv[ac], "-retainVariance") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -retainVariance\n");
+           		return 1;
+           	}
+           	minVariance = atof(argv[ac]);  /* no string copy, just pointer assignment */
+        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
 		} else if ( ! strncmp(argv[ac], "-p", 2) ) {
 			if( ac+3 >= argc ) {
@@ -148,7 +178,14 @@ int main(int argc, char * argv[])
     if ( verbose ) {
         fprintf(stdout, "Input file: %s\n", inputpath);
         fprintf(stdout, "Mask file: %s\n", maskpath);
-        fprintf(stdout, "Voxel: %d %d %d\n", x, y, z);
+		if ( x >= 0 )
+	    	fprintf(stdout, "Voxel: %d %d %d\n", x, y, z);
+		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
+        	fprintf(stdout, "Algorithm: Mean\n");
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+			fprintf(stdout, "Algorithm: PCA\n");
+			fprintf(stdout, "Variance to be retain: %.2f\n", minVariance);
+		}
     }
 	
     fslio = FslOpen(inputpath, "rb");
@@ -278,45 +315,105 @@ int main(int argc, char * argv[])
 
 	        free(signalData);
 		}
-
-        int t;
-
+		
 		if ( verbose ) {
-			fprintf(stdout, "Coputing mean ROI timecourse\n");
+			fprintf(stdout, "Removed %ld voxels, %ld remaining\n", nNanPoints, (nPoints - nNanPoints));
 		}
 
-        /* Iterate over all timepoints */
-        #pragma omp parallel num_threads(threads) private(t) shared(timecourse,nPoints)
-        {
-            #pragma omp for schedule(guided)
-            for ( t = 0; t<vDim; t=t+1 ) {
+		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
+        
+	        int t;
+
+			if ( verbose ) {
+				fprintf(stdout, "Coputing mean ROI timecourse\n");
+			}
+
+	        /* Iterate over all timepoints */
+	        #pragma omp parallel num_threads(threads) private(t) shared(timecourse,nPoints)
+	        {
+	            #pragma omp for schedule(guided)
+	            for ( t = 0; t<vDim; t=t+1 ) {
             
-                double sum = 0;
+	                double sum = 0;
                 
-                /* Read out datapoints from the buffer */
-                double *pointValues = malloc(nPoints*sizeof(double));
-                rsExtractPointsFromBuffer(fslio, pointValues, buffer, slope, inter, maskPoints, nPoints, t, xDim, yDim, zDim, vDim);
+	                /* Read out datapoints from the buffer */
+	                double *pointValues = malloc(nPoints*sizeof(double));
+	                rsExtractPointsFromBuffer(fslio, pointValues, buffer, slope, inter, maskPoints, nPoints, t, xDim, yDim, zDim, vDim);
                 
-                /* Iterate over all points in the mask */
-                for ( unsigned long i=0; i<nPoints; i=i+1) {
-					if ( isNanPoint[i] ) {
-						continue;
-					}
-                    sum = sum + pointValues[i];
-                }
+	                /* Iterate over all points in the mask */
+	                for ( unsigned long i=0; i<nPoints; i=i+1) {
+						if ( isNanPoint[i] ) {
+							continue;
+						}
+	                    sum = sum + pointValues[i];
+	                }
                 
-                free(pointValues);
+	                free(pointValues);
                 
-                /* Create average */
-                timecourse[t] = sum / (nPoints - nNanPoints);
+	                /* Create average */
+	                timecourse[t] = sum / (nPoints - nNanPoints);
+	            }
+	        }
+        
+        
+	        for ( t = 0; t<vDim; t=t+1 ) {
+	            fprintf(stdout, "%.10f\n", timecourse[t]);
+	        }
+
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+			
+			if ( verbose ) {
+				fprintf(stdout, "Computing PCA components for timecourses in the mask\n");
+			}
+			
+			// Prepare non-NAN points
+			Point3D *nonNanPoints = malloc((nPoints - nNanPoints)*sizeof(Point3D));
+			n = 0;
+			for ( unsigned long i=0; i<nPoints; i=i+1) {
+				if ( isNanPoint[i] ) {
+					continue;
+				}
+				
+				nonNanPoints[n] = maskPoints[i];				
+				n = n+1;
             }
-        }
-        
-        free(maskPoints);
-        
-        for ( t = 0; t<vDim; t=t+1 ) {
-            fprintf(stdout, "%.10f\n", timecourse[t]);
-        }
+			
+			// Prepare data matrix
+			gsl_matrix* data = gsl_matrix_alloc((nPoints - nNanPoints), vDim);
+			for ( n=0; n<(nPoints - nNanPoints); n=n+1) {
+				
+				double *signalData = malloc(sizeof(double) * vDim);
+		        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
+				
+				for ( int t = 0; t < vDim; t=t+1 ) {
+					gsl_matrix_set(data, n, t, signalData[t]);
+				}
+				
+				free(signalData);
+			}
+			free(nonNanPoints);
+			
+			// Run PCA
+			gsl_matrix* components = rsPCA(data, minVariance);
+			gsl_matrix_free(data);
+			
+			if ( verbose ) {
+				fprintf(stdout, "reduced data matrix dimensions after PCA: %dx%d\n", (int)components->size1, (int)components->size2);
+			}
+			for ( t = 0; t<vDim; t=t+1 ) {
+				for ( int c = 0; c<components->size1; c=c+1) {
+	            	fprintf(stdout, "%.10f", gsl_matrix_get(components, c, t));
+					if ( t<(vDim-1) ) {
+						fprintf(stdout, "\t");
+					}
+				}
+				fprintf(stdout, "\n");
+	        }
+
+			gsl_matrix_free(components);
+		}
+		
+		free(maskPoints);
     }
     
     FslClose(fslio);
