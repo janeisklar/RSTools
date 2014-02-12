@@ -708,16 +708,23 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
 }
 
 // Originally taken from: https://gist.github.com/microo8/4065693
-gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance)
+gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, BOOL verbose)
 {
     /*
     @param data - matrix of data vectors, MxN matrix, each column is a data vector, M - dimension, N - data vector count
     @param minVariance - min percentage of variance that should be retained
     */
+	
     assert(data != NULL);
     unsigned int i;
+    unsigned int j;
     unsigned int rows = data->size1;
     unsigned int cols = data->size2;
+
+	if ( verbose ) {
+		fprintf(stdout, "Running PCA on a %dx%d matrix\n", rows, cols);
+	}
+
     gsl_vector* mean = gsl_vector_alloc(rows);
  
     for(i = 0; i < rows; i++) {
@@ -749,6 +756,17 @@ gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance)
     // Sort the eigenvectors
     gsl_eigen_symmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
 
+	if ( verbose ) {
+		fprintf(stdout, "\nPCAs(eigenvectors):\n");
+		
+		for ( i = 0; i<rows; i=i+1 ) {
+			for ( j = 0; j<rows; j=j+1) {
+            	fprintf(stdout, "% 5.10f\t", gsl_matrix_get(eigenvectors, i, j));
+			}
+			fprintf(stdout, "\n");
+        }
+	}
+
 	// Determine how much components to keep
 	int L = 0;
 	double explainedVariance = 0.0;
@@ -756,13 +774,27 @@ gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance)
 	for (unsigned int i=0; i<rows; i=i+1)
 		totalVariance = totalVariance + gsl_vector_get(eigenvalues, i);
 	
-	//fprintf(stdout, "Total variance: %.3f\n", totalVariance);
+	if ( verbose ) {
+		fprintf(stdout, "\nTotal variance: %.10f\n", totalVariance);
+		fprintf(stdout, "\nEigenvalues:\n");
+		for ( j = 0; j<rows; j=j+1) {
+        	fprintf(stdout, "%.10f\t", gsl_vector_get(eigenvalues, j)/totalVariance);
+		}
+		fprintf(stdout, "\n\n");
+		fprintf(stdout, "Determining the number of components to keep:\n");
+	}
 		
 	do {
 		explainedVariance = explainedVariance + gsl_vector_get(eigenvalues, L);
-		//fprintf(stdout, "%02d %.3f\n", L, (explainedVariance/totalVariance));
+		
+		if ( verbose )
+			fprintf(stdout, "% 3d %.10f\n", L, (explainedVariance/totalVariance));
+			
 		L = L + 1;
 	} while( (explainedVariance/totalVariance) < minVariance );
+	
+	if ( verbose )
+		fprintf(stdout, "\n");
 	
     gsl_vector_free(eigenvalues);
  

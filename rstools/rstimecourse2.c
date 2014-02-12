@@ -394,7 +394,7 @@ int main(int argc, char * argv[])
 			free(nonNanPoints);
 			
 			// Run PCA
-			gsl_matrix* components = rsPCA(data, minVariance);
+			gsl_matrix* components = rsPCA(data, minVariance, verbose);
 			gsl_matrix_free(data);
 			
 			if ( verbose ) {
@@ -402,8 +402,8 @@ int main(int argc, char * argv[])
 			}
 			for ( t = 0; t<vDim; t=t+1 ) {
 				for ( int c = 0; c<components->size1; c=c+1) {
-	            	fprintf(stdout, "%.10f", gsl_matrix_get(components, c, t));
-					if ( t<(vDim-1) ) {
+	            	fprintf(stdout, "% 5.10f", gsl_matrix_get(components, c, t));
+					if ( c < (components->size1-1) ) {
 						fprintf(stdout, "\t");
 					}
 				}
