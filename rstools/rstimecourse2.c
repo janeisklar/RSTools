@@ -34,41 +34,46 @@ int show_help( void )
     
    printf(
       "options:\n"
-      "              -a <algorithm>   : the algorithm used to aggregate the data within\n"
-      "                                 a ROI, e.g. mean or pca\n"
+      "  -a <algorithm>             : the algorithm used to aggregate the data within\n"
+      "                               a ROI, e.g. mean or pca\n"
    );
 
    printf(
-      "              -help            : show this help\n"
+      "  -help                      : show this help\n"
    );
  
    printf(
-      "              -input <volume>  : the volume from which the timecourse will be extracted\n"
+      "  -input <volume>            : the volume from which the timecourse will be extracted\n"
    );
    
    printf(
-      "              -mask <mask>     : a mask specifying the ROI\n"
+      "  -mask <mask>               : a mask specifying the ROI\n"
    );
    
    printf(
-      "              -p <X> <Y> <Z>   : speficies a voxel using nifti coordinates(0-based) from\n"
-      "                                 which the timecourse is to be extracted\n"
+      "  -p <X> <Y> <Z>             : speficies a voxel using nifti coordinates(0-based) from\n"
+      "                               which the timecourse is to be extracted\n"
    );
     
    printf(
-      "              -savemask <mask> : optional path where the rescaled mask specified with -mask\n"
-      "                                 will be saved. The saved file with have the same dimensions\n"
-      "                                 as the input volume.\n"
+      "  -savemask <mask>           : optional path where the rescaled mask specified with -mask\n"
+      "                               will be saved. The saved file with have the same dimensions\n"
+      "                               as the input volume.\n"
    );
 
    printf(
-	  "              -retainVariance  : (use only with -a pca) percentage of explained variance\n"
-	  "                                 that will be retained. keep in mind that a higher percentage\n"
-	  "                                 will result in more variables are to be returned."
+	  "  -retainVariance <float>    : (use only with -a pca) percentage of explained variance\n"
+	  "                               that will be retained. keep in mind that a higher percentage\n"
+	  "                               will result in more variables are to be returned."
+   );
+
+   printf(
+	  "  -retainComponents <int>    : (use only with -a pca) number of PCA components that will be\n"
+	  "                               outputted\n"
    );
    
    printf(
-      "              -v[erbose]       : show debug information\n"
+      "  -v[erbose]                 : show debug information\n"
       "\n"
    );
     
@@ -91,7 +96,8 @@ int main(int argc, char * argv[])
 	size_t dt;
     float inter = 0.0, slope = 1.0;
     int threads = 1;
-	float minVariance = 0.8;
+	float minVariance = 1.0;
+	int nComponents = -1;
 	short algorithm = RSTIMECOURSE_ALGORITHM_MEAN;
     
     BOOL verbose = FALSE;
@@ -140,7 +146,13 @@ int main(int argc, char * argv[])
            		fprintf(stderr, "** missing argument for -retainVariance\n");
            		return 1;
            	}
-           	minVariance = atof(argv[ac]);  /* no string copy, just pointer assignment */
+           	minVariance = atof(argv[ac]);
+        } else if ( ! strcmp(argv[ac], "-retainComponents") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -retainComponents\n");
+           		return 1;
+           	}
+           	nComponents = atoi(argv[ac]);
         } else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
 		} else if ( ! strncmp(argv[ac], "-p", 2) ) {
@@ -184,7 +196,10 @@ int main(int argc, char * argv[])
         	fprintf(stdout, "Algorithm: Mean\n");
 		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
 			fprintf(stdout, "Algorithm: PCA\n");
-			fprintf(stdout, "Variance to be retain: %.2f\n", minVariance);
+			fprintf(stdout, "Variance to be retained: %.2f\n", minVariance);
+			if ( nComponents > 0 ) {
+				fprintf(stdout, "Number of components to be retained: %d\n", nComponents);
+			}
 		}
     }
 	
@@ -385,8 +400,11 @@ int main(int argc, char * argv[])
 				double *signalData = malloc(sizeof(double) * vDim);
 		        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
 				
+				double mean  = gsl_stats_mean(signalData, 1, vDim);
+				double stdev = gsl_stats_sd(signalData, 1, vDim);
+				
 				for ( int t = 0; t < vDim; t=t+1 ) {
-					gsl_matrix_set(data, n, t, signalData[t]);
+					gsl_matrix_set(data, n, t, (signalData[t] - mean) / stdev);
 				}
 				
 				free(signalData);
@@ -394,7 +412,7 @@ int main(int argc, char * argv[])
 			free(nonNanPoints);
 			
 			// Run PCA
-			gsl_matrix* components = rsPCA(data, minVariance, verbose);
+			gsl_matrix* components = rsPCA(data, minVariance, nComponents, verbose);
 			gsl_matrix_free(data);
 			
 			if ( verbose ) {

@@ -708,11 +708,12 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
 }
 
 // Originally taken from: https://gist.github.com/microo8/4065693
-gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, BOOL verbose)
+gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
 {
     /*
     @param data - matrix of data vectors, MxN matrix, each column is a data vector, M - dimension, N - data vector count
     @param minVariance - min percentage of variance that should be retained
+    @param nComponents - number of components that will be returned. ignored if less than 1
     */
 	
     assert(data != NULL);
@@ -791,7 +792,7 @@ gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, BOOL verbose)
 			fprintf(stdout, "% 3d %.10f\n", L, (explainedVariance/totalVariance));
 			
 		L = L + 1;
-	} while( (explainedVariance/totalVariance) < minVariance );
+	} while( L < nComponents || ((explainedVariance/totalVariance) < minVariance && nComponents < 1) );
 	
 	if ( verbose )
 		fprintf(stdout, "\n");
