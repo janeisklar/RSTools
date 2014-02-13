@@ -518,7 +518,7 @@ void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix
 	FslCloneHeader(fslio, reference);
     FslSetDim(fslio, xDim, yDim, zDim, nMaps);
     FslSetDimensionality(fslio, 4);
-    FslSetDataType(fslio, pixType);
+    FslSetDataType(fslio, DT_FLOAT32);
     FslWriteHeader(fslio);
     
 	/* prepare buffer */
