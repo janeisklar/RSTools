@@ -17,6 +17,7 @@
 
 #define RSTIMECOURSE_ALGORITHM_MEAN 1
 #define RSTIMECOURSE_ALGORITHM_PCA  2
+#define RSTIMECOURSE_ALGORITHM_TPCA 3
 
 int show_help( void )
 {
@@ -35,7 +36,7 @@ int show_help( void )
    printf(
       "options:\n"
       "  -a <algorithm>             : the algorithm used to aggregate the data within\n"
-      "                               a ROI, e.g. mean or pca\n"
+      "                               a ROI, e.g. mean, pca or tpca\n"
    );
 
    printf(
@@ -62,14 +63,19 @@ int show_help( void )
    );
 
    printf(
-	  "  -retainVariance <float>    : (use only with -a pca) percentage of explained variance\n"
+	  "  -retainVariance <float>    : (use only with -a [t]pca) percentage of explained variance\n"
 	  "                               that will be retained. keep in mind that a higher percentage\n"
 	  "                               will result in more variables are to be returned.\n"
    );
 
    printf(
-	  "  -retainComponents <int>    : (use only with -a pca) number of PCA components that will be\n"
+	  "  -retainComponents <int>    : (use only with -a [t]pca) number of PCA components that will be\n"
 	  "                               outputted\n"
+   );
+
+   printf(
+	  "  -useStandardScores         : (use only with -a [t]pca) remove mean and set std. dev to 1\n"
+	  "                               prior to running pca\n"
    );
    
    printf(
@@ -99,7 +105,7 @@ int main(int argc, char * argv[])
 	float minVariance = 1.0;
 	int nComponents = -1;
 	short algorithm = RSTIMECOURSE_ALGORITHM_MEAN;
-    
+	BOOL useStandardScores = FALSE;
     BOOL verbose = FALSE;
 	
 	int ac;
@@ -136,7 +142,9 @@ int main(int argc, char * argv[])
 			if ( ! strcmp(argv[ac], "mean") ) {
 				algorithm = RSTIMECOURSE_ALGORITHM_MEAN;	
 			} else if ( ! strcmp(argv[ac], "pca") ) {
-				algorithm = RSTIMECOURSE_ALGORITHM_PCA;	
+				algorithm = RSTIMECOURSE_ALGORITHM_PCA;
+			} else if ( ! strcmp(argv[ac], "tpca") ) {
+				algorithm = RSTIMECOURSE_ALGORITHM_TPCA;
 			} else {
 				fprintf(stderr, "** the requested algorithm is not supported\n");
 				return 1;
@@ -153,7 +161,9 @@ int main(int argc, char * argv[])
            		return 1;
            	}
            	nComponents = atoi(argv[ac]);
-        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
+        } else if ( ! strcmp(argv[ac], "-useStandardScores") ) {
+			useStandardScores = TRUE;
+		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
 		} else if ( ! strncmp(argv[ac], "-p", 2) ) {
 			if( ac+3 >= argc ) {
@@ -194,8 +204,12 @@ int main(int argc, char * argv[])
 	    	fprintf(stdout, "Voxel: %d %d %d\n", x, y, z);
 		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
         	fprintf(stdout, "Algorithm: Mean\n");
-		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
-			fprintf(stdout, "Algorithm: PCA\n");
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
+			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+				fprintf(stdout, "Algorithm: PCA\n");
+			} else {
+				fprintf(stdout, "Algorithm: tPCA\n");
+			}
 			fprintf(stdout, "Variance to be retained: %.2f\n", minVariance);
 			if ( nComponents > 0 ) {
 				fprintf(stdout, "Number of components to be retained: %d\n", nComponents);
@@ -375,7 +389,7 @@ int main(int argc, char * argv[])
 	            fprintf(stdout, "%.10f\n", timecourse[t]);
 	        }
 
-		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
 			
 			if ( verbose ) {
 				fprintf(stdout, "Computing PCA components for timecourses in the mask\n");
@@ -400,8 +414,13 @@ int main(int argc, char * argv[])
 				double *signalData = malloc(sizeof(double) * vDim);
 		        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
 				
-				double mean  = gsl_stats_mean(signalData, 1, vDim);
-				double stdev = gsl_stats_sd(signalData, 1, vDim);
+				double mean  = 0; 
+				double stdev = 1;
+				
+				if ( useStandardScores ) {
+					mean  = gsl_stats_mean(signalData, 1, vDim);
+					stdev = gsl_stats_sd(signalData, 1, vDim);
+				}
 				
 				for ( int t = 0; t < vDim; t=t+1 ) {
 					gsl_matrix_set(data, n, t, (signalData[t] - mean) / stdev);
@@ -412,7 +431,13 @@ int main(int argc, char * argv[])
 			free(nonNanPoints);
 			
 			// Run PCA
-			gsl_matrix* components = rsPCA(data, minVariance, nComponents, verbose);
+			gsl_matrix* components;
+			
+			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+				components = rsPCA(data, minVariance, nComponents, verbose);
+			} else {
+				components = rsTPCA(data, minVariance, nComponents, verbose);
+			}
 			gsl_matrix_free(data);
 			
 			if ( verbose ) {

@@ -81,7 +81,9 @@ double rsSampleCosineWave(const double sampling_rate, const double f, const int 
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
 long double *rsFirstEigenvector(const double **A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
+gsl_matrix* rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose, BOOL returnProjection);
 gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
+gsl_matrix* rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
 long double rsEuclideanNorm(const long double *x, const long n);
 void rsScaleVector(long double *x, const long n, const long double factor, const int threads);

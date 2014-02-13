@@ -708,7 +708,7 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
 }
 
 // Originally taken from: https://gist.github.com/microo8/4065693
-gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+gsl_matrix* rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose, BOOL returnProjection)
 {
     /*
     @param data - matrix of data vectors, MxN matrix, each column is a data vector, M - dimension, N - data vector count
@@ -768,7 +768,7 @@ gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, B
         }
 	}
 
-	// Determine how much components to keep
+	// Determine how many components to keep
 	int L = 0;
 	double explainedVariance = 0.0;
 	double totalVariance = 0.0;
@@ -798,15 +798,40 @@ gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, B
 		fprintf(stdout, "\n");
 	
     gsl_vector_free(eigenvalues);
- 
-    // Project the original dataset
-    gsl_matrix* result = gsl_matrix_alloc(L, cols);
+ 	
     gsl_matrix_view L_eigenvectors = gsl_matrix_submatrix(eigenvectors, 0, 0, rows, L);
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &L_eigenvectors.matrix, data, 0.0, result);
-    gsl_matrix_free(eigenvectors);
+
+	if ( returnProjection ) {
+	    // Project the original dataset
+	    gsl_matrix* result = gsl_matrix_alloc(L, cols);
+	    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &L_eigenvectors.matrix, data, 0.0, result);
+	    gsl_matrix_free(eigenvectors);
  
-    // Result is n LxN matrix, each column is the original data vector with reduced dimension from M to L
-    return result;
+    	// Result is n LxN matrix, each column is the original data vector with reduced dimension from M to L
+    	return result;
+	} else {
+		gsl_matrix* result = gsl_matrix_alloc(L, rows);
+		gsl_matrix_transpose_memcpy(result, &(L_eigenvectors.matrix));
+		//gsl_matrix_memcpy(result, &L_eigenvectors.matrix);
+	    gsl_matrix_free(eigenvectors);
+		return result;
+	}
+}
+
+gsl_matrix* rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+{
+	return rsGenericPCA(data, minVariance, nComponents, verbose, TRUE);
+}
+
+gsl_matrix* rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+{
+	gsl_matrix* dataT = gsl_matrix_alloc(data->size2, data->size1);
+	gsl_matrix_transpose_memcpy(dataT, data);
+	
+	gsl_matrix* result = rsGenericPCA(dataT, minVariance, nComponents, verbose, FALSE);
+	gsl_matrix_free(dataT);
+	
+	return result;
 }
 
 double **d2matrix(int yh, int xh)
