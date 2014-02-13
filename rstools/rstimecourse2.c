@@ -64,7 +64,7 @@ int show_help( void )
    printf(
 	  "  -retainVariance <float>    : (use only with -a pca) percentage of explained variance\n"
 	  "                               that will be retained. keep in mind that a higher percentage\n"
-	  "                               will result in more variables are to be returned."
+	  "                               will result in more variables are to be returned.\n"
    );
 
    printf(
