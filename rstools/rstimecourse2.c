@@ -19,6 +19,8 @@
 #define RSTIMECOURSE_ALGORITHM_PCA  2
 #define RSTIMECOURSE_ALGORITHM_TPCA 3
 
+void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps);
+
 int show_help( void )
 {
    printf(
@@ -35,7 +37,7 @@ int show_help( void )
     
    printf(
       "options:\n"
-      "  -a <algorithm>             : the algorithm used to aggregate the data within\n"
+      "  -a[lgorithm] <algorithm>   : the algorithm used to aggregate the data within\n"
       "                               a ROI, e.g. mean, pca or tpca\n"
    );
 
@@ -77,6 +79,11 @@ int show_help( void )
 	  "  -useStandardScores         : (use only with -a [t]pca) remove mean and set std. dev to 1\n"
 	  "                               prior to running pca\n"
    );
+
+   printf(
+	  "  -spatialMap <volume>       : (use only with -a pca) store spatial map that is created using\n"
+	  "                               the PCA components\n"
+   );
    
    printf(
       "  -v[erbose]                 : show debug information\n"
@@ -95,6 +102,7 @@ int main(int argc, char * argv[])
 	char *inputpath = NULL;
 	char *maskpath = NULL;
     char *savemaskpath = NULL;
+	char *spatialmappath = NULL;
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
@@ -122,6 +130,12 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			inputpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-spatialMap") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -spatialMap\n");
+				return 1;
+			}
+			spatialmappath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -m\n");
@@ -207,6 +221,9 @@ int main(int argc, char * argv[])
 		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
 			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
 				fprintf(stdout, "Algorithm: PCA\n");
+				if ( spatialmappath != NULL ) {
+					fprintf(stdout, "Spatial map file: %s\n", spatialmappath);
+				}
 			} else {
 				fprintf(stdout, "Algorithm: tPCA\n");
 			}
@@ -222,13 +239,6 @@ int main(int argc, char * argv[])
         fprintf(stderr, "\nError, could not read header info for %s.\n",inputpath);
         return 1;
     }
-    
-	/* open nifti dataset header */
-	/*fslio = FslReadHeader(inputpath);
-	if (fslio == NULL) {
-		fprintf(stderr, "\nError, could not read header info for %s.\n",inputpath);
-		return 1;
-	}*/
 
 	/* determine dimensions */
 	FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
@@ -428,20 +438,35 @@ int main(int argc, char * argv[])
 				
 				free(signalData);
 			}
-			free(nonNanPoints);
 			
 			// Run PCA
 			gsl_matrix* components;
+			struct rsPCAResult pcaResult;
 			
 			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
-				components = rsPCA(data, minVariance, nComponents, verbose);
+				pcaResult = rsPCA(data, minVariance, nComponents, verbose);
+				components = pcaResult.transformed;
+				
+				if ( spatialmappath != NULL) {
+					rsWriteSpatialMap(spatialmappath, fslio, nonNanPoints, pcaResult.eigenvectors);
+				}
 			} else {
-				components = rsTPCA(data, minVariance, nComponents, verbose);
+				pcaResult = rsTPCA(data, minVariance, nComponents, verbose);
+				components = pcaResult.eigenvectors;
+				
+				if ( spatialmappath != NULL) {
+					rsWriteSpatialMap(spatialmappath, fslio, nonNanPoints, pcaResult.transformed);
+				}
 			}
 			gsl_matrix_free(data);
+			free(nonNanPoints);
 			
 			if ( verbose ) {
-				fprintf(stdout, "reduced data matrix dimensions after PCA: %dx%d\n", (int)components->size1, (int)components->size2);
+				if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
+					fprintf(stdout, "Reduced data matrix(%dx%d) after spatial PCA:\n", (int)components->size1, (int)components->size2);
+				} else {
+					fprintf(stdout, "Selected tPCA eigenvectors(%dx%d)\n", (int)components->size1, (int)components->size2);
+				}
 			}
 			for ( t = 0; t<vDim; t=t+1 ) {
 				for ( int c = 0; c<components->size1; c=c+1) {
@@ -453,7 +478,7 @@ int main(int argc, char * argv[])
 				fprintf(stdout, "\n");
 	        }
 
-			gsl_matrix_free(components);
+			rsPCAResultFree(pcaResult);
 		}
 		
 		free(maskPoints);
@@ -463,4 +488,56 @@ int main(int argc, char * argv[])
     free(fslio);
     
 	return 0;
+}
+
+void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps)
+{
+	int x=-1, y=-1, z=-1, t=0;
+	short xDim, yDim, zDim, vDim, pixType;
+	size_t buffsize;
+    float inter = 0.0, slope = 1.0;
+	void *buffer;
+	short nMaps  = maps->size1;
+	long nPoints = maps->size2;
+	
+	FSLIO *fslio = FslOpen(file, "wb");
+    if (fslio == NULL) {
+        fprintf(stderr, "\nError, could not read header info for %s.\n",file);
+    }
+
+    if (reference->niftiptr->scl_slope != 0) {
+        slope = reference->niftiptr->scl_slope;
+        inter = reference->niftiptr->scl_inter;
+    }
+	
+	/* determine dimensions */
+	FslGetDataType(reference, &pixType);
+	FslGetDim(reference, &xDim, &yDim, &zDim, &vDim);
+	
+	/* prepare file */
+	FslCloneHeader(fslio, reference);
+    FslSetDim(fslio, xDim, yDim, zDim, nMaps);
+    FslSetDimensionality(fslio, 4);
+    FslSetDataType(fslio, pixType);
+    FslWriteHeader(fslio);
+    
+	/* prepare buffer */
+    buffer = malloc((size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)reference->niftiptr->nbyper);
+	rsResetBufferToValue(reference->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, nMaps, 1, sqrt(-1.0));
+	
+	/* write spatial maps to buffer */
+	for (unsigned long p = 0L; p<nPoints; p=p+1L) {
+		double data[nMaps];
+		
+		for ( short i=0; i<nMaps; i=i+1 ) {
+			data[i] = gsl_matrix_get(maps, i, p);
+		}
+        
+        rsWriteTimecourseToBuffer(fslio, &data[0], buffer, slope, inter, points[p], xDim, yDim, zDim, nMaps);
+    }
+    
+	/* write to file */
+    FslWriteVolumes(fslio, buffer, nMaps);
+    FslClose(fslio);
+    free(fslio);
 }
