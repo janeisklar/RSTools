@@ -58,7 +58,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask clustering
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask motionscrubbing clustering
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -77,6 +77,7 @@ clean:
 	rm -f rsttest2
 	rm -f rsmask2
 	rm -f rsclustering2
+	rm -f rsmotionscrubbing2
 
 mathutils:
 	@echo 
@@ -102,9 +103,9 @@ timecourse:
 	@echo "*      RS Timecourse      *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rstimecourse.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rstimecourse.o -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) -fopenmp
+	$(CC) $(CFLAGS) rstimecourse.o -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 	$(CC) $(CFLAGS) -c rstimecourse2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rstimecourse2.o -o rstimecourse2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) -fopenmp
+	$(CC) $(CFLAGS) rstimecourse2.o -o rstimecourse2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 regression:
 	@echo
@@ -194,6 +195,13 @@ clustering:
 	$(CC) $(CFLAGS) -c rsclustering2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rsclustering2.o -o rsclustering2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
+motionscrubbing:
+	@echo
+	@echo "***************************"
+	@echo "*  RS Motion Scrbubbing   *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsmotionscrubbing2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rsregression_common.o rsmotionscrubbing2.o -o rsmotionscrubbing2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 help:
 	@echo "all:      make the rstools"

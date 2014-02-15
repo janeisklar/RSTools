@@ -707,6 +707,142 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
     return b;
 }
 
+// Originally taken from: https://gist.github.com/microo8/4065693
+struct rsPCAResult rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+{
+    /*
+    @param data - matrix of data vectors, MxN matrix, each column is a data vector, M - dimension, N - data vector count
+    @param minVariance - min percentage of variance that should be retained
+    @param nComponents - number of components that will be returned. ignored if less than 1
+    */
+	
+    assert(data != NULL);
+    unsigned int i;
+    unsigned int j;
+    unsigned int rows = data->size1;
+    unsigned int cols = data->size2;
+	struct rsPCAResult result;
+
+	if ( verbose ) {
+		fprintf(stdout, "Running PCA on a %dx%d matrix\n", rows, cols);
+	}
+
+    gsl_vector* mean = gsl_vector_alloc(rows);
+ 
+    for(i = 0; i < rows; i++) {
+        gsl_vector_set(mean, i, gsl_stats_mean(data->data + i * cols, 1, cols));
+    }
+ 
+    // Get mean-substracted data into matrix mean_substracted_data.
+    gsl_matrix* mean_substracted_data = gsl_matrix_alloc(rows, cols);
+    gsl_matrix_memcpy(mean_substracted_data, data);
+    for(i = 0; i < cols; i++) {
+        gsl_vector_view mean_substracted_point_view = gsl_matrix_column(mean_substracted_data, i);
+        gsl_vector_sub(&mean_substracted_point_view.vector, mean);
+    }
+    gsl_vector_free(mean);
+ 
+    // Compute Covariance matrix
+    gsl_matrix* covariance_matrix = gsl_matrix_alloc(rows, rows);
+    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(cols - 1), mean_substracted_data, mean_substracted_data, 0.0, covariance_matrix);
+    gsl_matrix_free(mean_substracted_data);
+ 
+    // Get eigenvectors, sort by eigenvalue.
+    gsl_vector* eigenvalues = gsl_vector_alloc(rows);
+    gsl_matrix* eigenvectors = gsl_matrix_alloc(rows, rows);
+    gsl_eigen_symmv_workspace* workspace = gsl_eigen_symmv_alloc(rows);
+    gsl_eigen_symmv(covariance_matrix, eigenvalues, eigenvectors, workspace);
+    gsl_eigen_symmv_free(workspace);
+    gsl_matrix_free(covariance_matrix);
+ 
+    // Sort the eigenvectors
+    gsl_eigen_symmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
+
+	if ( verbose ) {
+		fprintf(stdout, "\nPCAs(eigenvectors):\n");
+		
+		for ( i = 0; i<rows; i=i+1 ) {
+			for ( j = 0; j<rows; j=j+1) {
+            	fprintf(stdout, "% 5.10f\t", gsl_matrix_get(eigenvectors, i, j));
+			}
+			fprintf(stdout, "\n");
+        }
+	}
+
+	// Determine how many components to keep
+	int L = 0;
+	double explainedVariance = 0.0;
+	double totalVariance = 0.0;
+	for (unsigned int i=0; i<rows; i=i+1)
+		totalVariance = totalVariance + gsl_vector_get(eigenvalues, i);
+	
+	if ( verbose ) {
+		fprintf(stdout, "\nTotal variance: %.10f\n", totalVariance);
+		fprintf(stdout, "\nEigenvalues:\n");
+		for ( j = 0; j<rows; j=j+1) {
+        	fprintf(stdout, "%.10f\t", gsl_vector_get(eigenvalues, j)/totalVariance);
+		}
+		fprintf(stdout, "\n\n");
+		fprintf(stdout, "Determining the number of components to keep:\n");
+	}
+		
+	do {
+		explainedVariance = explainedVariance + gsl_vector_get(eigenvalues, L);
+		
+		if ( verbose )
+			fprintf(stdout, "% 3d %.10f\n", L, (explainedVariance/totalVariance));
+			
+		L = L + 1;
+	} while( L < nComponents || ((explainedVariance/totalVariance) < minVariance && nComponents < 1) );
+	
+	if ( verbose )
+		fprintf(stdout, "\n");
+	
+ 	
+    gsl_matrix_view L_eigenvectors = gsl_matrix_submatrix(eigenvectors, 0, 0, rows, L);
+    gsl_vector_view L_eigenvalues  = gsl_vector_subvector(eigenvalues, 0, L);
+
+    // Project the original dataset
+    result.transformed = gsl_matrix_alloc(L, cols); // transformed is a n LxN matrix, each column is the original data vector with reduced dimension from M to L
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, &L_eigenvectors.matrix, data, 0.0, result.transformed);
+
+	// Extract the first L eigenvectors
+ 	result.eigenvectors = gsl_matrix_alloc(L, rows);
+	gsl_matrix_transpose_memcpy(result.eigenvectors, &(L_eigenvectors.matrix));
+	
+	// Extract the first L eigenvalues
+	result.eigenvalues = gsl_vector_alloc(L);
+	gsl_vector_memcpy(result.eigenvalues, &(L_eigenvalues.vector));
+	
+	gsl_matrix_free(eigenvectors);
+    gsl_vector_free(eigenvalues);
+	
+	return result;
+}
+
+struct rsPCAResult rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+{
+	return rsGenericPCA(data, minVariance, nComponents, verbose);
+}
+
+struct rsPCAResult rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose)
+{
+	gsl_matrix* dataT = gsl_matrix_alloc(data->size2, data->size1);
+	gsl_matrix_transpose_memcpy(dataT, data);
+	
+	struct rsPCAResult result = rsGenericPCA(dataT, minVariance, nComponents, verbose);
+	gsl_matrix_free(dataT);
+	
+	return result;
+}
+
+void rsPCAResultFree(struct rsPCAResult result)
+{
+	gsl_matrix_free(result.transformed);
+	gsl_matrix_free(result.eigenvectors);
+	gsl_vector_free(result.eigenvalues);
+}
+
 double **d2matrix(int yh, int xh)
 {
     long int j;

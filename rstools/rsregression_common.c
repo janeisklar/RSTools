@@ -384,11 +384,12 @@ double *rsParseRegressorLine(char *line, long *nRegressors) {
         endsWithSeparator = FALSE;
     }
     
-    char lineCpy[lineLength];
+    char lineCpy[lineLength+1];
     strcpy(lineCpy, line);
     
     if ( !endsWithSeparator ) {
         lineCpy[lineLength-1] = '\t';
+		lineCpy[lineLength]   = '\0';
     }
     
     ptr = strtok(lineCpy, delimiter);
