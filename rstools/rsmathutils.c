@@ -42,19 +42,22 @@ void rsLinearRegression(const int nSamples, const double *signal, const int nReg
         
         gsl_vector_add_constant(y, -1.0 * meanY); // remove mean
         gsl_vector_scale(y, 1 / sY); // divide by st.dev
-        
-        // transform the regressors
-        for (int i=0; i<nRegressors; i=i+1) {
-            
-            gsl_vector_view regressor = gsl_matrix_column(X, i);
-            
-            const double meanX = gsl_stats_mean(regressor.vector.data, 1, nSamples);
-            const double sX = gsl_stats_sd_m(regressor.vector.data, 1, nSamples, meanX);
-            
-            gsl_vector_add_constant(&regressor.vector, -1.0 * meanX); // remove mean
-            gsl_vector_scale(&regressor.vector, 1 / sX); // divide by st.dev
-        }
     }
+
+	// remove the regressors' mean
+    for (int i=0; i<nRegressors; i=i+1) {
+            
+        gsl_vector_view regressor = gsl_matrix_column(X, i);
+        
+        const double meanX = gsl_stats_mean(regressor.vector.data, 1, nSamples);
+        
+        gsl_vector_add_constant(&regressor.vector, -1.0 * meanX); // remove mean
+
+		if ( zScoreRegression ) {
+	    	const double sX = gsl_stats_sd_m(regressor.vector.data, 1, nSamples, meanX);
+        	gsl_vector_scale(&regressor.vector, 1 / sX); // divide by st.dev
+		}
+	}
     
     // execute linear regression
     double chisq;
