@@ -81,9 +81,15 @@ int show_help( void )
    );
 
    printf(
-	  "  -spatialMap <volume>       : (use only with -a pca) store spatial map that is created using\n"
+	  "  -spatialMap <volume>       : (use only with -a [t]pca) store spatial map that is created using\n"
 	  "                               the PCA components\n"
    );
+
+
+	printf(
+	  "  -eigenvalues <file>        : (use only with -a [t]pca) write out all eigenvalues to the file\n"
+	  "                               that is specified with this option\n"
+	);
    
    printf(
       "  -v[erbose]                 : show debug information\n"
@@ -103,6 +109,7 @@ int main(int argc, char * argv[])
 	char *maskpath = NULL;
     char *savemaskpath = NULL;
 	char *spatialmappath = NULL;
+	char *eigenvaluespath = NULL;
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
@@ -142,6 +149,12 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			maskpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-eigenvalues") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -eigenvalues\n");
+				return 1;
+			}
+			eigenvaluespath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-s", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -savemask\n");
@@ -405,6 +418,10 @@ int main(int argc, char * argv[])
 				fprintf(stdout, "Computing PCA components for timecourses in the mask\n");
 			}
 			
+			#ifdef USE_OPENBLAS
+			              openblas_set_num_threads(threads);
+			#endif
+			
 			// Prepare non-NAN points
 			Point3D *nonNanPoints = malloc((nPoints - nNanPoints)*sizeof(Point3D));
 			n = 0;
@@ -442,6 +459,7 @@ int main(int argc, char * argv[])
 			// Run PCA
 			gsl_matrix* components;
 			struct rsPCAResult pcaResult;
+			long nEigenvalues = (nPoints - nNanPoints);
 			
 			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
 				pcaResult = rsPCA(data, minVariance, nComponents, verbose);
@@ -451,6 +469,7 @@ int main(int argc, char * argv[])
 					rsWriteSpatialMap(spatialmappath, fslio, nonNanPoints, pcaResult.eigenvectors);
 				}
 			} else {
+				nEigenvalues = vDim;
 				pcaResult = rsTPCA(data, minVariance, nComponents, verbose);
 				components = pcaResult.eigenvectors;
 				
@@ -460,6 +479,19 @@ int main(int argc, char * argv[])
 			}
 			gsl_matrix_free(data);
 			free(nonNanPoints);
+			
+			// Write out eigenvalues
+			if ( eigenvaluespath != NULL ) {
+				FILE *fp;
+				fp = fopen( eigenvaluespath , "w" );
+				
+				for ( long i=0; i<nEigenvalues; i=i+1 ) {
+					fprintf(fp, "%.10f\n", gsl_vector_get(pcaResult.eigenvalues_all, i));
+				}
+				
+				fclose(fp);
+			}
+			
 			
 			if ( verbose ) {
 				if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {

@@ -816,9 +816,11 @@ struct rsPCAResult rsGenericPCA(const gsl_matrix* data, double minVariance, int 
 	// Extract the first L eigenvalues
 	result.eigenvalues = gsl_vector_alloc(L);
 	gsl_vector_memcpy(result.eigenvalues, &(L_eigenvalues.vector));
+
+	// Also store all eigenvalues
+	result.eigenvalues_all = eigenvalues;
 	
 	gsl_matrix_free(eigenvectors);
-    gsl_vector_free(eigenvalues);
 	
 	return result;
 }
@@ -844,6 +846,7 @@ void rsPCAResultFree(struct rsPCAResult result)
 	gsl_matrix_free(result.transformed);
 	gsl_matrix_free(result.eigenvectors);
 	gsl_vector_free(result.eigenvalues);
+	gsl_vector_free(result.eigenvalues_all);
 }
 
 double **d2matrix(int yh, int xh)

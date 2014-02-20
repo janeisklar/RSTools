@@ -31,6 +31,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifdef USE_OPENBLAS
+void openblas_set_num_threads(int num_threads);
+#endif
     
 #define RSFFTFILTER_CUTOFF 1
 #define RSFFTFILTER_SIGMOID 2
@@ -66,6 +70,7 @@ struct rsFFTFilterParams {
 struct rsPCAResult {
 	gsl_matrix* transformed;
 	gsl_vector* eigenvalues;
+	gsl_vector* eigenvalues_all;
 	gsl_matrix* eigenvectors;
 };
     

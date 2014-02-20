@@ -25,8 +25,24 @@ ifdef NATIVE
 NATIVE_CFLAGS   =   -march=native
 endif
 
-CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(NATIVE_CFLAGS)
-RSMATH_LIBS	    =	-L. -lrsmathutils -lgsl -lgslcblas $(FFTW_LIBS)
+ifeq ($(echo "int main(){}" | gcc -o /dev/null -x c - -lcblas -latlas 2>/dev/null), 1)
+USE_ATLAS           =   1
+endif
+
+ifdef USE_OPENBLAS
+RSMATH_LIBS         =   -L. -lrsmathutils -lgsl -lopenblas  $(FFTW_LIBS)
+BLAS_CFLAGS         =   -DUSE_OPENBLAS=1
+else
+ifdef USE_ATLAS
+RSMATH_LIBS         =   -L. -lrsmathutils -lgsl -lcblas -latlas -lpthread  $(FFTW_LIBS)
+BLAS_CFLAGS         =   -DUSE_ATLAS=1
+else
+RSMATH_LIBS         =   -L. -lrsmathutils -lgsl -lgslcblas $(FFTW_LIBS)
+BLAS_CFLAGS         =
+endif
+endif
+
+CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(BLAS_CFLAGS) $(NATIVE_CFLAGS)
 
 ## ARCH = X86_64
 
