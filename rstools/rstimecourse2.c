@@ -18,6 +18,7 @@
 #define RSTIMECOURSE_ALGORITHM_MEAN 1
 #define RSTIMECOURSE_ALGORITHM_PCA  2
 #define RSTIMECOURSE_ALGORITHM_TPCA 3
+#define RSTIMECOURSE_ALGORITHM_CTP  4
 
 void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps);
 
@@ -38,7 +39,7 @@ int show_help( void )
    printf(
       "options:\n"
       "  -a[lgorithm] <algorithm>   : the algorithm used to aggregate the data within\n"
-      "                               a ROI, e.g. mean, pca or tpca\n"
+      "                               a ROI, e.g. mean, pca, tpca or ctp\n"
    );
 
    printf(
@@ -51,6 +52,10 @@ int show_help( void )
    
    printf(
       "  -mask <mask>               : a mask specifying the ROI\n"
+   );
+
+   printf(
+      "  -mask2 <mask>              : (use only with -a ctp) a second mask specifying the ROI\n"
    );
    
    printf(
@@ -71,8 +76,10 @@ int show_help( void )
    );
 
    printf(
-	  "  -retainComponents <int>    : (use only with -a [t]pca) number of PCA components that will be\n"
-	  "                               outputted\n"
+	  "  -retainComponents <int>    : (use only with -a [t]pca or ctp) number of PCA/CTP components\n"
+	  "                               that will be outputted. This should be a multiple of two when\n"
+	  "                               running CTP as the components will be distributed equally over\n"
+	  "                               both masks.\n"
    );
 
    printf(
@@ -81,14 +88,14 @@ int show_help( void )
    );
 
    printf(
-	  "  -spatialMap <volume>       : (use only with -a [t]pca) store spatial map that is created using\n"
-	  "                               the PCA components\n"
+	  "  -spatialMap <volume>       : (use only with -a [t]pca or ctp) store spatial map that is\n"
+	  "                               created using the PCA/CTP components\n"
    );
 
 
 	printf(
-	  "  -eigenvalues <file>        : (use only with -a [t]pca) write out all eigenvalues to the file\n"
-	  "                               that is specified with this option\n"
+	  "  -eigenvalues <file>        : (use only with -a [t]pca or ctp) write out all eigenvalues\n"
+	  "                               to the file that is specified with this option\n"
 	);
    
    printf(
@@ -107,6 +114,7 @@ int main(int argc, char * argv[])
 	
 	char *inputpath = NULL;
 	char *maskpath = NULL;
+	char *mask2path = NULL;
     char *savemaskpath = NULL;
 	char *spatialmappath = NULL;
 	char *eigenvaluespath = NULL;
@@ -143,6 +151,12 @@ int main(int argc, char * argv[])
 				return 1;
 			}
 			spatialmappath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-mask2") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -mask2\n");
+				return 1;
+			}
+			mask2path = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -m\n");
@@ -172,6 +186,8 @@ int main(int argc, char * argv[])
 				algorithm = RSTIMECOURSE_ALGORITHM_PCA;
 			} else if ( ! strcmp(argv[ac], "tpca") ) {
 				algorithm = RSTIMECOURSE_ALGORITHM_TPCA;
+			} else if ( ! strcmp(argv[ac], "ctp") ) {
+				algorithm = RSTIMECOURSE_ALGORITHM_CTP;
 			} else {
 				fprintf(stderr, "** the requested algorithm is not supported\n");
 				return 1;
@@ -224,6 +240,11 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 	
+	if ( mask2path == NULL && algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
+		fprintf(stderr, "A second binary mask must be supplied to run CTP! (use -mask2)\n");
+		return 1;
+	}
+	
     if ( verbose ) {
         fprintf(stdout, "Input file: %s\n", inputpath);
         fprintf(stdout, "Mask file: %s\n", maskpath);
@@ -231,16 +252,20 @@ int main(int argc, char * argv[])
 	    	fprintf(stdout, "Voxel: %d %d %d\n", x, y, z);
 		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
         	fprintf(stdout, "Algorithm: Mean\n");
-		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA || algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
 			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
-				fprintf(stdout, "Algorithm: PCA\n");
-				if ( spatialmappath != NULL ) {
-					fprintf(stdout, "Spatial map file: %s\n", spatialmappath);
-				}
-			} else {
+				fprintf(stdout, "Algorithm: sPCA\n");
+			} else if ( algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
 				fprintf(stdout, "Algorithm: tPCA\n");
+			} else if ( algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
+				fprintf(stdout, "Algorithm: CTP\n");
 			}
-			fprintf(stdout, "Variance to be retained: %.2f\n", minVariance);
+			if ( spatialmappath != NULL ) {
+				fprintf(stdout, "Spatial map file: %s\n", spatialmappath);
+			}
+			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA ) {
+				fprintf(stdout, "Variance to be retained: %.2f\n", minVariance);
+			}
 			if ( nComponents > 0 ) {
 				fprintf(stdout, "Number of components to be retained: %d\n", nComponents);
 			}
@@ -321,12 +346,40 @@ int main(int argc, char * argv[])
     } else {
         /*** Extract timecourse for a mask ***/
         unsigned long nPoints = 0L;
-        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, NULL);
+		unsigned long nPointsMask1 = 0L;
+        Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPointsMask1, savemaskpath, fslio, NULL);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
             FslClose(fslio);
             return 1;
         }
+		nPoints = nPoints + nPointsMask1;
+		
+		/* Load second mask (for CST) */
+		unsigned long nPointsMask2 = 0L;
+		Point3D *mask2Points;
+        if ( mask2path == NULL) {
+            fprintf(stderr, "\nError: Mask2 invalid.\n");
+            FslClose(fslio);
+            return 1;
+        } else {
+			mask2Points= ReadMask(mask2path, xDim, yDim, zDim, &nPointsMask2, NULL, fslio, NULL);
+			
+			// merge with points of first mask
+			nPoints = nPoints + nPointsMask2;
+			Point3D* allPoints = malloc(nPoints*sizeof(Point3D));
+			for ( long i=0; i<nPoints; i=i+1 ) {
+				if ( i < nPointsMask1 ) {
+					allPoints[i] = maskPoints[i];
+				} else {
+					allPoints[i] = mask2Points[i-nPointsMask1];
+				}
+			}
+			
+			free(mask2Points);
+			free(maskPoints);
+			maskPoints = allPoints;
+		}
         
         double timecourse[vDim];
         
@@ -342,6 +395,8 @@ int main(int argc, char * argv[])
 		
 		long n;
 		long nNanPoints = 0;
+		long nNanPointsMask1 = 0;
+		long nNanPointsMask2 = 0;
 		int isNanPoint[nPoints];
 		
 		for (n=0; n<nPoints; n=n+1) {
@@ -356,13 +411,23 @@ int main(int argc, char * argv[])
 				if ( signalData[t] != signalData[t] ) {
 					isNanPoint[n] = TRUE;
 					nNanPoints = nNanPoints + 1;
+					if (n<nPointsMask1) {
+						nNanPointsMask1 = nNanPointsMask1 + 1;
+					} else {
+						nNanPointsMask2 = nNanPointsMask2 + 1;
+					}
 					break;
 				}
 	        }
 
-			if ( gsl_stats_sd(signalData, 1, vDim) < 0.000001 ) {
+			if ( isNanPoint[n] == FALSE && gsl_stats_sd(signalData, 1, vDim) < 0.000001 ) {
 				isNanPoint[n] = TRUE;
 				nNanPoints = nNanPoints + 1;
+				if (n<nPointsMask1) {
+					nNanPointsMask1 = nNanPointsMask1 + 1;
+				} else {
+					nNanPointsMask2 = nNanPointsMask2 + 1;
+				}
 			}
 
 	        free(signalData);
@@ -417,10 +482,6 @@ int main(int argc, char * argv[])
 			if ( verbose ) {
 				fprintf(stdout, "Computing PCA components for timecourses in the mask\n");
 			}
-			
-			#ifdef USE_OPENBLAS
-			              openblas_set_num_threads(threads);
-			#endif
 			
 			// Prepare non-NAN points
 			Point3D *nonNanPoints = malloc((nPoints - nNanPoints)*sizeof(Point3D));
@@ -511,6 +572,97 @@ int main(int argc, char * argv[])
 	        }
 
 			rsPCAResultFree(pcaResult);
+					
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
+		
+			if ( verbose ) {
+				fprintf(stdout, "Computing common temporal patterns for the timecourses in both masks\n");
+			}
+			
+			unsigned long nPoints2 = 0L;
+	        Point3D *maskPoints2 = ReadMask(mask2path, xDim, yDim, zDim, &nPoints2, NULL, fslio, NULL);
+	        if ( maskPoints2 == NULL) {
+	            fprintf(stderr, "\nError: Mask2 invalid.\n");
+	            FslClose(fslio);
+	            return 1;
+	        }
+		
+			// Prepare non-NAN points
+			Point3D *nonNanPoints = malloc((nPoints - nNanPoints)*sizeof(Point3D));
+			n = 0;
+			for ( unsigned long i=0; i<nPoints; i=i+1) {
+				if ( isNanPoint[i] ) {
+					continue;
+				}
+			
+				nonNanPoints[n] = maskPoints[i];				
+				n = n+1;
+	        }
+		
+			// Prepare data matrix
+			gsl_matrix* data = gsl_matrix_alloc(vDim, (nPoints - nNanPoints));
+			for ( n=0; n<(nPoints - nNanPoints); n=n+1) {
+			
+				double *signalData = malloc(sizeof(double) * vDim);
+		        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
+			
+				double mean  = 0; 
+				double stdev = 1;
+			
+				if ( useStandardScores ) {
+					mean  = gsl_stats_mean(signalData, 1, vDim);
+					stdev = gsl_stats_sd(signalData, 1, vDim);
+				}
+			
+				for ( int t = 0; t < vDim; t=t+1 ) {
+					gsl_matrix_set(data, t, n, (signalData[t] - mean) / stdev);
+				}
+			
+				free(signalData);
+			}
+			
+			// Run CTP
+			gsl_matrix_view viewA = gsl_matrix_submatrix(data, 0,                            0, vDim, nPointsMask1-nNanPointsMask1);
+			gsl_matrix_view viewB = gsl_matrix_submatrix(data, 0, nPointsMask1-nNanPointsMask1, vDim, nPointsMask2-nNanPointsMask2);
+			gsl_matrix *dataA = &(viewA.matrix);
+			gsl_matrix *dataB = &(viewB.matrix);
+			//long nEigenvalues = (nPoints - nNanPoints);
+			struct rsCTPResult ctpResult = rsCTP(dataA, dataB, nComponents/2, verbose);
+			long nEigenvalues = ctpResult.eigenvalues_all->size;
+			
+			if ( spatialmappath != NULL) {
+				//rsWriteSpatialMap(spatialmappath, fslio, nonNanPoints, pcaResult.eigenvectors);
+			}
+
+			gsl_matrix_free(data);
+			free(nonNanPoints);
+		
+			// Write out eigenvalues
+			if ( eigenvaluespath != NULL ) {
+				FILE *fp;
+				fp = fopen( eigenvaluespath , "w" );
+			
+				for ( long i=0; i<nEigenvalues; i=i+1 ) {
+					fprintf(fp, "%.10f\n", gsl_vector_get(ctpResult.eigenvalues_all, i));
+				}
+			
+				fclose(fp);
+			}
+		
+			if ( verbose ) {
+				fprintf(stdout, "Selected eigenvectors(%dx%d) of the CST anaylsis:\n", (int)ctpResult.eigenvectors->size1, (int)ctpResult.eigenvectors->size2);
+			}
+			for ( t = 0; t<vDim; t=t+1 ) {
+				for ( int c = 0; c<ctpResult.eigenvectors->size1; c=c+1) {
+	            	fprintf(stdout, "% 5.10f", gsl_matrix_get(ctpResult.eigenvectors, c, t));
+					if ( c < (ctpResult.eigenvectors->size1-1) ) {
+						fprintf(stdout, "\t");
+					}
+				}
+				fprintf(stdout, "\n");
+	        }
+
+			rsCTPResultFree(ctpResult);
 		}
 		
 		free(maskPoints);

@@ -849,6 +849,127 @@ void rsPCAResultFree(struct rsPCAResult result)
 	gsl_vector_free(result.eigenvalues_all);
 }
 
+struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose)
+{
+	
+    assert(A != NULL);
+    assert(B != NULL);
+	assert(A->size1 == B->size1);
+
+    unsigned int i;
+    unsigned int j;
+    unsigned int rows  = A->size1;
+    unsigned int colsA = A->size2;
+    unsigned int colsB = B->size2;
+	struct rsCTPResult result;
+
+	if ( verbose ) {
+		fprintf(stdout, "Running Common Temporal Patterns Analysis on a %dx%d and %dx%d matrix\n", rows, colsA, rows, colsB);
+	}
+
+    gsl_vector* meanA = gsl_vector_alloc(rows);
+    gsl_vector* meanB = gsl_vector_alloc(rows);
+ 
+    for(i = 0; i < rows; i++) {
+        gsl_vector_set(meanA, i, gsl_stats_mean(A->data + i * colsA, 1, colsA));
+        gsl_vector_set(meanB, i, gsl_stats_mean(B->data + i * colsB, 1, colsB));
+    }
+ 
+    // Get mean-substracted data into matrix demeanedA and demeanedB.
+    gsl_matrix* demeanedA = gsl_matrix_alloc(rows, colsA);
+    gsl_matrix* demeanedB = gsl_matrix_alloc(rows, colsB);
+    gsl_matrix_memcpy(demeanedA, A);
+    gsl_matrix_memcpy(demeanedB, B);
+    for(i = 0; i < colsA; i++) {
+        gsl_vector_view demeanedPointViewA = gsl_matrix_column(demeanedA, i);
+        gsl_vector_sub(&demeanedPointViewA.vector, meanA);
+	}
+
+    for(i = 0; i < colsB; i++) {
+        gsl_vector_view demeanedPointViewB = gsl_matrix_column(demeanedB, i);
+        gsl_vector_sub(&demeanedPointViewB.vector, meanB);
+    }
+    gsl_vector_free(meanA);
+    gsl_vector_free(meanB);
+ 
+    // Compute Covariance matrices
+    gsl_matrix* covA = gsl_matrix_alloc(rows, rows);
+    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
+    gsl_matrix_free(demeanedA);
+	
+    gsl_matrix* covB = gsl_matrix_alloc(rows, rows);
+    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsB - 1), demeanedB, demeanedB, 0.0, covB);
+    gsl_matrix_free(demeanedB);
+
+	gsl_matrix_add(covB, covA);
+ 
+    // Get eigenvectors, sort by eigenvalue.
+    gsl_vector* eigenvalues = gsl_vector_alloc(rows);
+    gsl_matrix* eigenvectors = gsl_matrix_alloc(rows, rows);
+    gsl_eigen_gensymmv_workspace* workspace = gsl_eigen_gensymmv_alloc(rows);
+    gsl_eigen_gensymmv(covA, covB, eigenvalues, eigenvectors, workspace);
+    gsl_eigen_gensymmv_free(workspace);
+    gsl_matrix_free(covA);
+    gsl_matrix_free(covB);
+ 
+    // Sort the eigenvectors
+    gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
+
+/*
+	if ( verbose ) {
+		fprintf(stdout, "\nCTPs(eigenvectors):\n");
+		
+		for ( i = 0; i<rows; i=i+1 ) {
+			for ( j = 0; j<rows; j=j+1) {
+            	fprintf(stdout, "% 5.10f\t", gsl_matrix_get(eigenvectors, i, j));
+			}
+			fprintf(stdout, "\n");
+        }
+	}
+*/
+
+	// Extract the first and last nComponents eigenvectors
+	int L = 2 * nComponents;
+	
+    gsl_matrix* L_eigenvectors = gsl_matrix_alloc(rows, L);
+    gsl_vector* L_eigenvalues  = gsl_vector_alloc(L);
+
+	for ( i = 0; i<nComponents; i=i+1 ) {
+		const unsigned i2 = L-i-1;
+		gsl_vector_view viewCol  = gsl_matrix_column(eigenvectors, i);
+		gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, i2);
+		gsl_matrix_set_col(L_eigenvectors, i,  &(viewCol.vector));
+		gsl_matrix_set_col(L_eigenvectors, i2, &(viewCol2.vector));
+		gsl_vector_set(L_eigenvalues, i, gsl_vector_get(eigenvalues, i));
+		gsl_vector_set(L_eigenvalues, i2, 1.0-gsl_vector_get(eigenvalues, i2));
+	}
+ 	
+    // Project the original dataset
+    result.transformedA = gsl_matrix_alloc(L, colsA);
+    result.transformedB = gsl_matrix_alloc(L, colsB);
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, A, 0.0, result.transformedA);
+	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, B, 0.0, result.transformedB);
+
+	// Store eigenvalues and eigenvectors
+	result.eigenvectors = gsl_matrix_alloc(L, rows);
+	gsl_matrix_transpose_memcpy(result.eigenvectors, L_eigenvectors);
+	result.eigenvalues = L_eigenvalues;
+
+	// Also store all eigenvalues
+	result.eigenvalues_all = eigenvalues;
+	
+	return result;
+}
+
+void rsCTPResultFree(struct rsCTPResult result)
+{
+	gsl_matrix_free(result.transformedA);
+	gsl_matrix_free(result.transformedB);
+	gsl_matrix_free(result.eigenvectors);
+	gsl_vector_free(result.eigenvalues);
+	gsl_vector_free(result.eigenvalues_all);
+}
+
 double **d2matrix(int yh, int xh)
 {
     long int j;

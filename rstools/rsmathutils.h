@@ -73,6 +73,14 @@ struct rsPCAResult {
 	gsl_vector* eigenvalues_all;
 	gsl_matrix* eigenvectors;
 };
+
+struct rsCTPResult {
+	gsl_matrix* transformedA;
+	gsl_matrix* transformedB;
+	gsl_vector* eigenvalues;
+	gsl_vector* eigenvalues_all;
+	gsl_matrix* eigenvectors;
+};
     
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
 void rsLinearRegressionFilter(const int nSamples, const double *signal, const int nRegressors, const double **regressors, const double sampling_rate, const double f1, const double f2, double *betas, double *residuals, double *fitted, const int verbose);
@@ -96,6 +104,8 @@ struct rsPCAResult rsGenericPCA(const gsl_matrix* data, double minVariance, int 
 struct rsPCAResult rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 struct rsPCAResult rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 void rsPCAResultFree(struct rsPCAResult result);
+struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
+void rsCTPResultFree(struct rsCTPResult result);
 long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
 long double rsEuclideanNorm(const long double *x, const long n);
 void rsScaleVector(long double *x, const long n, const long double factor, const int threads);

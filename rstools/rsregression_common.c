@@ -31,7 +31,7 @@ void rsRegressionPrintHelp() {
    );
    
    printf(
-      "   -betas <volume>        : the volume to be regressed\n"
+      "   -betas <volume>        : the volume in which the beta-coefficients will be saved\n"
    );
     
    printf(
