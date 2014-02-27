@@ -230,6 +230,8 @@ int main(int argc, char * argv[])
 		}
 	}
 	
+	rsSetThreadsNum(threads);
+	
 	if ( inputpath == NULL ) {
 		fprintf(stderr, "No input volume specified!\n");
 		return 1;
@@ -707,7 +709,7 @@ void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix
     
 	/* prepare buffer */
     buffer = malloc((size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)reference->niftiptr->nbyper);
-	rsResetBufferToValue(reference->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, nMaps, 1, sqrt(-1.0));
+	rsResetBufferToValue(reference->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, nMaps, sqrt(-1.0));
 	
 	/* write spatial maps to buffer */
 	for (unsigned long p = 0L; p<nPoints; p=p+1L) {

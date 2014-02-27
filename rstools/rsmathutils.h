@@ -81,7 +81,7 @@ struct rsCTPResult {
 	gsl_vector* eigenvalues_all;
 	gsl_matrix* eigenvectors;
 };
-    
+
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
 void rsLinearRegressionFilter(const int nSamples, const double *signal, const int nRegressors, const double **regressors, const double sampling_rate, const double f1, const double f2, double *betas, double *residuals, double *fitted, const int verbose);
 struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose);
@@ -99,21 +99,21 @@ double rsSampleSineWave(const double sampling_rate, const double f, const int t)
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);
 double rsSigmoidRolloff(const double nBins, const double rolloff, const double bin);    
 double rsSigmoid(const double rolloff, const double x);
-long double *rsFirstEigenvector(const double **A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose);
+long double *rsFirstEigenvector(const double **A, const long n, const long maxIterations, const double precision, const BOOL verbose);
 struct rsPCAResult rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 struct rsPCAResult rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 struct rsPCAResult rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 void rsPCAResultFree(struct rsPCAResult result);
 struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
 void rsCTPResultFree(struct rsCTPResult result);
-long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads);
+long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m);
 long double rsEuclideanNorm(const long double *x, const long n);
-void rsScaleVector(long double *x, const long n, const long double factor, const int threads);
-void rsVectorSub(long double *x, const long double *y, const long n, const int threads);
-void rsVectorSwap(long double *x, long double *y, const long n, const int threads);
+void rsScaleVector(long double *x, const long n, const long double factor);
+void rsVectorSub(long double *x, const long double *y, const long n);
+void rsVectorSwap(long double *x, long double *y, const long n);
 long double rsVectorMean(const long double *x, const long n);
 BOOL rsVectorContains(const long *x, const long n, const long element);
-void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads);
+void rsMatrixConversion(double **A, const long m, const long n, const int mode);
 
 double **d2matrix(int yh, int xh);
 int rs_gsl_matrix_fprintf(FILE *stream,gsl_matrix *m,char *fmt);

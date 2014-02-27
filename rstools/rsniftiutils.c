@@ -1,5 +1,17 @@
 #include "rsniftiutils.h"
 
+static unsigned int rsThreadsNum = 1;
+
+void rsSetThreadsNum(const unsigned int threads)
+{
+	rsThreadsNum = threads;
+}
+
+unsigned int rsGetThreadsNum()
+{
+	return rsThreadsNum;
+}
+
 /*
  * Creates a new 3D point
  */
@@ -584,7 +596,7 @@ BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double *inbuf, floa
     return TRUE;
 }
 
-BOOL rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const int threads, const double value) {
+BOOL rsResetBufferToValue(const int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value) {
     
     switch (datatype) {
         case NIFTI_TYPE_UINT8:
@@ -620,7 +632,7 @@ BOOL rsResetBufferToValue(const int datatype, void *buffer, const float slope, c
     
     double scaled_value = (value - inter) / slope;
     
-    #pragma omp parallel num_threads(threads) shared(buffer,THIS_UINT8_BUFFER,THIS_INT8_BUFFER,THIS_UINT16_BUFFER,THIS_INT16_BUFFER,THIS_UINT32_BUFFER,THIS_INT32_BUFFER,THIS_UINT64_BUFFER,THIS_INT64_BUFFER,THIS_FLOAT32_BUFFER,THIS_FLOAT64_BUFFER)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) shared(buffer,THIS_UINT8_BUFFER,THIS_INT8_BUFFER,THIS_UINT16_BUFFER,THIS_INT16_BUFFER,THIS_UINT32_BUFFER,THIS_INT32_BUFFER,THIS_UINT64_BUFFER,THIS_INT64_BUFFER,THIS_FLOAT32_BUFFER,THIS_FLOAT64_BUFFER)
     {
         #pragma omp for schedule(guided)
         for (int x=0; x<xh; x=x+1) {

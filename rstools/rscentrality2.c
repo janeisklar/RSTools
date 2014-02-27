@@ -176,6 +176,8 @@ int main(int argc, char * argv[]) {
 		}
 	}
 	
+	rsSetThreadsNum(threads);
+	
 	if ( inputpath == NULL ) {
 		fprintf(stderr, "No input volume specified!\n");
 		return 1;
@@ -356,19 +358,19 @@ int main(int argc, char * argv[]) {
             (correlationMode == RSMATRIXCONVERSION_ABSOLUTE ? "absolute" : (correlationMode == RSMATRIXCONVERSION_POSITIVE ? "strictly positive" : (correlationMode == RSMATRIXCONVERSION_NEGATIVE ? "strictly negative" : "rescaled" )))
         );
     }
-    rsMatrixConversion(similarity, nPoints, nPoints, correlationMode, threads);
+    rsMatrixConversion(similarity, nPoints, nPoints, correlationMode);
     
     /* compute first eigenvector */
     if ( verbose ) fprintf(stdout, "Computing eigenvector centrality..\n");
     
-    long double *eigenvector = rsFirstEigenvector((const double**)similarity, nPoints, 10000, 0.000001, threads, verbose);
+    long double *eigenvector = rsFirstEigenvector((const double**)similarity, nPoints, 10000, 0.000001, verbose);
     free(similarity[0]);
     free(similarity);
     
     /* write back to file */
     if ( verbose ) fprintf(stdout, "Writing output..\n");
     
-    rsResetBufferToValue(fslioCentrality->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, 1, threads, sqrt(-1.0));
+    rsResetBufferToValue(fslioCentrality->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, 1, sqrt(-1.0));
     
     for (unsigned long p = 0L; p<nPoints; p=p+1L) {
         Point3D point     = maskPoints[p];
@@ -430,7 +432,7 @@ void rsTestPowerIteration() {
     rs_matrix_fprintf(stdout, (const double**)m, 4, 4, "%.4f");
     fprintf(stdout, "\n");
     
-    long double *b = rsFirstEigenvector((const double **)m, 4, 100000, 0.000001, 1, TRUE);
+    long double *b = rsFirstEigenvector((const double **)m, 4, 100000, 0.000001, TRUE);
     
     fprintf(stdout, "\n");
     fprintf(stdout, "Eigenvector:\n");

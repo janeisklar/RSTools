@@ -126,6 +126,8 @@ int main(int argc, char * argv[]) {
 		}
 	}
 	
+	rsSetThreadsNum(threads);
+	
 	if ( inputpath == NULL ) {
 		fprintf(stderr, "No input volume specified!\n");
 		return 1;
@@ -271,7 +273,7 @@ int main(int argc, char * argv[]) {
     const double epsilon2 = 2.0e-8;
     const double corrnorm = sqrt(vDim-1);
     
-    #pragma omp parallel num_threads(threads) private(n)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
@@ -356,7 +358,7 @@ int main(int argc, char * argv[]) {
     const double sigma = 1.0;               // standard deviation
     const double scale = 2.0 / (nPoints+1); // scaling factor transforming values from uniform [1,N] to uniform ]0,2[
     
-    #pragma omp parallel num_threads(threads) private(n)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
@@ -364,7 +366,7 @@ int main(int argc, char * argv[]) {
         }
     }
     
-    #pragma omp parallel num_threads(threads) private(n)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
@@ -379,9 +381,9 @@ int main(int argc, char * argv[]) {
     // Write back to file
     if ( verbose ) fprintf(stdout, "Writing output..\n");
     
-    rsResetBufferToValue(fslioCentrality->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, 1, threads, sqrt(-1.0));
+    rsResetBufferToValue(fslioCentrality->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, 1, sqrt(-1.0));
     
-    #pragma omp parallel num_threads(threads) private(n)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
         for (n = 0L; n<nPoints; n=n+1L) {
@@ -445,7 +447,7 @@ void rsTestPowerIteration() {
     rs_matrix_fprintf(stdout, (const double**)m, 4, 4, "%.4f");
     fprintf(stdout, "\n");
     
-    long double *b = rsFirstEigenvector((const double **)m, 4, 100000, 0.000001, 1, TRUE);
+    long double *b = rsFirstEigenvector((const double **)m, 4, 100000, 0.000001, TRUE);
     
     fprintf(stdout, "\n");
     fprintf(stdout, "Eigenvector:\n");

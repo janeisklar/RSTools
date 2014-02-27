@@ -105,6 +105,8 @@ int main(int argc, char * argv[]) {
 		}
 	}
 	
+	rsSetThreadsNum(threads);
+	
 	if ( inputpath == NULL ) {
 		fprintf(stderr, "No input volume specified!\n");
 		return 1;
@@ -187,11 +189,11 @@ int main(int argc, char * argv[]) {
     
     FslReadVolumes(fslio, buffer, vDim);
     
-    rsResetBufferToValue(dt, outputBuffer, slope, inter, xDim, yDim, zDim, vDim, threads, log(-1)); 
+    rsResetBufferToValue(dt, outputBuffer, slope, inter, xDim, yDim, zDim, vDim, log(-1)); 
     
     long p;
     
-    #pragma omp parallel num_threads(threads) private(p) shared(buffer,fslio)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(p) shared(buffer,fslio)
     {
         #pragma omp for schedule(guided, 1)
         for (p = 0L; p<nPoints; p=p+1L) {

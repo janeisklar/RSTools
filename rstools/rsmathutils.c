@@ -662,7 +662,7 @@ double rsSigmoid(const double rolloff, const double x)
     return 1.0 - tanh(rolloff*M_PI*pow(x, 2.0));
 }
 
-long double *rsFirstEigenvector(const double** A, const long n, const long maxIterations, const double precision, const int threads, const BOOL verbose)
+long double *rsFirstEigenvector(const double** A, const long n, const long maxIterations, const double precision, const BOOL verbose)
 {
     // Power iteration method
     // http://en.wikipedia.org/wiki/Power_iteration
@@ -682,18 +682,18 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
                 
         // calculate the matrix-by-vector product tmp=Ab
         free(tmp);
-        tmp = rsMatrixByVectorProduct(A, b, n, n, threads);
+        tmp = rsMatrixByVectorProduct(A, b, n, n);
         
         // calculate the vector norm(euclidean)
         const long double norm = rsEuclideanNorm(tmp, n);
         long double invNorm = ((long double)1) / norm;
         
         // normalize it for the next iteration
-        rsScaleVector(tmp, n, invNorm, threads);
+        rsScaleVector(tmp, n, invNorm);
         
         // check if it has converged
-        rsVectorSwap(b, tmp, n, threads);
-        rsVectorSub(tmp, b, n, threads);
+        rsVectorSwap(b, tmp, n);
+        rsVectorSub(tmp, b, n);
         long double mean = fabsl(rsVectorMean(tmp, n));
         
         if (verbose) {
@@ -856,8 +856,7 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
     assert(B != NULL);
 	assert(A->size1 == B->size1);
 
-    unsigned int i;
-    unsigned int j;
+    long i, j;
     unsigned int rows  = A->size1;
     unsigned int colsA = A->size2;
     unsigned int colsB = B->size2;
@@ -866,41 +865,86 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 	if ( verbose ) {
 		fprintf(stdout, "Running Common Temporal Patterns Analysis on a %dx%d and %dx%d matrix\n", rows, colsA, rows, colsB);
 	}
-
+	
+	// compute means
     gsl_vector* meanA = gsl_vector_alloc(rows);
     gsl_vector* meanB = gsl_vector_alloc(rows);
- 
-    for(i = 0; i < rows; i++) {
-        gsl_vector_set(meanA, i, gsl_stats_mean(A->data + i * colsA, 1, colsA));
-        gsl_vector_set(meanB, i, gsl_stats_mean(B->data + i * colsB, 1, colsB));
+ 	
+	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(colsA,colsB,rows) private(i,j)
+	{
+        #pragma omp for schedule(guided)
+       	for(i = 0; i < rows; i=i+1) {
+			double mean = 0.0;
+			for(j=0; j<colsA; j=j+1) {
+				mean = mean + gsl_matrix_get(A,i,j) / colsA;
+			}
+			gsl_vector_set(meanA, i, mean);
+			
+			mean = 0.0;
+			for(j=0; j<colsB; j=j+1) {
+				mean = mean + gsl_matrix_get(B,i,j) / colsB;
+			}
+        	gsl_vector_set(meanB, i, mean);
+		}
     }
  
     // Get mean-substracted data into matrix demeanedA and demeanedB.
-    gsl_matrix* demeanedA = gsl_matrix_alloc(rows, colsA);
-    gsl_matrix* demeanedB = gsl_matrix_alloc(rows, colsB);
-    gsl_matrix_memcpy(demeanedA, A);
-    gsl_matrix_memcpy(demeanedB, B);
-    for(i = 0; i < colsA; i++) {
-        gsl_vector_view demeanedPointViewA = gsl_matrix_column(demeanedA, i);
-        gsl_vector_sub(&demeanedPointViewA.vector, meanA);
+    gsl_matrix* demeanedA;
+    gsl_matrix* demeanedB;
+    
+	#pragma omp parallel sections num_threads(rsGetThreadsNum())
+	{
+		#pragma omp section
+		{
+			demeanedA = gsl_matrix_alloc(rows, colsA);
+			gsl_matrix_memcpy(demeanedA, A);
+		}
+		
+		#pragma omp section
+		{
+			demeanedB = gsl_matrix_alloc(rows, colsB);
+    		gsl_matrix_memcpy(demeanedB, B);
+		}
 	}
 
-    for(i = 0; i < colsB; i++) {
-        gsl_vector_view demeanedPointViewB = gsl_matrix_column(demeanedB, i);
-        gsl_vector_sub(&demeanedPointViewB.vector, meanB);
+	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(colsA,colsB) private(i)
+	{
+        #pragma omp for schedule(guided)
+    	for(i = 0; i < colsA; i++) {
+        	gsl_vector_view demeanedPointViewA = gsl_matrix_column(demeanedA, i);
+        	gsl_vector_sub(&demeanedPointViewA.vector, meanA);
+		}
+		
+        #pragma omp for schedule(guided)
+    	for(i = 0; i < colsB; i++) {
+        	gsl_vector_view demeanedPointViewB = gsl_matrix_column(demeanedB, i);
+        	gsl_vector_sub(&demeanedPointViewB.vector, meanB);
+		}
     }
-    gsl_vector_free(meanA);
-    gsl_vector_free(meanB);
  
     // Compute Covariance matrices
-    gsl_matrix* covA = gsl_matrix_alloc(rows, rows);
-    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
-    gsl_matrix_free(demeanedA);
+	gsl_matrix* covA;
+	gsl_matrix* covB;
 	
-    gsl_matrix* covB = gsl_matrix_alloc(rows, rows);
-    gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsB - 1), demeanedB, demeanedB, 0.0, covB);
-    gsl_matrix_free(demeanedB);
-
+	#pragma omp parallel sections num_threads(rsGetThreadsNum())
+	{
+		#pragma omp section
+		{
+		    gsl_vector_free(meanA);
+			covA = gsl_matrix_alloc(rows, rows);
+			gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
+    		gsl_matrix_free(demeanedA);
+		}
+	
+		#pragma omp section
+		{
+		    gsl_vector_free(meanB);
+			covB = gsl_matrix_alloc(rows, rows);
+    		gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsB - 1), demeanedB, demeanedB, 0.0, covB);
+    		gsl_matrix_free(demeanedB);
+		}
+	}
+	
 	gsl_matrix_add(covB, covA);
  
     // Get eigenvectors, sort by eigenvalue.
@@ -915,48 +959,56 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
     // Sort the eigenvectors
     gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
 
-/*
-	if ( verbose ) {
-		fprintf(stdout, "\nCTPs(eigenvectors):\n");
-		
-		for ( i = 0; i<rows; i=i+1 ) {
-			for ( j = 0; j<rows; j=j+1) {
-            	fprintf(stdout, "% 5.10f\t", gsl_matrix_get(eigenvectors, i, j));
-			}
-			fprintf(stdout, "\n");
-        }
-	}
-*/
-
 	// Extract the first and last nComponents eigenvectors
 	int L = 2 * nComponents;
 	
     gsl_matrix* L_eigenvectors = gsl_matrix_alloc(rows, L);
     gsl_vector* L_eigenvalues  = gsl_vector_alloc(L);
-
-	for ( i = 0; i<nComponents; i=i+1 ) {
-		const unsigned i2 = L-i-1;
-		gsl_vector_view viewCol  = gsl_matrix_column(eigenvectors, i);
-		gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, rows-i-1);
-		gsl_matrix_set_col(L_eigenvectors, i,  &(viewCol.vector));
-		gsl_matrix_set_col(L_eigenvectors, i2, &(viewCol2.vector));
-		gsl_vector_set(L_eigenvalues, i, gsl_vector_get(eigenvalues, i));
-		gsl_vector_set(L_eigenvalues, i2, 1.0-gsl_vector_get(eigenvalues, rows-i-1));
+	
+	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(L,rows) private(i)
+	{
+        #pragma omp for schedule(guided)
+		for ( i = 0; i<nComponents; i=i+1 ) {
+			const unsigned i2 = L-i-1;
+			gsl_vector_view viewCol  = gsl_matrix_column(eigenvectors, i);
+			gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, rows-i-1);
+			gsl_matrix_set_col(L_eigenvectors, i,  &(viewCol.vector));
+			gsl_matrix_set_col(L_eigenvectors, i2, &(viewCol2.vector));
+			gsl_vector_set(L_eigenvalues, i, gsl_vector_get(eigenvalues, i));
+			gsl_vector_set(L_eigenvalues, i2, gsl_vector_get(eigenvalues, rows-i-1));
+		}
 	}
  	
-    // Project the original dataset
-    result.transformedA = gsl_matrix_alloc(L, colsA);
-    result.transformedB = gsl_matrix_alloc(L, colsB);
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, A, 0.0, result.transformedA);
-	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, B, 0.0, result.transformedB);
+	#pragma omp parallel sections num_threads(rsGetThreadsNum())
+	{
+		// Project the original dataset
+		#pragma omp section
+		{
+			result.transformedA = gsl_matrix_alloc(L, colsA);
+		    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, A, 0.0, result.transformedA);
+		}
+		
+		#pragma omp section
+		{
+    		result.transformedB = gsl_matrix_alloc(L, colsB);
+			gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, B, 0.0, result.transformedB);
+		}
+		
+		// Store eigenvectors
+		#pragma omp section
+		{
+			result.eigenvectors = gsl_matrix_alloc(L, rows);
+			gsl_matrix_transpose_memcpy(result.eigenvectors, L_eigenvectors);
+		}
+		
+		// Store eigenvalues
+		#pragma omp section
+		{
+			result.eigenvalues     = L_eigenvalues;
+			result.eigenvalues_all = eigenvalues;
+		}
+	}
 
-	// Store eigenvalues and eigenvectors
-	result.eigenvectors = gsl_matrix_alloc(L, rows);
-	gsl_matrix_transpose_memcpy(result.eigenvectors, L_eigenvectors);
-	result.eigenvalues = L_eigenvalues;
-
-	// Also store all eigenvalues
-	result.eigenvalues_all = eigenvalues;
 	
 	return result;
 }
@@ -999,11 +1051,11 @@ double **d2matrix(int yh, int xh)
  * m..height of the matrix
  * The matrix is assumed to be in the following format A[m][n]
  */
-long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m, const int threads) {
+long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m) {
     long double *y = malloc(m*sizeof(long double));
     long i,j;
     
-    #pragma omp parallel num_threads(threads) private(i,j) shared(y)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(i,j) shared(y)
     {
         #pragma omp for schedule(guided)
         for (i=0; i<m; i=i+1L) {
@@ -1031,11 +1083,11 @@ long double rsEuclideanNorm(const long double *x, const long n)
     return sqrtl(tss);
 }
 
-void rsScaleVector(long double *x, const long n, const long double factor, const int threads)
+void rsScaleVector(long double *x, const long n, const long double factor)
 {
     long i;
     
-    #pragma omp parallel num_threads(threads) private(i) shared(x)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(i) shared(x)
     {
         #pragma omp for schedule(guided)
         for (i=0L; i<n; i=i+1L) {
@@ -1044,11 +1096,11 @@ void rsScaleVector(long double *x, const long n, const long double factor, const
     }
 }
 
-void rsVectorSub(long double *x, const long double *y, const long n, const int threads)
+void rsVectorSub(long double *x, const long double *y, const long n)
 {
     long i;
     
-    #pragma omp parallel num_threads(threads) private(i) shared(x,y)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(i) shared(x,y)
     {
         #pragma omp for schedule(guided)
         for (i=0L; i<n; i=i+1L) {
@@ -1057,12 +1109,12 @@ void rsVectorSub(long double *x, const long double *y, const long n, const int t
     }
 }
 
-void rsVectorSwap(long double *x, long double *y, const long n, const int threads)
+void rsVectorSwap(long double *x, long double *y, const long n)
 {
     long double tmp;
     long i;
     
-    #pragma omp parallel num_threads(threads) private(i,tmp) shared(x,y)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(i,tmp) shared(x,y)
     {
         #pragma omp for schedule(guided)
         for (i=0L; i<n; i=i+1L) {
@@ -1084,11 +1136,11 @@ BOOL rsVectorContains(const long *x, const long n, const long element) {
 	return FALSE;
 }
 
-void rsMatrixConversion(double **A, const long m, const long n, const int mode, const int threads)
+void rsMatrixConversion(double **A, const long m, const long n, const int mode)
 {
     long i,j;
     
-    #pragma omp parallel num_threads(threads) private(i,j) shared(A)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(i,j) shared(A)
     {
         #pragma omp for schedule(guided)
         for (i=0; i<m; i=i+1L) {
