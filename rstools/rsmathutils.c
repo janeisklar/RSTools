@@ -937,11 +937,11 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 	for ( i = 0; i<nComponents; i=i+1 ) {
 		const unsigned i2 = L-i-1;
 		gsl_vector_view viewCol  = gsl_matrix_column(eigenvectors, i);
-		gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, i2);
+		gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, rows-i-1);
 		gsl_matrix_set_col(L_eigenvectors, i,  &(viewCol.vector));
 		gsl_matrix_set_col(L_eigenvectors, i2, &(viewCol2.vector));
 		gsl_vector_set(L_eigenvalues, i, gsl_vector_get(eigenvalues, i));
-		gsl_vector_set(L_eigenvalues, i2, 1.0-gsl_vector_get(eigenvalues, i2));
+		gsl_vector_set(L_eigenvalues, i2, 1.0-gsl_vector_get(eigenvalues, rows-i-1));
 	}
  	
     // Project the original dataset
