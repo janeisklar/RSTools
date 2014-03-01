@@ -1029,9 +1029,10 @@ void rsCTPResultFree(struct rsCTPResult result)
 /*
  * Takes in a symmetric matrix and checks if all
  * eigenvalues are positive. If not it will 'fix'
- * those that are negative by setting them to eps
- * and then reconstructs the original matrix.
- * The number of altered eigenvalues is returned.
+ * those that are negative by setting them to the
+ * average eigenvalue and then reconstructs the
+ * original matrix. Finally, the number of altered
+ * eigenvalues is returned.
  */
 long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 {
@@ -1039,7 +1040,6 @@ long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 	
 	long nEVAltered   = 0;
     const long   n    = A->size1;
-	const double eps  = 1e-6;
 	const double zero = 1e-10;
 	
 	gsl_vector* eigenvalues  = gsl_vector_alloc(n);
@@ -1049,7 +1049,19 @@ long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 	// perform eigenvalue decomposition
     gsl_eigen_symmv(A, eigenvalues, eigenvectors, workspace);
 	gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_VAL_ASC);
-
+	
+	// compute mean eigenvalue(of those that are retained)
+	double norm       = 0.0;
+	long   normValues = 0;
+	for ( long i=0; i<n; i=i+1 ) {
+		const double v = gsl_vector_get(eigenvalues, i);
+		if ( v > zero ) {
+			norm       = norm + v;
+			normValues = normValues + 1;
+		}
+	}
+	double meanValue = norm / normValues;
+	
 	// check for negative eigenvalues
 	for ( long i=0; i<n; i=i+1 ) {
 		
@@ -1057,7 +1069,7 @@ long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 			continue;
 		}
 		
-		gsl_vector_set(eigenvalues, i, eps);
+		gsl_vector_set(eigenvalues, i, meanValue);
 		nEVAltered = nEVAltered + 1;
 	}
 	
