@@ -584,14 +584,6 @@ int main(int argc, char * argv[])
 			if ( verbose ) {
 				fprintf(stdout, "Computing common temporal patterns for the timecourses in both masks\n");
 			}
-			
-			unsigned long nPoints2 = 0L;
-	        Point3D *maskPoints2 = ReadMask(mask2path, xDim, yDim, zDim, &nPoints2, NULL, fslio, NULL);
-	        if ( maskPoints2 == NULL) {
-	            fprintf(stderr, "\nError: Mask2 invalid.\n");
-	            FslClose(fslio);
-	            return 1;
-	        }
 		
 			// Prepare non-NAN points
 			Point3D *nonNanPoints = malloc((nPoints - nNanPoints)*sizeof(Point3D));
