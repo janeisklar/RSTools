@@ -364,27 +364,29 @@ int main(int argc, char * argv[])
 		/* Load second mask (for CST) */
 		unsigned long nPointsMask2 = 0L;
 		Point3D *mask2Points;
-        if ( mask2path == NULL) {
-            fprintf(stderr, "\nError: Mask2 invalid.\n");
-            FslClose(fslio);
-            return 1;
-        } else {
-			mask2Points= ReadMask(mask2path, xDim, yDim, zDim, &nPointsMask2, NULL, fslio, NULL);
+		if ( algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
+	        if ( mask2path == NULL) {
+	            fprintf(stderr, "\nError: Mask2 invalid.\n");
+	            FslClose(fslio);
+	            return 1;
+	        } else {
+				mask2Points= ReadMask(mask2path, xDim, yDim, zDim, &nPointsMask2, NULL, fslio, NULL);
 			
-			// merge with points of first mask
-			nPoints = nPoints + nPointsMask2;
-			Point3D* allPoints = malloc(nPoints*sizeof(Point3D));
-			for ( long i=0; i<nPoints; i=i+1 ) {
-				if ( i < nPointsMask1 ) {
-					allPoints[i] = maskPoints[i];
-				} else {
-					allPoints[i] = mask2Points[i-nPointsMask1];
+				// merge with points of first mask
+				nPoints = nPoints + nPointsMask2;
+				Point3D* allPoints = malloc(nPoints*sizeof(Point3D));
+				for ( long i=0; i<nPoints; i=i+1 ) {
+					if ( i < nPointsMask1 ) {
+						allPoints[i] = maskPoints[i];
+					} else {
+						allPoints[i] = mask2Points[i-nPointsMask1];
+					}
 				}
-			}
 			
-			free(mask2Points);
-			free(maskPoints);
-			maskPoints = allPoints;
+				free(mask2Points);
+				free(maskPoints);
+				maskPoints = allPoints;
+			}
 		}
         
         double timecourse[vDim];
