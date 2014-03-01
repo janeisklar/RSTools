@@ -934,11 +934,6 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 				covA = gsl_matrix_alloc(rows, rows);
 				gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
 	    		gsl_matrix_free(demeanedA);
-				long evChanged = rsMakePositiveDefiniteSymmetric(covA);
-
-				if ( evChanged > 0 ) {
-					fprintf(stderr, "Fixed %ld eigenvalue(s) in the covariance matrix of the first mask to ensure it is positive-definite. Consider increasing its size!\n", evChanged);
-				}
 			}
 	
 			#pragma omp section
@@ -960,12 +955,7 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 		{
 			#pragma omp section
 			{
-				gsl_matrix_add(covB, covA);
-				long evChanged = rsMakePositiveDefiniteSymmetric(covB);
-				
-				if ( evChanged > 0 ) {
-					fprintf(stderr, "Fixed %ld eigenvalue(s) in the combined covariance matrix of both masks to ensure it is positive-definite. Consider increasing the mask sizes!\n", evChanged);
-				}
+				gsl_matrix_add(covA, covB); // covA = covA + covB
 
 			    eigenvalues  = gsl_vector_alloc(rows);
 			    eigenvectors = gsl_matrix_alloc(rows, rows);
@@ -1047,9 +1037,10 @@ long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 {
     assert(A->size1 == A->size2);
 	
-	long nEVAltered  = 0;
-    const long   n   = A->size1;
-	const double eps = 1e-8;
+	long nEVAltered   = 0;
+    const long   n    = A->size1;
+	const double eps  = 1e-6;
+	const double zero = 1e-10;
 	
 	gsl_vector* eigenvalues  = gsl_vector_alloc(n);
     gsl_matrix* eigenvectors = gsl_matrix_alloc(n, n);
@@ -1062,7 +1053,7 @@ long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 	// check for negative eigenvalues
 	for ( long i=0; i<n; i=i+1 ) {
 		
-		if ( gsl_vector_get(eigenvalues, i) > 0 ) {
+		if ( gsl_vector_get(eigenvalues, i) > zero ) {
 			continue;
 		}
 		

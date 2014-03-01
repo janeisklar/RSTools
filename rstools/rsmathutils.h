@@ -14,6 +14,8 @@
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_linalg.h>
+
 
 #include "rsniftiutils.h"
 
