@@ -857,21 +857,30 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 	assert(A->size1 == B->size1);
 
     long i, j;
-    unsigned int rows  = A->size1;
-    unsigned int colsA = A->size2;
-    unsigned int colsB = B->size2;
+	int L = 2 * nComponents;
+    long rows  = A->size1;
+    long colsA = A->size2;
+    long colsB = B->size2;
 	struct rsCTPResult result;
-
-	if ( verbose ) {
-		fprintf(stdout, "Running Common Temporal Patterns Analysis on a %dx%d and %dx%d matrix\n", rows, colsA, rows, colsB);
-	}
 	
-	// compute means
     gsl_vector* meanA = gsl_vector_alloc(rows);
     gsl_vector* meanB = gsl_vector_alloc(rows);
+    gsl_matrix* demeanedA;
+    gsl_matrix* demeanedB;
+	gsl_matrix* covA;
+	gsl_matrix* covB;
+	gsl_vector* eigenvalues;
+    gsl_matrix* eigenvectors;
+    gsl_matrix* L_eigenvectors = gsl_matrix_alloc(rows, L);
+    gsl_vector* L_eigenvalues  = gsl_vector_alloc(L);
+
+	if ( verbose ) {
+		fprintf(stdout, "Running Common Temporal Patterns Analysis on a %ldx%ld and %ldx%ld matrix\n", rows, colsA, rows, colsB);
+	}
  	
-	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(colsA,colsB,rows) private(i,j)
-	{
+	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(colsA,colsB,rows,L,result,nComponents,verbose) private(i,j)
+	{	
+		// compute means
         #pragma omp for schedule(guided)
        	for(i = 0; i < rows; i=i+1) {
 			double mean = 0.0;
@@ -886,29 +895,23 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 			}
         	gsl_vector_set(meanB, i, mean);
 		}
-    }
  
-    // Get mean-substracted data into matrix demeanedA and demeanedB.
-    gsl_matrix* demeanedA;
-    gsl_matrix* demeanedB;
-    
-	#pragma omp parallel sections num_threads(rsGetThreadsNum())
-	{
-		#pragma omp section
+	    // Get mean-substracted data into matrix demeanedA and demeanedB.
+		#pragma omp sections
 		{
-			demeanedA = gsl_matrix_alloc(rows, colsA);
-			gsl_matrix_memcpy(demeanedA, A);
+			#pragma omp section
+			{
+				demeanedA = gsl_matrix_alloc(rows, colsA);
+				gsl_matrix_memcpy(demeanedA, A);
+			}
+		
+			#pragma omp section
+			{
+				demeanedB = gsl_matrix_alloc(rows, colsB);
+	    		gsl_matrix_memcpy(demeanedB, B);
+			}
 		}
 		
-		#pragma omp section
-		{
-			demeanedB = gsl_matrix_alloc(rows, colsB);
-    		gsl_matrix_memcpy(demeanedB, B);
-		}
-	}
-
-	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(colsA,colsB) private(i)
-	{
         #pragma omp for schedule(guided)
     	for(i = 0; i < colsA; i++) {
         	gsl_vector_view demeanedPointViewA = gsl_matrix_column(demeanedA, i);
@@ -920,53 +923,63 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
         	gsl_vector_view demeanedPointViewB = gsl_matrix_column(demeanedB, i);
         	gsl_vector_sub(&demeanedPointViewB.vector, meanB);
 		}
-    }
+		
  
-    // Compute Covariance matrices
-	gsl_matrix* covA;
-	gsl_matrix* covB;
-	
-	#pragma omp parallel sections num_threads(rsGetThreadsNum())
-	{
-		#pragma omp section
+    	// Compute Covariance matrices
+		#pragma omp sections
 		{
-		    gsl_vector_free(meanA);
-			covA = gsl_matrix_alloc(rows, rows);
-			gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
-    		gsl_matrix_free(demeanedA);
-		}
-	
-		#pragma omp section
-		{
-		    gsl_vector_free(meanB);
-			covB = gsl_matrix_alloc(rows, rows);
-    		gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsB - 1), demeanedB, demeanedB, 0.0, covB);
-    		gsl_matrix_free(demeanedB);
-		}
-	}
-	
-	gsl_matrix_add(covB, covA);
- 
-    // Get eigenvectors, sort by eigenvalue.
-    gsl_vector* eigenvalues = gsl_vector_alloc(rows);
-    gsl_matrix* eigenvectors = gsl_matrix_alloc(rows, rows);
-    gsl_eigen_gensymmv_workspace* workspace = gsl_eigen_gensymmv_alloc(rows);
-    gsl_eigen_gensymmv(covA, covB, eigenvalues, eigenvectors, workspace);
-    gsl_eigen_gensymmv_free(workspace);
-    gsl_matrix_free(covA);
-    gsl_matrix_free(covB);
- 
-    // Sort the eigenvectors
-    gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
+			#pragma omp section
+			{
+			    gsl_vector_free(meanA);
+				covA = gsl_matrix_alloc(rows, rows);
+				gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsA - 1), demeanedA, demeanedA, 0.0, covA);
+	    		gsl_matrix_free(demeanedA);
+				long evChanged = rsMakePositiveDefiniteSymmetric(covA);
 
-	// Extract the first and last nComponents eigenvectors
-	int L = 2 * nComponents;
+				if ( evChanged > 0 ) {
+					fprintf(stderr, "Fixed %ld eigenvalue(s) in the covariance matrix of the first mask to ensure it is positive-definite. Consider increasing its size!\n", evChanged);
+				}
+			}
 	
-    gsl_matrix* L_eigenvectors = gsl_matrix_alloc(rows, L);
-    gsl_vector* L_eigenvalues  = gsl_vector_alloc(L);
+			#pragma omp section
+			{
+			    gsl_vector_free(meanB);
+				covB = gsl_matrix_alloc(rows, rows);
+	    		gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0 / (double)(colsB - 1), demeanedB, demeanedB, 0.0, covB);
+	    		gsl_matrix_free(demeanedB);
+				long evChanged = rsMakePositiveDefiniteSymmetric(covB);
+				
+				if ( evChanged > 0 ) {
+					fprintf(stderr, "Fixed %ld eigenvalue(s) in the covariance matrix of the second mask to ensure it is positive-definite. Consider increasing its size!\n", evChanged);
+				}
+			}
+		}
+		
+		// Get eigenvectors, sort by eigenvalue.
+		#pragma omp sections
+		{
+			#pragma omp section
+			{
+				gsl_matrix_add(covB, covA);
+				long evChanged = rsMakePositiveDefiniteSymmetric(covB);
+				
+				if ( evChanged > 0 ) {
+					fprintf(stderr, "Fixed %ld eigenvalue(s) in the combined covariance matrix of both masks to ensure it is positive-definite. Consider increasing the mask sizes!\n", evChanged);
+				}
+
+			    eigenvalues  = gsl_vector_alloc(rows);
+			    eigenvectors = gsl_matrix_alloc(rows, rows);
+			    gsl_eigen_gensymmv_workspace* workspace = gsl_eigen_gensymmv_alloc(rows);
+			    gsl_eigen_gensymmv(covA, covB, eigenvalues, eigenvectors, workspace);
+			    gsl_eigen_gensymmv_free(workspace);
+			    gsl_matrix_free(covA);
+			    gsl_matrix_free(covB);
+ 
+			    gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_ABS_DESC);
+			}
+		}
 	
-	#pragma omp parallel num_threads(rsGetThreadsNum()) shared(L,rows) private(i)
-	{
+		// Extract the first and last nComponents eigenvectors
         #pragma omp for schedule(guided)
 		for ( i = 0; i<nComponents; i=i+1 ) {
 			const unsigned i2 = L-i-1;
@@ -977,35 +990,36 @@ struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponen
 			gsl_vector_set(L_eigenvalues, i, gsl_vector_get(eigenvalues, i));
 			gsl_vector_set(L_eigenvalues, i2, gsl_vector_get(eigenvalues, rows-i-1));
 		}
-	}
  	
-	#pragma omp parallel sections num_threads(rsGetThreadsNum())
-	{
-		// Project the original dataset
-		#pragma omp section
+		// Prepare return value
+		#pragma omp sections
 		{
-			result.transformedA = gsl_matrix_alloc(L, colsA);
-		    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, A, 0.0, result.transformedA);
-		}
+			// Project the original dataset
+			#pragma omp section
+			{
+				result.transformedA = gsl_matrix_alloc(L, colsA);
+			    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, A, 0.0, result.transformedA);
+			}
 		
-		#pragma omp section
-		{
-    		result.transformedB = gsl_matrix_alloc(L, colsB);
-			gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, B, 0.0, result.transformedB);
-		}
+			#pragma omp section
+			{
+	    		result.transformedB = gsl_matrix_alloc(L, colsB);
+				gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, L_eigenvectors, B, 0.0, result.transformedB);
+			}
 		
-		// Store eigenvectors
-		#pragma omp section
-		{
-			result.eigenvectors = gsl_matrix_alloc(L, rows);
-			gsl_matrix_transpose_memcpy(result.eigenvectors, L_eigenvectors);
-		}
+			// Store eigenvectors
+			#pragma omp section
+			{
+				result.eigenvectors = gsl_matrix_alloc(L, rows);
+				gsl_matrix_transpose_memcpy(result.eigenvectors, L_eigenvectors);
+			}
 		
-		// Store eigenvalues
-		#pragma omp section
-		{
-			result.eigenvalues     = L_eigenvalues;
-			result.eigenvalues_all = eigenvalues;
+			// Store eigenvalues
+			#pragma omp section
+			{
+				result.eigenvalues     = L_eigenvalues;
+				result.eigenvalues_all = eigenvalues;
+			}
 		}
 	}
 
@@ -1020,6 +1034,64 @@ void rsCTPResultFree(struct rsCTPResult result)
 	gsl_matrix_free(result.eigenvectors);
 	gsl_vector_free(result.eigenvalues);
 	gsl_vector_free(result.eigenvalues_all);
+}
+
+/*
+ * Takes in a symmetric matrix and checks if all
+ * eigenvalues are positive. If not it will 'fix'
+ * those that are negative by setting them to eps
+ * and then reconstructs the original matrix.
+ * The number of altered eigenvalues is returned.
+ */
+long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
+{
+    assert(A->size1 == A->size2);
+	
+	long nEVAltered  = 0;
+    const long   n   = A->size1;
+	const double eps = 1e-8;
+	
+	gsl_vector* eigenvalues  = gsl_vector_alloc(n);
+    gsl_matrix* eigenvectors = gsl_matrix_alloc(n, n);
+    gsl_eigen_symmv_workspace* workspace = gsl_eigen_symmv_alloc(n);
+
+	// perform eigenvalue decomposition
+    gsl_eigen_symmv(A, eigenvalues, eigenvectors, workspace);
+	gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_VAL_ASC);
+
+	// check for negative eigenvalues
+	for ( long i=0; i<n; i=i+1 ) {
+		
+		if ( gsl_vector_get(eigenvalues, i) > 0 ) {
+			continue;
+		}
+		
+		gsl_vector_set(eigenvalues, i, eps);
+		nEVAltered = nEVAltered + 1;
+	}
+	
+	// if eigenvalues were changed reconstruct matrix
+	if ( nEVAltered > 0 ) {
+		// create diagional eigenvalue matrix
+		gsl_matrix* eigenvaluesMatrix   = gsl_matrix_alloc(n, n);
+	    gsl_vector_view eigenvaluesDiag = gsl_matrix_diagonal(eigenvaluesMatrix);
+	    gsl_matrix_set_all(eigenvaluesMatrix, 0.0);
+	    gsl_vector_memcpy(&eigenvaluesDiag.vector, eigenvalues);
+	
+		// reconstruct matrix
+		gsl_matrix* tmp = gsl_matrix_alloc(n, n); 
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, eigenvectors, eigenvaluesMatrix, 0.0, tmp);
+		gsl_blas_dgemm(CblasNoTrans,   CblasTrans, 1.0,          tmp,      eigenvectors, 0.0,   A);
+		
+	    gsl_matrix_free(tmp);
+	    gsl_matrix_free(eigenvaluesMatrix);
+	}
+
+    gsl_eigen_symmv_free(workspace);
+    gsl_matrix_free(eigenvectors);
+    gsl_vector_free(eigenvalues);
+
+	return nEVAltered;
 }
 
 double **d2matrix(int yh, int xh)
@@ -1211,6 +1283,15 @@ void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const 
 {
         for (long j=0; j<n; j=j+1) {
             fprintf(stream, fmt, x[j]);
+            fprintf(stream, " ");
+        }
+        fprintf(stream, "\n");
+}
+
+void rs_gsl_vector_fprintf(FILE *stream, gsl_vector *v, const char* fmt)
+{
+        for (long j=0; j<v->size; j=j+1) {
+            fprintf(stream, fmt, gsl_vector_get(v, j));
             fprintf(stream, " ");
         }
         fprintf(stream, "\n");

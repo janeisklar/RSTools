@@ -21,6 +21,7 @@
 #define RSTIMECOURSE_ALGORITHM_CTP  4
 
 void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps);
+void rsTimecourseTest();
 
 int show_help( void )
 {
@@ -225,6 +226,9 @@ int main(int argc, char * argv[])
     			return 1;
     		}
     		threads = atoi(argv[ac]);
+		} else if ( ! strcmp(argv[ac], "-test") ) {
+			rsTimecourseTest();
+			return 0;
     	} else {
 			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
 		}
@@ -603,25 +607,30 @@ int main(int argc, char * argv[])
 		
 			// Prepare data matrix
 			gsl_matrix* data = gsl_matrix_alloc(vDim, (nPoints - nNanPoints));
-			for ( n=0; n<(nPoints - nNanPoints); n=n+1) {
+			#pragma omp parallel num_threads(rsGetThreadsNum()) shared(fslio,buffer,slope,inter,xDim,yDim,zDim,vDim,nPoints,nNanPoints) private(n)
+			{
+				#pragma omp for schedule(guided)
+				for ( n=0; n<(nPoints - nNanPoints); n=n+1) {
 			
-				double *signalData = malloc(sizeof(double) * vDim);
-		        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
+					double *signalData = malloc(sizeof(double) * vDim);
+			        rsExtractTimecourseFromBuffer(fslio, signalData, buffer, slope, inter, nonNanPoints[n], xDim, yDim, zDim, vDim);
 			
-				double mean  = 0; 
-				double stdev = 1;
+					double mean  = 0; 
+					double stdev = 1;
 			
-				if ( useStandardScores ) {
-					mean  = gsl_stats_mean(signalData, 1, vDim);
-					stdev = gsl_stats_sd(signalData, 1, vDim);
+					if ( useStandardScores ) {
+						mean  = gsl_stats_mean(signalData, 1, vDim);
+						stdev = gsl_stats_sd(signalData, 1, vDim);
+					}
+			
+					for ( int t = 0; t < vDim; t=t+1 ) {
+						gsl_matrix_set(data, t, n, (signalData[t] - mean) / stdev);
+					}
+			
+					free(signalData);
 				}
-			
-				for ( int t = 0; t < vDim; t=t+1 ) {
-					gsl_matrix_set(data, t, n, (signalData[t] - mean) / stdev);
-				}
-			
-				free(signalData);
 			}
+			free(buffer);
 			
 			// Run CTP
 			gsl_matrix_view viewA = gsl_matrix_submatrix(data, 0,                            0, vDim, nPointsMask1-nNanPointsMask1);
@@ -726,4 +735,66 @@ void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix
     FslWriteVolumes(fslio, buffer, nMaps);
     FslClose(fslio);
     free(fslio);
+}
+
+void rsTimecourseTest()
+{
+	/*
+     >> a = rand(5);
+     >> b = triu(a) + triu(a,1)';
+     b =
+     
+     0.2760    0.4984    0.7513    0.9593    0.8407
+     0.4984    0.9597    0.2551    0.5472    0.2543
+     0.7513    0.2551    0.5060    0.1386    0.8143
+     0.9593    0.5472    0.1386    0.1493    0.2435
+     0.8407    0.2543    0.8143    0.2435    0.9293
+    */
+	
+	double **m = d2matrix(4,4);
+    
+    // 1st row
+    m[0][0] = 0.2760;
+    m[0][1] = 0.4984; m[1][0] = 0.4984;
+    m[0][2] = 0.7513; m[2][0] = 0.7513;
+    m[0][3] = 0.9593; m[3][0] = 0.9593;
+    m[0][4] = 0.8407; m[4][0] = 0.8407;
+    
+    // 2nd row
+    m[1][1] = 0.9597;
+    m[1][2] = 0.2551; m[2][1] = 0.2551;
+    m[1][3] = 0.5472; m[3][1] = 0.5472;
+    m[1][4] = 0.2543; m[4][1] = 0.2543;
+    
+    // 3rd row
+    m[2][2] = 0.5060;
+    m[2][3] = 0.1386; m[3][2] = 0.1386;
+    m[2][4] = 0.8143; m[4][2] = 0.8143;
+    
+    // 4th row
+    m[3][3] = 0.1493;
+    m[3][4] = 0.2435; m[4][3] = 0.2435;
+    
+    // 5th row
+    m[4][4] = 0.9293;
+
+	gsl_matrix* A = gsl_matrix_alloc(5,5);
+
+	for ( int r=0; r<5; r=r+1 ) {
+		for ( int c=0; c<5; c=c+1 ) {
+			gsl_matrix_set(A, r, c, m[r][c]);
+		}
+	}
+	
+	fprintf(stdout, "Original matrix:\n");	
+	rs_gsl_matrix_fprintf(stdout, A, "%.4f");
+	fprintf(stdout, "\n");
+	
+	long evChanged = rsMakePositiveDefiniteSymmetric(A);
+
+	fprintf(stdout, "* changed %ld eigenvalues\n\n", evChanged);	
+	
+	fprintf(stdout, "Matrix after calling rsMakePositiveDefiniteSymmetric():\n");
+	rs_gsl_matrix_fprintf(stdout, A, "%.4f");
+	fprintf(stdout, "\n");
 }

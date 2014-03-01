@@ -106,6 +106,7 @@ struct rsPCAResult rsTPCA(const gsl_matrix* data, double minVariance, int nCompo
 void rsPCAResultFree(struct rsPCAResult result);
 struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
 void rsCTPResultFree(struct rsCTPResult result);
+long rsMakePositiveDefiniteSymmetric(gsl_matrix* A);
 long double *rsMatrixByVectorProduct(const double **A, const long double *x, const long n, const long m);
 long double rsEuclideanNorm(const long double *x, const long n);
 void rsScaleVector(long double *x, const long n, const long double factor);
@@ -117,6 +118,7 @@ void rsMatrixConversion(double **A, const long m, const long n, const int mode);
 
 double **d2matrix(int yh, int xh);
 int rs_gsl_matrix_fprintf(FILE *stream,gsl_matrix *m,char *fmt);
+void rs_gsl_vector_fprintf(FILE *stream, gsl_vector *v, const char* fmt);
 void rs_matrix_fprintf(FILE *stream, const double **A, const long m, const long n, const char* fmt);
 void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const char* fmt);
 void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* fmt);
