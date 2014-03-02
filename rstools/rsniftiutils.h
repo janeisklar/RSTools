@@ -4,6 +4,7 @@
 
 #include <nifti1.h>
 #include <fslio.h>
+#include "rscommon.h"
 
 #if !defined(__NIFTIUTILS_H)
 #define __NIFTIUTILS_H
@@ -57,10 +58,13 @@ void convertScaledDoubleToBuffer_FLOAT64(THIS_FLOAT64 *outbuf, double *inbuf, fl
 char *rsLeftTrimString(char *s);
 char *rsRightTrimString(char *s);
 char *rsTrimString(char *s);
+char *rsMergeStringArray(int argc, char * argv[]);
 
 void rsSetThreadsNum(const unsigned int threads);
 unsigned int rsGetThreadsNum();
     
+void rsWriteNiftiHeader(FSLIO *fslio, char* description);
+
 #ifdef __cplusplus
 }
 #endif

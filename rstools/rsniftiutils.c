@@ -839,3 +839,123 @@ char *rsTrimString(char *s)
 {
     return rsRightTrimString(rsLeftTrimString(s));
 }
+
+void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
+{
+  short sform_code, qform_code;
+  mat44 smat, qmat;
+  /* writes header and opens img file ready for writing */
+  if (fslio==NULL)  RSIOERR("FslWriteHeader: Null pointer passed for FSLIO");
+
+  if (fslio->niftiptr!=NULL) {
+
+	char* oldComment = "";
+	BOOL commentExistsAlready = FALSE;
+	nifti1_extension *ext;
+		
+	// check extensions
+	nifti_image *nim = fslio->niftiptr;
+
+	if( nim->num_ext > 0 && nim->ext_list != NULL ) {
+		
+		// find extension
+		ext = nim->ext_list;
+
+		int c;
+		for ( c = 0; c < nim->num_ext; c++ ){
+			if ( ext->ecode == NIFTI_ECODE_COMMENT && ext->edata != NULL ) { 
+				break;
+			}
+		    ext++;
+		}
+
+		if ( c < nim->num_ext ) {
+			commentExistsAlready = TRUE;
+			
+			// read extension
+			int size = ext->esize;
+			oldComment = malloc(sizeof(char)*(size+1));
+			strncpy(oldComment, ext->edata, size);
+			oldComment[strlen(oldComment)]   = '\n';
+			oldComment[strlen(oldComment)+1] = '\0';
+		}
+	}
+	
+	char *version = "\n# " RSTOOLS_VERSION_LABEL "\n";
+	size_t oldCommentLength = strlen(oldComment);
+	size_t datalength       = oldCommentLength+strlen(version)+strlen(comment)+1;
+	size_t datalength2      = (size_t)ceil((double)datalength / 16.0) * 16;
+	char data[datalength2];
+	
+	sprintf(&data[0], "%s%s%s", oldComment, version, comment);
+	
+	if ( commentExistsAlready ) {
+		ext->edata = data;
+		ext->esize = datalength2;
+	} else {
+		nifti_add_extension(fslio->niftiptr, &data[0], datalength2, NIFTI_ECODE_COMMENT);
+	}
+	
+    fslio->written_hdr = 1;
+    if (znz_isnull(fslio->fileptr)) RSIOERR("FslWriteHeader: no file opened!");
+    /* modify niftiptr for FSL-specific purposes */
+    strcpy(fslio->niftiptr->descrip, RSTOOLS_VERSION_LABEL);
+
+    /* set qform to equal sform if currently unset (or vice versa) */
+    qform_code = FslGetRigidXform(fslio,&qmat);
+    sform_code = FslGetStdXform(fslio,&smat);
+    if ( (sform_code != NIFTI_XFORM_UNKNOWN) && 
+	 (qform_code == NIFTI_XFORM_UNKNOWN) ) {
+      FslSetRigidXform(fslio,sform_code,smat);
+    }
+    if ( (qform_code != NIFTI_XFORM_UNKNOWN) && 
+	 (sform_code == NIFTI_XFORM_UNKNOWN) ) {
+      FslSetStdXform(fslio,qform_code,qmat);
+    }
+    if (FslIsSingleFileType(FslGetFileType(fslio))) {
+      /* write header info but don't close the file */
+      nifti_image_write_hdr_img2(fslio->niftiptr,2,"wb",fslio->fileptr,NULL);
+      /* set up pointer at end of iname_offset for single files only */
+      FslSeekVolume(fslio,0);
+    } else {
+      /* open a new hdr file, write it and close it */
+      nifti_image_write_hdr_img(fslio->niftiptr,0,"wb");
+    }
+  }
+
+  if (fslio->mincptr!=NULL) {
+    fprintf(stderr,"Warning:: Minc is not yet supported\n");
+  }
+  return;
+}
+
+char *rsMergeStringArray(int argc, char * argv[])
+{
+	size_t length = 1;
+	size_t written = 0;
+	for ( int i=0; i<argc; i=i+1 ) {
+		length = length + strlen(argv[i]) + 1;
+	}
+	
+	char *result     = malloc(sizeof(char)*length);
+	char *cur_string = result;
+	char *separator  = " ";
+	
+	for ( int i=0; i<argc; i=i+1 ) {
+		size_t cur_length = strlen(argv[i]);
+
+		cur_string      = &result[0]+written;
+		written         = written + cur_length;
+		
+		strcpy(cur_string, argv[i]);
+		
+		cur_string      = &result[0]+written;
+		strcpy(cur_string, separator);
+		written         = written + 1;
+		cur_string      = &result[0]+written;
+	}
+	cur_string[1] = '\0';
+	//cur_string[written] = '\0';
+	
+	return result;
+}

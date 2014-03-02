@@ -25,6 +25,8 @@ ifdef NATIVE
 NATIVE_CFLAGS   =   -march=native
 endif
 
+GITHASH         =   $(shell git rev-parse --short HEAD)
+
 ifeq ($(echo "int main(){}" | gcc -o /dev/null -x c - -lcblas -latlas 2>/dev/null), 1)
 USE_ATLAS           =   1
 endif
@@ -42,7 +44,7 @@ BLAS_CFLAGS         =
 endif
 endif
 
-CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(BLAS_CFLAGS) $(NATIVE_CFLAGS)
+CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(BLAS_CFLAGS) $(NATIVE_CFLAGS) -DRSTOOLS_VERSION_HASH="$(GITHASH)"
 
 ## ARCH = X86_64
 
@@ -74,7 +76,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask motionscrubbing
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask motionscrubbing info
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -93,6 +95,7 @@ clean:
 	rm -f rsttest2
 	rm -f rsmask2
 	rm -f rsmotionscrubbing2
+	rm -f rsinfo
 
 mathutils:
 	@echo 
@@ -209,6 +212,14 @@ motionscrubbing:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsmotionscrubbing2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rsregression_common.o rsmotionscrubbing2.o -o rsmotionscrubbing2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
+info:
+	@echo
+	@echo "***************************"
+	@echo "*        RS INFO          *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsinfo.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS)
+	$(CC) $(CFLAGS) rsinfo.o -o rsinfo $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS)
 
 help:
 	@echo "all:      make the rstools"

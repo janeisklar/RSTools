@@ -11,6 +11,7 @@
 
 void rsMaskPrintHelp() {
     printf(
+	    RSTOOLS_VERSION_LABEL "\n\n"
         "basic usage:  rsmask2 -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -164,7 +165,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioOutput, xDim, yDim, zDim, vDim);
     FslSetDimensionality(fslioOutput, 4);
     FslSetDataType(fslioOutput, pixtype);
-    FslWriteHeader(fslioOutput);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioOutput, callString);
+	free(callString);
     
     /* load mask */
     unsigned long nPoints = 0L;

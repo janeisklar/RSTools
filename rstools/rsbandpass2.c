@@ -10,6 +10,7 @@
 int show_help( )
 {
     printf(
+	   RSTOOLS_VERSION_LABEL "\n"
        "rsbandpass2: Given a 4D-Nifti and a frequency band this tool will apply\n"
        "             FFT filtering on it.\n"
        "\n"
@@ -45,7 +46,9 @@ int main(int argc, char * argv[])
     FslSetDim(fslioFiltered, p.xDim, p.yDim, p.zDim, p.vDim);
     FslSetDimensionality(fslioFiltered, 4);
     FslSetDataType(fslioFiltered, p.pixtype);
-    FslWriteHeader(fslioFiltered);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioFiltered, callString);
+	free(callString);
     
     // Prepare empty timecourse
     double emptybuffer[p.vDim];
@@ -64,15 +67,14 @@ int main(int argc, char * argv[])
     }
     
     FslReadVolumes(p.fslio, buffer, p.vDim);
-    short x,y,z;
+    short x,y,z, processedSlices = 0;
     double *signal;
     Point3D point;
     
-    #pragma omp parallel num_threads(p.threads) private(y,x,signal,point) shared(p,emptybuffer,buffer,fslioFiltered)
+    #pragma omp parallel num_threads(p.threads) private(z,y,x,signal,point) shared(p,emptybuffer,buffer,fslioFiltered)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<p.zDim; z=z+1) {
-            fprintf(stdout, "Filtering slice Z%03hd/%03hd\n", z+1, p.zDim);        
             for (y=0; y<p.yDim; y=y+1) {
                 for (x=0; x<p.xDim; x=x+1) {
                     
@@ -98,10 +100,22 @@ int main(int argc, char * argv[])
                     free(signal);
                 }
             }
+			
+			/* show progress */
+			if (p.verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
+            
+            	if (processedSlices > 0 && processedSlices % (short)(p.zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p.zDim));
+            	}
+			}
         }
     }
     
-    fprintf(stdout, "Write out result to: %s\n", p.saveFilteredPath);
+	if ( p.verbose ) {
+    	fprintf(stdout, "Write out result to: %s\n", p.saveFilteredPath);
+	}
     
     FslWriteVolumes(fslioFiltered, buffer, p.vDim);
     FslClose(fslioFiltered);

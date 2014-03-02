@@ -11,6 +11,7 @@
 
 void rsFillHolesPrintHelp() {
     printf(
+ 	    RSTOOLS_VERSION_LABEL "\n\n"
         "basic usage:  rsfillholes2 -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -184,7 +185,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioFilled, xDim, yDim, zDim, 1);
     FslSetDimensionality(fslioFilled, 4);
     FslSetDataType(fslioFilled, pixtype);
-    FslWriteHeader(fslioFilled);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioFilled, callString);
+	free(callString);
     
     /* load mask */
     unsigned long nPoints = 0L;

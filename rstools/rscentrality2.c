@@ -12,6 +12,7 @@
 void rsTestPowerIteration();
 void rsCentralityPrintHelp() {
     printf(
+  	    RSTOOLS_VERSION_LABEL "\n"
         "basic usage:  rscentrality -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -241,7 +242,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioCentrality, xDim, yDim, zDim, 1);
     FslSetDimensionality(fslioCentrality, 4);
     FslSetDataType(fslioCentrality, pixtype);
-    FslWriteHeader(fslioCentrality);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioCentrality, callString);
+	free(callString);
     
     /* load mask */
     unsigned long nPoints = 0L;

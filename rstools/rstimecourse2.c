@@ -25,7 +25,8 @@ void rsTimecourseTest();
 
 int show_help( void )
 {
-   printf(
+   printf(	
+	  RSTOOLS_VERSION_LABEL "\n"
       "rstimecourse2: Given a 4D-Nifti, this tool extracts the time course\n"
       "               for a single voxel or the meaned average of a region\n"
       "               specified by a binary mask\n"

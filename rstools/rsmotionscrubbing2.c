@@ -12,6 +12,7 @@
 
 void rsMaskPrintHelp() {
     printf(
+	   RSTOOLS_VERSION_LABEL "\n"
         "basic usage:  rsmotionscrubbing2 -input <volume> -rp <rp.txt> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -433,7 +434,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioOutput, xDim, yDim, zDim, remainingFrames);
     FslSetDimensionality(fslioOutput, 4);
     FslSetDataType(fslioOutput, pixtype);
-    FslWriteHeader(fslioOutput);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioOutput, callString);
+	free(callString);
 
    	/* create resulting file */
 	buffsize     = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)remainingFrames*(size_t)dt/(size_t)8;

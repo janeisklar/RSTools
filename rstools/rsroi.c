@@ -14,6 +14,7 @@
 int show_help( void )
 {
     printf(
+	   RSTOOLS_VERSION_LABEL "\n"
        "rsroi: Given a 4D-Nifti that will be cloned this tool will create\n"
        "       a binary mask for the specified region(sphere or cube).\n"
        "\n"
@@ -49,7 +50,7 @@ int show_help( void )
     );
 
     printf(
-       "   -roiValue <float>  : intensity value that will be used for the ROI\n"
+       "   -roiValue <float>   : intensity value that will be used for the ROI\n"
     );
     
     printf(
@@ -72,9 +73,9 @@ int show_help( void )
     );
     
     printf(
-        "  -randomsample <n>   : randomly sample <n> voxels from the file specified\n"
-        "                        using -input(through -keepVolume) or the other ROI\n"
-        "                        commands(-sphere, -cube)\n"
+       "  -randomsample <n>    : randomly sample <n> voxels from the file specified\n"
+       "                         using -input(through -keepVolume) or the other ROI\n"
+       "                         commands(-sphere, -cube)\n"
     );
     
     printf(
@@ -286,7 +287,9 @@ int main(int argc, char * argv[])
     FslSetDim(fslioMask, xDim, yDim, zDim, 1);
     FslSetDimensionality(fslioMask, 3);
     FslSetDataType(fslioMask, pixtype);
-    FslWriteHeader(fslioMask);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(fslioMask, callString);
+	free(callString);
     free(fslio);
     
     if (fslioMask == NULL) {

@@ -189,6 +189,7 @@ int main(int argc, char * argv[]) {
     // Load list of files
     unsigned int nFiles = 0;
     struct rsInputFile *files = rsReadFileListFromStandardInput(&nFiles);
+	size_t fileListLength = 1;
     
     for (int n=0; n<nFiles; n=n+1) {
         const struct rsInputFile file = files[n];
@@ -201,12 +202,23 @@ int main(int argc, char * argv[]) {
         if (verbose) {
             fprintf(stdout, "File: %s, Volumes: %d\n", file.path, file.vDim);
         }
+
+		fileListLength = fileListLength + strlen(file.path) + 5;
     }
     
     if ( nFiles < 1 ) {
         fprintf(stderr, "No files were supplied via standard input!\n");
         return 1;
     }
+
+	char fileList[fileListLength];
+	size_t bytesWritten = 0;
+    for (int n=0; n<nFiles; n=n+1) {
+        const struct rsInputFile file = files[n];
+		sprintf(&fileList[bytesWritten], "%s,%04d\n", file.path, file.vDim);
+		bytesWritten = bytesWritten + strlen(file.path) + 6;
+	}
+	fileList[fileListLength-1] = '\0';
     
     // Prepare output buffer
     const struct rsInputFile refFile = files[0];
@@ -224,7 +236,13 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioOutput, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
     FslSetDimensionality(fslioOutput, 4);
     FslSetDataType(fslioOutput, refFile.pixtype);
-    FslWriteHeader(fslioOutput);
+	char *comment1 = rsMergeStringArray(argc, argv);
+	char *comment2 = "\nFilelist:\n";
+	size_t commentLength = strlen(comment1)+strlen(comment2)+fileListLength+1;
+	char comment[commentLength];
+	sprintf(&comment[0], "%s%s%s\n", comment1, comment2, fileList);
+	comment[commentLength-1] = '\0';	
+    rsWriteNiftiHeader(fslioOutput, &comment[0]);
     
     void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*nOutputVolumes*(size_t)refFile.dt/(size_t)8);
     

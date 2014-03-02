@@ -16,6 +16,7 @@
 int show_help( )
 {
     printf(
+	   RSTOOLS_VERSION_LABEL "\n"
         "rsregression: Given a 4D-Nifti and a txt file with regressors(columns),\n"
         "              this tool will perform a multiple linear regression on it.\n"
         "\n"
@@ -39,7 +40,8 @@ int main(int argc, char * argv[])
     
     void *buffer;
 	size_t buffsize;
-    
+	char *callString = rsMergeStringArray(argc, argv);
+
     /* prepare residuals file */
     FSLIO *fslioResiduals = NULL;
     
@@ -56,7 +58,7 @@ int main(int argc, char * argv[])
         FslSetDim(fslioResiduals, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioResiduals, 4);
         FslSetDataType(fslioResiduals, p.pixtype);
-        FslWriteHeader(fslioResiduals);
+		rsWriteNiftiHeader(fslioResiduals, callString);
     }
     
     /* prepare betas file */
@@ -76,7 +78,7 @@ int main(int argc, char * argv[])
         FslSetDim(fslioBetas, p.xDim, p.yDim, p.zDim, (p.nRegressors+1L));
         FslSetDimensionality(fslioBetas, 4);
         FslSetDataType(fslioBetas, p.pixtype);
-        FslWriteHeader(fslioBetas);
+		rsWriteNiftiHeader(fslioBetas, callString);
         
         // prepare buffer
         buffsize = (size_t)((size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)(p.nRegressors+1)*(size_t)p.dt/(size_t)8);
@@ -100,12 +102,13 @@ int main(int argc, char * argv[])
         FslSetDim(fslioFitted, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioFitted, 4);
         FslSetDataType(fslioFitted, p.pixtype);
-        FslWriteHeader(fslioFitted);
+		rsWriteNiftiHeader(fslioFitted, callString);
         
         // prepare buffer
         buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
         fittedBuffer = malloc(buffsize);
     }
+	free(callString);
     
     // Prepare empty timecourse
     int emptyValuesLength = p.vDim > p.nRegressors ? p.vDim : p.nRegressors+1;
@@ -201,13 +204,15 @@ int main(int argc, char * argv[])
                 }
             }
             
-            /* show progress */
-            #pragma omp atomic
-            processedSlices += 1;
+			/* show progress */
+			if (p.verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
             
-            if (p.verbose && processedSlices > 0 && processedSlices % (short)(p.zDim / 10) == 0) {
-                fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p.zDim));
-            }
+            	if (processedSlices > 0 && processedSlices % (short)(p.zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p.zDim));
+            	}
+			}
         }
     }
     

@@ -10,6 +10,7 @@
 
 void rsCorrelationPrintHelp() {
     printf(
+	   RSTOOLS_VERSION_LABEL "\n"
        "rscorrelation: This tool will correlate the timecourse of\n"
        "               of every voxel in the supplied volume with\n"
        "               a timecourse that is supplied via standard\n"
@@ -62,7 +63,7 @@ void rsCorrelationPrintHelp() {
     
     printf(
        "   -delay <int>           : (rscorrelation2 only) delay the regressor by the defined\n"
-       "                            volumes(or TR)"
+       "                            volumes(or TR)\n"
     );
     
     printf(
@@ -224,7 +225,9 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
     FslSetDimensionality(p.fslioCorrelation, 4);
     FslSetDataType(p.fslioCorrelation, p.pixtype);
-    FslWriteHeader(p.fslioCorrelation);
+	char *callString = rsMergeStringArray(argc, argv);
+    rsWriteNiftiHeader(p.fslioCorrelation, callString);
+	free(callString);
     
     /* prepare buffer */
     p.correlation = d3matrix(p.zDim, p.yDim, p.xDim);
