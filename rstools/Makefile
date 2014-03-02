@@ -120,8 +120,6 @@ timecourse:
 	@echo "***************************"
 	@echo "*      RS Timecourse      *"
 	@echo "***************************"
-	$(CC) $(CFLAGS) -c rstimecourse.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rstimecourse.o -o rstimecourse $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 	$(CC) $(CFLAGS) -c rstimecourse2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rstimecourse2.o -o rstimecourse2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
@@ -131,9 +129,7 @@ regression:
 	@echo "*      RS Regression      *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsregression_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) -c rsregression.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) -c rsregression2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rsregression_common.o rsregression.o -o rsregression $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 	$(CC) $(CFLAGS) rsregression_common.o rsregression2.o -o rsregression2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 bandpass:
@@ -142,9 +138,7 @@ bandpass:
 	@echo "*       RS Bandpass       *"
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rsbandpass_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) -c rsbandpass.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) -c rsbandpass2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rsbandpass_common.o rsbandpass.o -o rsbandpass $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 	$(CC) $(CFLAGS) rsbandpass_common.o rsbandpass2.o -o rsbandpass2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 roi:
@@ -160,9 +154,7 @@ correlation:
 	@echo "***************************"
 	@echo "*     RS Correlation      *"
 	@echo "***************************"
-	$(CC) $(CFLAGS) -c rscorrelation.c -c rscorrelation_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) -c rscorrelation2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation.o -o rscorrelation $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+	$(CC) $(CFLAGS) -c rscorrelation2.c -c rscorrelation_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation2.o -o rscorrelation2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 centrality:

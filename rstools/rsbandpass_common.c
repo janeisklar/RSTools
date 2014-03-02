@@ -56,7 +56,7 @@ void rsBandpassPrintHelp() {
     );
 
     printf(
-      "   -threads <int>           : (rsbandpass2 only) number of threads used for processing\n"
+      "   -threads <int>           : number of threads used for processing\n"
     );
     
 #if RS_FFTW_ENABLED == 1

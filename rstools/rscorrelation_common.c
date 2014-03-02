@@ -58,12 +58,11 @@ void rsCorrelationPrintHelp() {
     );
 
     printf(
-       "   -threads <int>         : (rscorrelation2 only) number of threads used for processing\n"
+       "   -threads <int>         : number of threads used for processing\n"
     );
     
     printf(
-       "   -delay <int>           : (rscorrelation2 only) delay the regressor by the defined\n"
-       "                            volumes(or TR)\n"
+       "   -delay <int>           : delay the regressor by the defined volumes(or TR)\n"
     );
     
     printf(

@@ -42,7 +42,7 @@ void rsCentralityPrintHelp() {
     );
     
     printf(
-        "   -threads <int>         : (rsregression2 only) number of threads used for processing\n"
+        "   -threads <int>         : number of threads used for processing\n"
     );
     
     printf(

@@ -13,6 +13,7 @@
 
 void rsTTestPrintHelp() {
     printf(
+		RSTOOLS_VERSION_LABEL "\n\n"
         "Takes in a list of niftis with one ore more volumes\n"
         "or a single nifti with more than one volume via stdin\n"
         "and performs a one-sample t-test on it.\n"
