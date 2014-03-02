@@ -947,15 +947,14 @@ char *rsMergeStringArray(int argc, char * argv[])
 		cur_string      = &result[0]+written;
 		written         = written + cur_length;
 		
-		strcpy(cur_string, argv[i]);
+		sprintf(&cur_string[0], "%s", argv[i]);
 		
 		cur_string      = &result[0]+written;
 		strcpy(cur_string, separator);
 		written         = written + 1;
 		cur_string      = &result[0]+written;
 	}
-	cur_string[1] = '\0';
-	//cur_string[written] = '\0';
+	cur_string[0] = '\0';
 	
 	return result;
 }
