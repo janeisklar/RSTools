@@ -202,8 +202,8 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 		comment = callString;
 	} else {
 		char *separator = "\nReference Timecourse Info:\n";
-	 	comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+2));
-		sprintf(&comment[0], "%s%s%s\n", callString, separator, p.comment);
+		comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+1));
+		sprintf(&comment[0], "%s%s%s", callString, separator, p.comment);
 		free(callString);
 	}
 	

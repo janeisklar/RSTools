@@ -873,11 +873,9 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 			commentExistsAlready = TRUE;
 			
 			// read extension
-			int size = ext->esize;
+			size_t size = ext->esize;
 			oldComment = malloc(sizeof(char)*(size+2));
-			strncpy(oldComment, ext->edata, size);
-			oldComment[size]   = '\n';
-			oldComment[size+1] = '\0';
+			sprintf(&oldComment[0], "%s\n", ext->edata);
 		}
 	}
 	
@@ -891,8 +889,7 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 	char *version = "\n# " RSTOOLS_VERSION_LABEL "\n";
 	
 	// merge old/new comment, version and date
-	size_t oldCommentLength = strlen(oldComment);
-	size_t datalength       = oldCommentLength+strlen(version)+strlen(comment)+strlen(date)+1;
+	size_t datalength       = strlen(oldComment)+strlen(version)+strlen(comment)+strlen(date)+1;
 	size_t datalength2      = (size_t)ceil((double)datalength / 16.0) * 16;
 	char data[datalength2];
 	
@@ -974,7 +971,7 @@ char *rsReadCommentFile(char *path) {
 	FILE *f = fopen(path, "r");
     
     if (f == NULL) {
-        fprintf(stderr, "Error: Regressor comments could not be read(file couldn't be opened).\n");
+        fprintf(stderr, "Error: Comments could not be read(file couldn't be opened).\n");
         return NULL;
     }
 
@@ -987,7 +984,7 @@ char *rsReadCommentFile(char *path) {
     char *content = malloc(sizeof(char)*(size+1));
 		
 	if( content == NULL || size != fread(content, 1, size, f) ) {
-		fprintf(stderr, "Error: Regressor comments could not be read into memory!\n");
+		fprintf(stderr, "Error: Comments could not be read into memory!\n");
 		free(content);
         return NULL;
 	}

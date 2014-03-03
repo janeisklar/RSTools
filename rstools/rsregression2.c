@@ -46,8 +46,8 @@ int main(int argc, char * argv[])
 		comment = callString;
 	} else {
 		char *separator = "\nRegressor Info:\n";
-	 	comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.regressorComment)+2));
-		sprintf(&comment[0], "%s%s%s\n", callString, separator, p.regressorComment);
+		comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.regressorComment)+1));
+		sprintf(&comment[0], "%s%s%s", callString, separator, p.regressorComment);
 		free(callString);
 	}
 
