@@ -23,6 +23,8 @@ struct rsCorrelationParameters {
     char *inputpath;
 	char *maskpath;
 	char *outputpath;
+	char *commentpath;
+	char *comment;
     char *savemaskpath;
     char *saveBetasPath;
     char *saveResidualsPath;

@@ -41,6 +41,15 @@ int main(int argc, char * argv[])
     void *buffer;
 	size_t buffsize;
 	char *callString = rsMergeStringArray(argc, argv);
+	char *comment;
+	if ( p.regressorComment == NULL ) {
+		comment = callString;
+	} else {
+		char *separator = "\nRegressor Info:\n";
+	 	comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.regressorComment)+2));
+		sprintf(&comment[0], "%s%s%s\n", callString, separator, p.regressorComment);
+		free(callString);
+	}
 
     /* prepare residuals file */
     FSLIO *fslioResiduals = NULL;
@@ -58,7 +67,7 @@ int main(int argc, char * argv[])
         FslSetDim(fslioResiduals, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioResiduals, 4);
         FslSetDataType(fslioResiduals, p.pixtype);
-		rsWriteNiftiHeader(fslioResiduals, callString);
+		rsWriteNiftiHeader(fslioResiduals, comment);
     }
     
     /* prepare betas file */
@@ -78,7 +87,7 @@ int main(int argc, char * argv[])
         FslSetDim(fslioBetas, p.xDim, p.yDim, p.zDim, (p.nRegressors+1L));
         FslSetDimensionality(fslioBetas, 4);
         FslSetDataType(fslioBetas, p.pixtype);
-		rsWriteNiftiHeader(fslioBetas, callString);
+		rsWriteNiftiHeader(fslioBetas, comment);
         
         // prepare buffer
         buffsize = (size_t)((size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)(p.nRegressors+1)*(size_t)p.dt/(size_t)8);
@@ -102,7 +111,7 @@ int main(int argc, char * argv[])
         FslSetDim(fslioFitted, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioFitted, 4);
         FslSetDataType(fslioFitted, p.pixtype);
-		rsWriteNiftiHeader(fslioFitted, callString);
+		rsWriteNiftiHeader(fslioFitted, comment);
         
         // prepare buffer
         buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;

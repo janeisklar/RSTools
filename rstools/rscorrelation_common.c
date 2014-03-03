@@ -62,6 +62,11 @@ void rsCorrelationPrintHelp() {
     );
     
     printf(
+       "   -comment <txt>         : adds a comment about the origin of thereference timecourse\n"
+       "                            to the nifti header of the correlation map\n"
+    );
+
+    printf(
        "   -delay <int>           : delay the regressor by the defined volumes(or TR)\n"
     );
     
@@ -78,6 +83,8 @@ struct rsCorrelationParameters rsCorrelationInitParameters() {
     p.maskpath             = NULL;
     p.outputpath           = NULL;
     p.savemaskpath         = NULL;
+	p.commentpath          = NULL;
+	p.comment              = NULL;
     p.xDim                 = 0;
     p.yDim                 = 0;
     p.zDim                 = 0;
@@ -133,6 +140,12 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 				return p;
 			}
 			p.savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-comment") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -comment\n");
+				return p;
+			}
+			p.commentpath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strcmp(argv[ac], "-conversion") ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -conversion\n");
@@ -165,6 +178,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 			p.verbose = TRUE;
 		} else {
 			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
+			return p;
 		}
 	}
 	
@@ -176,6 +190,21 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 	if ( p.outputpath == NULL ) {
 		fprintf(stderr, "No output volume specified!\n");
 		return p;
+	}
+	
+	if ( p.commentpath != NULL ) {
+		p.comment = rsReadCommentFile(p.commentpath);
+	}
+	
+	char *callString = rsMergeStringArray(argc, argv);
+	char *comment;
+	if ( p.comment == NULL ) {
+		comment = callString;
+	} else {
+		char *separator = "\nReference Timecourse Info:\n";
+	 	comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+2));
+		sprintf(&comment[0], "%s%s%s\n", callString, separator, p.comment);
+		free(callString);
 	}
 	
     /* Read seed timecourse from stdin */
@@ -224,9 +253,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
     FslSetDimensionality(p.fslioCorrelation, 4);
     FslSetDataType(p.fslioCorrelation, p.pixtype);
-	char *callString = rsMergeStringArray(argc, argv);
-    rsWriteNiftiHeader(p.fslioCorrelation, callString);
-	free(callString);
+    rsWriteNiftiHeader(p.fslioCorrelation, comment);
     
     /* prepare buffer */
     p.correlation = d3matrix(p.zDim, p.yDim, p.xDim);

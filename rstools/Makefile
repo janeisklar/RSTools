@@ -25,7 +25,8 @@ ifdef NATIVE
 NATIVE_CFLAGS   =   -march=native
 endif
 
-GITHASH         =   $(shell git rev-parse --short HEAD)
+GITHASH         =   $(shell git --git-dir=../.git --work-tree=.. rev-parse --short HEAD)
+GITDATE         =   $(shell git --git-dir=../.git --work-tree=.. log -1 --pretty=format:'%ci')
 
 ifeq ($(echo "int main(){}" | gcc -o /dev/null -x c - -lcblas -latlas 2>/dev/null), 1)
 USE_ATLAS           =   1
@@ -44,7 +45,7 @@ BLAS_CFLAGS         =
 endif
 endif
 
-CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(BLAS_CFLAGS) $(NATIVE_CFLAGS) -DRSTOOLS_VERSION_HASH="$(GITHASH)"
+CFLAGS          =   -ansi -pedantic -Woverlength-strings -g -std=gnu99 $(FFTW_CFLAGS) $(BLAS_CFLAGS) $(NATIVE_CFLAGS) -DRSTOOLS_VERSION_HASH="$(GITHASH)" -DRSTOOLS_VERSION_DATE="$(GITDATE)"
 
 ## ARCH = X86_64
 

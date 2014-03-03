@@ -874,20 +874,29 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 			
 			// read extension
 			int size = ext->esize;
-			oldComment = malloc(sizeof(char)*(size+1));
+			oldComment = malloc(sizeof(char)*(size+2));
 			strncpy(oldComment, ext->edata, size);
-			oldComment[strlen(oldComment)]   = '\n';
-			oldComment[strlen(oldComment)+1] = '\0';
+			oldComment[size]   = '\n';
+			oldComment[size+1] = '\0';
 		}
 	}
 	
+	// incorporate current date/time into the comment
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	char date[23];
+	sprintf(&date[0], "# %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	// incorporate rstools version number into the comment
 	char *version = "\n# " RSTOOLS_VERSION_LABEL "\n";
+	
+	// merge old/new comment, version and date
 	size_t oldCommentLength = strlen(oldComment);
-	size_t datalength       = oldCommentLength+strlen(version)+strlen(comment)+1;
+	size_t datalength       = oldCommentLength+strlen(version)+strlen(comment)+strlen(date)+1;
 	size_t datalength2      = (size_t)ceil((double)datalength / 16.0) * 16;
 	char data[datalength2];
 	
-	sprintf(&data[0], "%s%s%s", oldComment, version, comment);
+	sprintf(&data[0], "%s%s%s%s", oldComment, version, date, comment);
 	
 	if ( commentExistsAlready ) {
 		ext->edata = data;
@@ -957,4 +966,34 @@ char *rsMergeStringArray(int argc, char * argv[])
 	cur_string[0] = '\0';
 	
 	return result;
+}
+
+char *rsReadCommentFile(char *path) {
+	
+	/* Open file */
+	FILE *f = fopen(path, "r");
+    
+    if (f == NULL) {
+        fprintf(stderr, "Error: Regressor comments could not be read(file couldn't be opened).\n");
+        return NULL;
+    }
+
+    /* Determine file size */
+	fseek(f, 0L, SEEK_END);
+	size_t size = ftell(f);
+	rewind(f);
+    
+    /* Read out file */
+    char *content = malloc(sizeof(char)*(size+1));
+		
+	if( content == NULL || size != fread(content, 1, size, f) ) {
+		fprintf(stderr, "Error: Regressor comments could not be read into memory!\n");
+		free(content);
+        return NULL;
+	}
+	fclose(f);
+	
+	content[size] = '\0';
+	
+	return &content[0];
 }

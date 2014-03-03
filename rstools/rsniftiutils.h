@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <nifti1.h>
 #include <fslio.h>
@@ -59,6 +60,7 @@ char *rsLeftTrimString(char *s);
 char *rsRightTrimString(char *s);
 char *rsTrimString(char *s);
 char *rsMergeStringArray(int argc, char * argv[]);
+char *rsReadCommentFile(char *path);
 
 void rsSetThreadsNum(const unsigned int threads);
 unsigned int rsGetThreadsNum();

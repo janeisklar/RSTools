@@ -19,64 +19,70 @@ void rsRegressionPrintHelp() {
    );
  
    printf(
-      "   -input <volume>        : the volume to be regressed\n"
-   );
-    
-   printf(
-      "   -residuals <volume>    : the volume in which the residuals will be saved\n"
-   );
-    
-   printf(
-      "   -fitted <volume>       : the volume in which the fitted volumes will be saved\n"
+      "   -input <volume>         : the volume to be regressed\n"
+   );                             
+                                  
+   printf(                        
+      "   -residuals <volume>     : the volume in which the residuals will be saved\n"
+   );                             
+                                  
+   printf(                        
+      "   -fitted <volume>        : the volume in which the fitted volumes will be saved\n"
+   );                             
+                                  
+   printf(                        
+      "   -betas <volume>         : the volume in which the beta-coefficients will be saved\n"
+   );                             
+                                  
+   printf(                        
+      "   -mask <mask>            : a mask specifying the ROI for improved performance\n"
+   );                             
+                                  
+   printf(                        
+      "   -savemask <mask>        : optional path where the rescaled mask specified with -mask\n"
+      "                             will be saved. The saved file with have the same dimensions\n"
+      "                             as the input volume.\n"
+   );                             
+                                  
+   printf(                        
+      "   -regressors <txt>       : a tabbed/spaced textfile containing the regressors with the\n"
+      "                             different regressors in the columns and time course in the\n"
+      "                             rows. Decimal numbers may be formatted like this: 1.23e+45\n"
+   );                             
+                                  
+   printf(                        
+      "   -regressorComment <txt> : a text file that contains additional information about the\n"
+      "                             regressors that were supplied. These information will be \n"
+      "                             incorporated in the headers of all created niftis.\n"
+   );                              
+                                  
+   printf(                        
+      "   -zscore                 : performs a z-score based linear regression, i.e. the mean and\n"
+      "                             standard deviation are removed from the input data and the\n"
+      "                             regressors.\n"
+   );                             
+                                  
+   printf(                        
+      "   -f1 <double>            : (optional) the lower frequency of the bandpass\n"
+      "                             filter\n"
+   );                             
+                                  
+   printf(                        
+      "   -f2 <double>            : (optional) the upper frequency of the bandpass filter\n"
+      "                             filter\n"
+   );                             
+                                  
+   printf(                        
+      "   -samplingrate <double>  : (optional) only required if bandpass filtering is\n"
+      "                             requested.\n"
+   );                             
+                                  
+   printf(                        
+      "   -threads <int>          : number of threads used for processing\n"
    );
    
    printf(
-      "   -betas <volume>        : the volume in which the beta-coefficients will be saved\n"
-   );
-    
-   printf(
-      "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
-   );
-    
-   printf(
-      "   -savemask <mask>       : optional path where the rescaled mask specified with -mask\n"
-      "                            will be saved. The saved file with have the same dimensions\n"
-      "                            as the input volume.\n"
-   );
-    
-   printf(
-      "   -regressors <txt>      : a tabbed/spaced textfile containing the regressors with the\n"
-      "                            different regressors in the columns and time course in the\n"
-      "                            rows. Decimal numbers may be formatted like this: 1.23e+45\n"
-   );
-    
-   printf(
-      "   -zscore                : comuptes a z-score based linear regression, i.e. the mean and\n"
-      "                            standard deviation are removed from the input data and the\n"
-      "                            regressors.\n"
-   );
-    
-   printf(
-      "   -f1 <double>           : (optional) the lower frequency of the bandpass\n"
-      "                            filter\n"
-   );
-
-   printf(
-      "   -f2 <double>           : (optional) the upper frequency of the bandpass filter\n"
-      "                            filter\n"
-   );
-
-   printf(
-      "   -samplingrate <double> : (optional) only required if bandpass filtering is\n"
-      "                            requested.\n"
-   );
-    
-   printf(
-      "   -threads <int>         : number of threads used for processing\n"
-   );
-   
-   printf(
-      "   -v[erbose]             : show debug information\n"
+      "   -v[erbose]              : show debug information\n"
       "\n"
    );
 }
@@ -87,6 +93,8 @@ struct rsRegressionParameters rsRegressionInitParameters() {
     p.inputpath            = NULL;
     p.maskpath             = NULL;
     p.regressorspath       = NULL;
+	p.regressorCommentPath = NULL;
+	p.regressorComment     = NULL;
     p.savemaskpath         = NULL;
     p.saveBetasPath        = NULL;
     p.saveResidualsPath    = NULL;
@@ -161,6 +169,12 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
 				return p;
 			}
 			p.regressorspath = argv[ac];  /* no string copy, just pointer assignment */
+		} else if ( ! strcmp(argv[ac], "-regressorComment") ) {
+			if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -regressorComment\n");
+				return p;
+			}
+			p.regressorCommentPath = argv[ac];  /* no string copy, just pointer assignment */
 		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -m\n");
@@ -215,6 +229,10 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
 	if ( p.regressorspath == NULL ) {
 		fprintf(stderr, "A file containing the regressors must be specified(-regressors)!\n");
 		return p;
+	}
+	
+	if ( p.regressorCommentPath != NULL ) {
+		p.regressorComment = rsReadCommentFile(p.regressorCommentPath);
 	}
     
     p.filterActive = p.sampling_rate >= 0.0 || p.f1 >= 0.0 || p.f2 >= 0.0;

@@ -21,6 +21,8 @@ struct rsRegressionParameters {
     char *inputpath;
 	char *maskpath;
 	char *regressorspath;
+	char *regressorCommentPath;
+	char *regressorComment;
     char *savemaskpath;
     char *saveBetasPath;
     char *saveResidualsPath;

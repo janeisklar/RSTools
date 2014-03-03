@@ -99,11 +99,15 @@ int show_help( void )
 	  "  -eigenvalues <file>        : (use only with -a [t]pca or ctp) write out all eigenvalues\n"
 	  "                               to the file that is specified with this option\n"
 	);
-   
-   printf(
+
+    printf(                        
+      "   -threads <int>            : number of threads used for processing\n"
+    );
+
+    printf(
       "  -v[erbose]                 : show debug information\n"
       "\n"
-   );
+    );
     
    return 0;
 }
