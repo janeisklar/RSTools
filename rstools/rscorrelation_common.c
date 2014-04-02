@@ -45,6 +45,11 @@ void rsCorrelationPrintHelp() {
        "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
     );
     
+	printf(
+	   "   -montecarlo <n> <m>    : repeats the computation of the correlation n times and uses\n"
+	   "                            m randomly drawn timepoint in each run. eventually the average\n"
+	   "                            is being saved. (using it enforces the conversion to z-scores)\n"
+	);
     
     printf(
        "   -conversion <mode>     : <mode> specifies what is stored in the output file, it can\n"
@@ -79,32 +84,35 @@ void rsCorrelationPrintHelp() {
 struct rsCorrelationParameters rsCorrelationInitParameters() {
     struct rsCorrelationParameters p;
     
-    p.inputpath            = NULL;
-    p.maskpath             = NULL;
-    p.outputpath           = NULL;
-    p.savemaskpath         = NULL;
-	p.commentpath          = NULL;
-	p.comment              = NULL;
-    p.xDim                 = 0;
-    p.yDim                 = 0;
-    p.zDim                 = 0;
-    p.vDim                 = 0;
-    p.delay                = 0;
-    p.pixtype              = 0;
-    p.dt                   = 4;
-    p.inter                = 0.0;
-    p.slope                = 1.0;
-    p.verbose              = FALSE;
-    p.fslio                = NULL;
-    p.fslioCorrelation     = NULL;
-    p.correlation          = NULL;
-    p.parametersValid      = FALSE;
-    p.mask                 = NULL;
-    p.nRegressorValues     = 0;
-    p.regressor            = NULL;
-    p.threads              = 1;
-    p.conversionMode       = RSTOOLS_CORRELATION_CONVERSION_Z;
-    
+    p.inputpath             = NULL;
+    p.maskpath              = NULL;
+    p.outputpath            = NULL;
+    p.savemaskpath          = NULL;
+	p.commentpath           = NULL;
+	p.comment               = NULL;
+    p.xDim                  = 0;
+    p.yDim                  = 0;
+    p.zDim                  = 0;
+    p.vDim                  = 0;
+    p.delay                 = 0;
+    p.pixtype               = 0;
+    p.dt                    = 4;
+    p.inter                 = 0.0;
+    p.slope                 = 1.0;
+    p.verbose               = FALSE;
+    p.fslio                 = NULL;
+    p.fslioCorrelation      = NULL;
+    p.correlation           = NULL;
+    p.parametersValid       = FALSE;
+    p.mask                  = NULL;
+    p.nRegressorValues      = 0;
+    p.regressor             = NULL;
+    p.threads               = 1;
+    p.conversionMode        = RSTOOLS_CORRELATION_CONVERSION_Z;
+	p.monteCarloRepetitions = 0;
+	p.monteCarloSampleSize  = 0;
+
+
     return p;
 }
 
@@ -128,7 +136,15 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 				return p;
 			}
 			p.outputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
+		} else if ( ! strcmp(argv[ac], "-montecarlo") ) {
+  			if( (++ac)+1 >= argc ) {
+           		fprintf(stderr, "** missing arguments for -montecarlo\n");
+           		return p;
+           	}
+           	p.monteCarloRepetitions = atoi(argv[ac]);
+			++ac;
+           	p.monteCarloSampleSize  = atoi(argv[ac]);
+	    } else if ( ! strncmp(argv[ac], "-m", 2) ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -m\n");
 				return p;

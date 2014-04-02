@@ -21,7 +21,7 @@ int show_help( void )
     );
     
     printf(
-       "basic usage:  rsroi <file>\n"
+       "basic usage:  rsinfo <file>\n"
        "\n"
     );
     

@@ -15,6 +15,8 @@
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 
 #include "rsniftiutils.h"
@@ -96,6 +98,7 @@ double rsCorrelation(const double* X, const double *Y, const size_t length);
 double rsZCorrelation(const double* X, const double* Y, const size_t length);
 double rsFastZCorrelation(const double* X, const double* Y, const size_t length);
 double rsTCorrelation(const double* X, const double* Y, const size_t length);
+double rsMonteCarloZCorrelation(const double* X, const double* Y, const size_t length, const unsigned int repetitions, const unsigned int samplingSize);
 double rsDistance(FloatPoint3D A, FloatPoint3D B);
 double rsSampleSineWave(const double sampling_rate, const double f, const int t);
 double rsSampleCosineWave(const double sampling_rate, const double f, const int t);

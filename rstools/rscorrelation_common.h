@@ -44,6 +44,9 @@ struct rsCorrelationParameters {
     float slope;
     
     short conversionMode;
+
+	unsigned int monteCarloRepetitions;
+	unsigned int monteCarloSampleSize;
     
     BOOL verbose;
     BOOL parametersValid;

@@ -64,7 +64,9 @@ int main(int argc, char * argv[]) {
                     const size_t regressorLength = p.nRegressorValues - fabs(p.delay);
                     
                     /* compute correlation */
-                    if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_Z ) {
+					if ( p.monteCarloRepetitions > 0 ) {
+						p.correlation[z][y][x] = rsMonteCarloZCorrelation(timecourse, regressor, regressorLength, p.monteCarloRepetitions, p.monteCarloSampleSize);
+					} else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_Z ) {
                         p.correlation[z][y][x] = rsZCorrelation(timecourse, regressor, regressorLength);
                     } else if ( p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE ) {
                         p.correlation[z][y][x] = rsCorrelation(timecourse, regressor, regressorLength);
