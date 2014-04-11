@@ -111,7 +111,8 @@ struct rsCorrelationParameters rsCorrelationInitParameters() {
     p.conversionMode        = RSTOOLS_CORRELATION_CONVERSION_Z;
 	p.monteCarloRepetitions = 0;
 	p.monteCarloSampleSize  = 0;
-
+	p.timeClusteringSize    = 10;
+	p.nClusters             = 1;
 
     return p;
 }
@@ -178,7 +179,20 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
                 fprintf(stderr, "** invalid value for -conversion\n");
 				return p;
             }
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
+		} else if ( ! strcmp(argv[ac], "-tClusterSize") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -tClusterSize\n");
+           		return p;
+           	}
+           	p.timeClusteringSize = atoi(argv[ac]);
+		} else if ( ! strcmp(argv[ac], "-nClusters") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -nClusters\n");
+           		return p;
+           	}
+           	p.nClusters = atoi(argv[ac]);
+		}
+		 else if ( ! strcmp(argv[ac], "-threads") ) {
   			if( ++ac >= argc ) {
            		fprintf(stderr, "** missing argument for -threads\n");
            		return p;
@@ -213,14 +227,16 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
 	}
 	
 	char *callString = rsMergeStringArray(argc, argv);
-	char *comment;
+
 	if ( p.comment == NULL ) {
-		comment = callString;
+		p.comment = callString;
 	} else {
 		char *separator = "\nReference Timecourse Info:\n";
-		comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+1));
+		char *comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+1));
 		sprintf(&comment[0], "%s%s%s", callString, separator, p.comment);
 		free(callString);
+		free(p.comment);
+		p.comment = comment;
 	}
 	
     /* Read seed timecourse from stdin */
@@ -269,7 +285,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
     FslSetDimensionality(p.fslioCorrelation, 4);
     FslSetDataType(p.fslioCorrelation, p.pixtype);
-    rsWriteNiftiHeader(p.fslioCorrelation, comment);
+    rsWriteNiftiHeader(p.fslioCorrelation, p.comment);
     
     /* prepare buffer */
     p.correlation = d3matrix(p.zDim, p.yDim, p.xDim);

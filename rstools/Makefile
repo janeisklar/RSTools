@@ -77,7 +77,7 @@ endif
 endif
 LDLIBS        = $(RLDFLAGS) $(RRPATH) $(RBLAS) $(RLAPACK) $(RCPPLIBS) $(RINSIDELIBS) $(GLIB_CXX) -lgsl -lgslcblas
 
-all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask motionscrubbing info
+all:	mathutils niftiutils timecourse regression bandpass roi correlation centrality fillholes fastcentrality ttest mask motionscrubbing info powerestimation
 
 clean:
 	rm -f *.o *.a *.dylib ../lib/librs*
@@ -97,6 +97,7 @@ clean:
 	rm -f rsmask2
 	rm -f rsmotionscrubbing2
 	rm -f rsinfo
+	rm -f rsvarlengthcorrelation2
 
 mathutils:
 	@echo 
@@ -157,6 +158,14 @@ correlation:
 	@echo "***************************"
 	$(CC) $(CFLAGS) -c rscorrelation2.c -c rscorrelation_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rscorrelation_common.o rscorrelation2.o -o rscorrelation2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+
+powerestimation:
+	@echo
+	@echo "***************************"
+	@echo "*   RS Stat. Power Est.   *"
+	@echo "***************************"
+	$(CC) $(CFLAGS) -c rsvarlengthcorrelation2.c -c rscorrelation_common.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
+	$(CC) $(CFLAGS) rscorrelation_common.o rsvarlengthcorrelation2.o -o rsvarlengthcorrelation2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 
 centrality:
 	@echo
