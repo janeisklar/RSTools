@@ -244,7 +244,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     
-    size_t nOutputVolumes = (nFiles > 1) ? refFile.vDim : 1;
+    unsigned int nOutputVolumes = refFile.vDim;
     
     FslCloneHeader(fslioOutput, refFile.fslio);
     FslSetDim(fslioOutput, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
@@ -258,44 +258,46 @@ int main(int argc, char * argv[]) {
 	comment[commentLength-1] = '\0';	
     rsWriteNiftiHeader(fslioOutput, &comment[0]);
     
-    void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*nOutputVolumes*(size_t)refFile.dt/(size_t)8);
-    
-    short t,x,y,z;
 	gsl_rng_env_setup();
+    void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*(size_t)nOutputVolumes*(size_t)refFile.dt/(size_t)8);
+	gsl_rng *randgen;
+	double *tValues;
+	double *series;
+	size_t *indices;
+	size_t fIndex;
+    short t,x,y,z,f;
     
-    #pragma omp parallel num_threads(threads) private(x,y,t) shared(buffer,nFiles,files)
+    #pragma omp parallel num_threads(threads) private(x,y,t,f,randgen,tValues,indices,fIndex,series) shared(buffer,nFiles,files,nOutputVolumes, nNiftis)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<refFile.zDim; z=z+1) {
+			
+			// create random number generator
+			randgen = gsl_rng_alloc(gsl_rng_default);
+			tValues = malloc((size_t)nOutputVolumes * sizeof(double));
+            indices = malloc((size_t)nFiles         * sizeof(size_t));
+			series  = malloc((size_t)nNiftis        * sizeof(double));
+
+			// prepare array with indices that will be shuffled
+			for (size_t i = 0; i < (size_t)nFiles; i=i+1) {
+				indices[i] = i;
+			}
+	
             for (y=0; y<refFile.yDim; y=y+1) {
                 for (x=0; x<refFile.xDim; x=x+1) {
                     Point3D point = MakePoint3D(x, y, z);
-                    double *tValues = (double*)malloc(sizeof(double)*nOutputVolumes);
-                    
-					size_t *indices;
-					indices = malloc(sizeof(size_t)*nFiles);
 
-					// create random number generator
-					gsl_rng *randgen = gsl_rng_alloc(gsl_rng_default);
-
-					// prepare array with indices that will be shuffled
-					for (size_t i = 0; i < nFiles; i=i+1) {
-						indices[i] = i;
-					}
-
-					// shuffle
-					gsl_ran_shuffle(randgen, indices, nFiles, sizeof(size_t));
-					gsl_rng_free(randgen);
+					// shuffle timepoints
+					gsl_ran_shuffle(randgen, &indices[0], nFiles, sizeof(size_t));
 
                     for (t=0; t<refFile.vDim; t=t+1) {
-                        double *series = (double*)malloc(sizeof(double)*nNiftis);
-
-                        for (int f=0; f<nNiftis; f=f+1) {
-							size_t fIndex = indices[f];
+                        for (f=0; f<(int)nNiftis; f=f+1) {
+							fIndex = indices[f];
                             const struct rsInputFile *file = &files[fIndex];
+
                             rsExtractPointsFromBuffer(
                                 (*file).fslio,
-                                &series[fIndex],
+                                &series[f],
                                 (*file).data,
                                 (*file).slope,
                                 (*file).inter,
@@ -310,14 +312,16 @@ int main(int argc, char * argv[]) {
                         }
                         
                         tValues[t] = rsOneSampleTTest(series, nNiftis, 0.0);
-                        free(series);
                     }   
                     
                     rsWriteTimecourseToBuffer(fslioOutput, tValues, buffer, refFile.slope, refFile.inter, point, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
-                    free(tValues);
-					free(indices);
                 }
             }
+			
+			free(series);
+			free(indices);
+            free(tValues);
+			gsl_rng_free(randgen);
         }
     }
     
