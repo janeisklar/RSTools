@@ -136,6 +136,9 @@ double rsOneSampleTTest(const double *data, const unsigned int length, const dou
     
 void rsRankingResolveTies(double *ranks, const size_t *tiesTrace, const size_t n_ties);
 void rsSpearmannRank(double *ranks, const double *data, const size_t n);
+
+gsl_rng *rsGetRandomNumberGenerator();
+void rsDestroyRandomNumberGenerator();
     
 #ifdef __cplusplus
 }
