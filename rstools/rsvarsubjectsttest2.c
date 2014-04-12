@@ -258,22 +258,19 @@ int main(int argc, char * argv[]) {
 	comment[commentLength-1] = '\0';	
     rsWriteNiftiHeader(fslioOutput, &comment[0]);
     
-	gsl_rng_env_setup();
     void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*(size_t)nOutputVolumes*(size_t)refFile.dt/(size_t)8);
-	gsl_rng *randgen;
+	gsl_rng *randgen = rsGetRandomNumberGenerator();
 	double *tValues;
 	double *series;
 	size_t *indices;
 	size_t fIndex;
     short t,x,y,z,f;
     
-    #pragma omp parallel num_threads(threads) private(x,y,t,f,randgen,tValues,indices,fIndex,series) shared(buffer,nFiles,files,nOutputVolumes, nNiftis)
+    #pragma omp parallel num_threads(threads) private(x,y,t,f,tValues,indices,fIndex,series) shared(randgen,buffer,nFiles,files,nOutputVolumes, nNiftis)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<refFile.zDim; z=z+1) {
 			
-			// create random number generator
-			randgen = gsl_rng_alloc(gsl_rng_default);
 			tValues = malloc((size_t)nOutputVolumes * sizeof(double));
             indices = malloc((size_t)nFiles         * sizeof(size_t));
 			series  = malloc((size_t)nNiftis        * sizeof(double));
@@ -321,10 +318,10 @@ int main(int argc, char * argv[]) {
 			free(series);
 			free(indices);
             free(tValues);
-			gsl_rng_free(randgen);
         }
     }
     
+	rsDestroyRandomNumberGenerator();
     FslWriteVolumes(fslioOutput, buffer, nOutputVolumes);
     
     // Close files

@@ -147,18 +147,13 @@ double* rsVaryingLengthZCorrelation(const double* X, const double* Y, const size
 	double sampledY[length];
 	size_t indices[length];
 
-	// create random number generator
-	gsl_rng_env_setup();
-	gsl_rng *randgen = gsl_rng_alloc(gsl_rng_default);
-
 	// prepare array with indices that will be randomly drawn from
 	for (size_t i = 0; i < length; i=i+1) {
 		indices[i] = i;
 	}
 
 	// shuffle and draw samples
-	gsl_ran_shuffle(randgen, indices, length, sizeof(size_t));
-	gsl_rng_free(randgen);
+	gsl_ran_shuffle(rsGetRandomNumberGenerator(), indices, length, sizeof(size_t));
 
 	//draw samples
 	for (size_t i = 0; i < length; i=i+1) {
@@ -200,7 +195,7 @@ double* rsVaryingLengthZCorrelation(const double* X, const double* Y, const size
 		
 		// end of next cluster reached?
 		if ( (((i+1) % tClusteringSize) == 0 && i > 0) || (i+1) >= length ) {
-//			printf("%ld\n", i);
+
 			// normalize correlation coefficient
 			sX   = sqrtl(tmpX / (long double)Nm1);
 			sY   = sqrtl(tmpY / (long double)Nm1);
@@ -223,8 +218,8 @@ double* rsVaryingLengthZCorrelation(const double* X, const double* Y, const size
 		}
 		
 		// update length of timepoints
+		Nm1 = N;
 		N   = N + 1;
-		Nm1 = N - 1;
     }
 
 	return &correlations[0];
