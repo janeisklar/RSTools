@@ -50,6 +50,7 @@ int main(int argc, char * argv[]) {
 	FslClose(p.fslioCorrelation);
 	p.fslioCorrelation = FslOpen(p.outputpath, "wb");
 	FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, p.nClusters);
+	FslSetIntent(fslioOutput, NIFTI_INTENT_ZSCORE, 0, 0, 0);
     rsWriteNiftiHeader(p.fslioCorrelation, p.comment);
     
     FslReadVolumes(p.fslio, buffer, p.vDim);

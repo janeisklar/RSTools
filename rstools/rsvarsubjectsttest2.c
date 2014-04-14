@@ -250,7 +250,7 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioOutput, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
     FslSetDimensionality(fslioOutput, 4);
     FslSetDataType(fslioOutput, refFile.pixtype);
-	FslSetIntent(fslioOutput, NIFTI_INTENT_TTEST, nFiles-1, 0, 0);
+	FslSetIntent(fslioOutput, NIFTI_INTENT_TTEST, nNiftis-1, 0, 0);
 	char *comment1 = rsMergeStringArray(argc, argv);
 	char *comment2 = "\nFilelist:\n";
 	size_t commentLength = strlen(comment1)+strlen(comment2)+fileListLength+1;
