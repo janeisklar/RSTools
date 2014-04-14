@@ -269,6 +269,13 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
     FslSetDimensionality(p.fslioCorrelation, 4);
     FslSetDataType(p.fslioCorrelation, p.pixtype);
+	if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE) {
+		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_CORREL, p.vDim-2, 0, 0);
+	} else if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_T) {
+		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_TTEST, p.vDim-2, 0, 0);
+	} else {
+		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_ZSCORE, 0, 0, 0);
+	}
     rsWriteNiftiHeader(p.fslioCorrelation, comment);
     
     /* prepare buffer */
