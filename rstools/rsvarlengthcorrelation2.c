@@ -8,6 +8,7 @@
 
 #include <omp.h>
 #include "rscorrelation_common.h"
+#include <gsl/gsl_cdf.h>
 
 int show_help( void )
 {
