@@ -265,7 +265,7 @@ int main(int argc, char * argv[]) {
 	double *series;
 	size_t *indices;
 	size_t fIndex;
-    short t,x,y,z,f;
+    short t,x,y,z,f,processedSlices = 0;
     
     #pragma omp parallel num_threads(threads) private(x,y,t,f,tValues,indices,fIndex,series) shared(randgen,buffer,nFiles,files,nOutputVolumes, nNiftis)
     {
@@ -319,6 +319,17 @@ int main(int argc, char * argv[]) {
 			free(series);
 			free(indices);
             free(tValues);
+
+			
+			/* show progress */
+			if (verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
+            
+            	if (processedSlices > 0 && processedSlices % (short)(refFile.zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)refFile.zDim));
+            	}
+			}
         }
     }
     

@@ -89,7 +89,7 @@ struct rsCTPResult {
 
 struct rsFDRResult {
 	double p;
-	double T;
+	double t;
 	int i;
 	int iNormalized;
 };

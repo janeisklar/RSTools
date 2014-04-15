@@ -76,6 +76,7 @@ struct rsInputFile {
     float   inter;
     float   slope;
     double* data;
+	float   dof;
 };
 
 
@@ -95,6 +96,16 @@ struct rsInputFile rsOpenInputFile(char* path) {
         return f;
     }
     
+	/* determine degrees of freedom */
+	float unused1, unused2;
+	short intent_code;
+	FslGetIntent(f.fslio, &intent_code, &f.dof, &unused1, &unused2);
+	
+    if (intent_code != NIFTI_INTENT_TTEST) {
+        fprintf(stderr, "\nFile %s does not seem to contain T-values!\n", f.path);
+        return f;
+    }
+
     f.readable = TRUE;
     
 	/* determine dimensions */
@@ -111,7 +122,8 @@ struct rsInputFile rsOpenInputFile(char* path) {
 	
 	/* determine datatype */
 	f.dt = FslGetDataType(f.fslio, &f.pixtype);
-    
+
+
     /* read in file */
     f.data = malloc((size_t)f.xDim*(size_t)f.yDim*(size_t)f.zDim*(size_t)f.vDim*(size_t)f.dt/(size_t)8);
     
@@ -282,6 +294,11 @@ int main(int argc, char * argv[]) {
     
     const struct rsInputFile refFile = files[0];
 	struct rsInputFile template = rsOpenInputFile(templatepath);
+	
+	if ( !template.readable ) {
+		fprintf(stderr, "Template file could not be read!\n");
+        return 1;
+	}
     
 	// Load mask
     unsigned long nPoints = 0L;
@@ -306,10 +323,10 @@ int main(int argc, char * argv[]) {
 			double ***data = d3matrix(file.zDim-1,  file.yDim-1, file.xDim-1);
 			rsExtractVolumeFromBuffer(file.fslio, data[0][0], file.data, file.slope, file.inter, threshold, file.xDim, file.yDim, file.zDim);
 			
-			struct rsFDRResult fdrResult = rsComputeTThresholdFDR(data, threshold, maskPoints, nPoints, row);
+			struct rsFDRResult fdrResult = rsComputeTThresholdFDR(data, threshold, maskPoints, nPoints, file.dof);
 			
 			if (verbose) {
-				fprintf(stdout, "Row: %d, Col: %d, t-FDR: %.3f, p-FDR: %.3f\n", row, col, fdrResult.T, fdrResult.p);
+				fprintf(stdout, "Row: % 2d, Col: %02d, DOF: %02.0f, t-FDR: %02.9f, p-FDR: %02.9f, i-FDR: %d, iNorm-FDR: %.4f\n", row, col, file.dof, fdrResult.t, fdrResult.p, fdrResult.i, fdrResult.iNormalized);
 			}
 			
 			free(data[0][0]);

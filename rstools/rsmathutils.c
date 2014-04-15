@@ -1408,9 +1408,10 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 {
 	// C(nVoxels) = sum_{i=1..nVoxels} 1/i	
 	double C = 1.0;
-	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
-		C += 1/nVoxels;
+	for ( unsigned long i = 1L; i<=nVoxels; i=i+1L ) {
+		C += 1.0/((double)i);
 	}
+	//C=1.0;
 	
 	// Sort T-values
 	double *tValues = (double*)malloc((size_t)nVoxels * sizeof(double));
@@ -1427,21 +1428,21 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 	}
 	
 	// Find largest p(i) that fulfills p(i) <= i/nVoxel * q/C(nVoxel)
-	
 	struct rsFDRResult result;
-	
 	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
 		const double p = rsComputePValueFromTValue(tValues[i], df);
-		if ( p <= ((i/nVoxels) * (q/C)) ) {
+		const double threshold = (((double)i+1.0)/(double)nVoxels) * (q/C);
+		
+		if ( p <= threshold ) {
 			result.p = p;
 			result.i = i;
-			result.T = tValues[i];
-			result.iNormalized = i/nVoxels;
+			result.t = tValues[i];
+			result.iNormalized = (i+1)/nVoxels;
 		} else {
 			break;
 		}
 	}
-	
+		
 	return result;
 }
 
