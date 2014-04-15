@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
     double *signal;
     Point3D point;
     
-    #pragma omp parallel num_threads(p.threads) private(z,y,x,signal,point) shared(p,emptybuffer,buffer,fslioFiltered)
+    #pragma omp parallel num_threads(p.threads) private(z,y,x,signal,point) shared(p,emptybuffer,buffer,fslioFiltered,processedSlices)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<p.zDim; z=z+1) {
