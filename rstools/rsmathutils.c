@@ -1450,6 +1450,65 @@ double rsComputePValueFromTValue(const double T, const int df)
 	return 1.0-gsl_cdf_tdist_P(T, df);
 }
 
+
+struct rsRadomizationTestResult rsRandomizationTest(const double *data, const unsigned int length, const unsigned long nRepetitions, const double alpha)
+{
+	const gsl_rng *rng = rsGetRandomNumberGenerator();
+	const double tObtained = rsOneSampleTTest(data, length, 0.0);
+	double signs[length];
+	double randData[length];
+	double tDistribution[2*nRepetitions];
+	double tDistribution2[nRepetitions];
+	unsigned long overshootCounter = 0L;
+	struct rsRadomizationTestResult result;
+	
+	// run simulation nRepetitions times
+	for ( unsigned long r=0L; r<nRepetitions; r=r+1L ) {
+		
+		// create array with the same size as the data containing numbers in the range [0,1)
+		for ( unsigned int i=0; i<length; i=i+1 ) {
+			signs[i] = (double)i / (double)length;
+		}
+		
+		// permute
+		gsl_ran_shuffle(rng, signs, length, sizeof(double));
+		
+		// find random threshold
+		const double threshold = gsl_rng_uniform (rng);
+		
+		// use the threshold to have the array contain the values 1 and -1 exclusively
+		for ( unsigned int i=0; i<length; i=i+1 ) {
+			signs[i] = signs[i] > threshold ? 1 : -1;
+		}
+		
+		// the signs array now contains a random ratio of 1's and -1's at random positions
+		// let's use it to randomly flip the data vector
+		for ( unsigned int i=0; i<length; i=i+1 ) {
+			randData[i] = signs[i]*data[i];
+		}
+		
+		double tRun = rsOneSampleTTest(&randData[0], length, 0.0);
+		
+		if ( fabs(tRun) >= fabs(tObtained) ) {
+			tDistribution2[overshootCounter] = tRun;
+			overshootCounter = overshootCounter + 1L;
+		}
+		
+		tDistribution[r] = tRun;
+		tDistribution[r+nRepetitions] = tRun*-1;
+	}
+	
+	// compute p-value (mean of the simulation distribution)
+	result.p = gsl_stats_mean(tDistribution2, 1.0, overshootCounter);
+	//result.p = ((double)overshootCounter) / ((double)nRepetitions);
+	
+	// compute t-value according to the supplied alpha-value
+	gsl_sort(&tDistribution[0], 1, nRepetitions*2); // sort ascending
+	result.t = gsl_stats_quantile_from_sorted_data(&tDistribution[0], 1.0, nRepetitions*2, alpha);
+	
+	return result;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // See: http://en.wikipedia.org/wiki/Student's_t-test#One-sample_t-test                                     //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

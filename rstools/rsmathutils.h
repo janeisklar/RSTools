@@ -91,7 +91,12 @@ struct rsFDRResult {
 	double p;
 	double T;
 	int i;
-	int iNormalized;
+	double iNormalized;
+};
+
+struct rsRadomizationTestResult {
+	double p;
+	double t;
 };
 
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
@@ -143,6 +148,7 @@ double rsErfInv(const double x);
 double rsOneSampleTTest(const double *data, const unsigned int length, const double mu);
 struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const Point3D* mask, const unsigned long nVoxels, const int df);
 double rsComputePValueFromTValue(const double T, const int df);
+struct rsRadomizationTestResult rsRandomizationTest(const double *data, const unsigned int length, const unsigned long nRepetitions, const double alpha);
     
 void rsRankingResolveTies(double *ranks, const size_t *tiesTrace, const size_t n_ties);
 void rsSpearmannRank(double *ranks, const double *data, const size_t n);

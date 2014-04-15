@@ -309,7 +309,10 @@ int main(int argc, char * argv[]) {
                             );
                         }
                         
-                        tValues[t] = rsOneSampleTTest(series, nNiftis, 0.0);
+                        //tValues[t] = rsOneSampleTTest(series, nNiftis, 0.0);
+						struct rsRadomizationTestResult radomizationResult;
+						radomizationResult = rsRandomizationTest(&series[0], nNiftis, 10000, 0.05);
+						tValues[t] = radomizationResult.p;
                     }   
                     
                     rsWriteTimecourseToBuffer(fslioOutput, tValues, buffer, refFile.slope, refFile.inter, point, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);

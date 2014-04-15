@@ -32,6 +32,13 @@ void rsTTestPrintHelp() {
     printf(
         "   -output <volume>       : the volume in which the result will be saved\n"
     );
+
+    printf(
+        "   -randomization <n>     : will perform a randomization test on the data\n"
+        "                            with n repetitions. corrected p-values instead\n"
+        "                            of t-values will be written to the resulting\n"
+        "                            nifti file\n"
+    );
     
     printf(
         "   -threads <int>         : number of threads used for processing\n"
@@ -146,6 +153,7 @@ int main(int argc, char * argv[]) {
 	
 	BOOL verbose = FALSE;
     int threads = 1;
+	int randomization = 0;
 	
 	int ac;
     
@@ -173,6 +181,12 @@ int main(int argc, char * argv[]) {
            		return 1;
            	}
            	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-randomization") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -randomization\n");
+           		return 1;
+           	}
+           	randomization = atoi(argv[ac]);  /* no string copy, just pointer assignment */
         } else {
 			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
 		}
@@ -281,7 +295,12 @@ int main(int argc, char * argv[]) {
                                 );
                             }
                             
-                            tValues[t] = rsOneSampleTTest(series, nFiles, 0.0);
+							if ( randomization > 0 ) {
+								struct rsRadomizationTestResult radomizationResult = rsRandomizationTest(&series[0], nFiles, randomization, 0.05);
+								tValues[t] = radomizationResult.p;
+							} else {
+								tValues[t] = rsOneSampleTTest(series, nFiles, 0.0);
+							}
                             free(series);
                         }                            
                     } else {
@@ -305,7 +324,17 @@ int main(int argc, char * argv[]) {
                             );
                         }
                         
-                        tValues[0] = rsOneSampleTTest(series, refFile.vDim, 0.0);
+						if ( randomization > 0 ) {
+							struct rsRadomizationTestResult radomizationResult = rsRandomizationTest(&series[0], refFile.vDim, randomization, 0.05);
+							tValues[0] = radomizationResult.p;
+							
+							double Tval = rsOneSampleTTest(series, refFile.vDim, 0.0);
+							if ( verbose && Tval == Tval ) {
+								fprintf(stdout, "p-value=%.10f, t-value=%.10f, est. t-value=%.10f\n", tValues[0], Tval, radomizationResult.t);
+							}
+						} else {
+							tValues[0] = rsOneSampleTTest(series, refFile.vDim, 0.0);
+						}
                         free(series);                            
                     }
                     
