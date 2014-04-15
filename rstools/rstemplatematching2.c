@@ -77,6 +77,7 @@ struct rsInputFile {
     float   slope;
     double* data;
 	float   dof;
+	double  tThreshold;
 };
 
 
@@ -308,32 +309,57 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-	// Prepare processing
-	gsl_rng *randgen = rsGetRandomNumberGenerator();
-	double *tValues;
-	double *series;
-	size_t *indices;
-	size_t fIndex;
-    short t,x,y,z,f;
-    
-	for ( int row = 0; row < nFiles; row = row + 1 ) {
+	// Find the file with the largest DOF
+	struct rsInputFile fileWithLargestDOF = files[0];
+	for ( int row = 1; row < nFiles; row = row + 1 ) {
 		const struct rsInputFile file = files[row];
-		
-		for ( int col = 0; col < file.vDim; col = col + 1 ) {
-			double ***data = d3matrix(file.zDim-1,  file.yDim-1, file.xDim-1);
-			rsExtractVolumeFromBuffer(file.fslio, data[0][0], file.data, file.slope, file.inter, threshold, file.xDim, file.yDim, file.zDim);
-			
-			struct rsFDRResult fdrResult = rsComputeTThresholdFDR(data, threshold, maskPoints, nPoints, file.dof);
-			
-			if (verbose) {
-				fprintf(stdout, "Row: % 2d, Col: %02d, DOF: %02.0f, t-FDR: %02.9f, p-FDR: %02.9f, i-FDR: %d, iNorm-FDR: %.4f\n", row, col, file.dof, fdrResult.t, fdrResult.p, fdrResult.i, fdrResult.iNormalized);
-			}
-			
-			free(data[0][0]);
-			free(data[0]);
-			free(data);
+		if ( file.dof > fileWithLargestDOF.dof ) {
+			fileWithLargestDOF = file;
 		}
 	}
+	
+	// Compute FDR-threshold for the file with the largest DOF
+	struct rsFDRResult fdrResult;
+	double ***data;
+	data = d3matrix(fileWithLargestDOF.zDim-1,  fileWithLargestDOF.yDim-1, fileWithLargestDOF.xDim-1);
+	rsExtractVolumeFromBuffer(fileWithLargestDOF.fslio, data[0][0], fileWithLargestDOF.data, fileWithLargestDOF.slope, fileWithLargestDOF.inter, fileWithLargestDOF.vDim-1, fileWithLargestDOF.xDim, fileWithLargestDOF.yDim, fileWithLargestDOF.zDim);
+	fdrResult = rsComputeTThresholdFDR(data, threshold, maskPoints, nPoints, fileWithLargestDOF.dof);
+	
+	// Compute corresponding t-threshold for all other files
+	for ( int row = 0; row < nFiles; row = row + 1 ) {
+		struct rsInputFile file = files[row];
+		file.tThreshold = rsComputeTValueFromPValue(fdrResult.p / 2, file.dof);
+		if (verbose) {
+			fprintf(stdout, "File: %s, DOF: %02.0f, t-FDR: %02.9f, uncorrected-p: %02.9f\n", file.path, file.dof, file.tThreshold, fdrResult.p);
+		}
+	}
+
+	// Prepare processing
+//	gsl_rng *randgen = rsGetRandomNumberGenerator();
+//	double *tValues;
+//	double *series;
+//	size_t *indices;
+//	size_t fIndex;
+//    short t,x,y,z,f;
+//    
+//	for ( int row = 0; row < nFiles; row = row + 1 ) {
+//		const struct rsInputFile file = files[row];
+//		
+//		for ( int col = 0; col < file.vDim; col = col + 1 ) {
+//			double ***data = d3matrix(file.zDim-1,  file.yDim-1, file.xDim-1);
+//			rsExtractVolumeFromBuffer(file.fslio, data[0][0], file.data, file.slope, file.inter, threshold, file.xDim, file.yDim, file.zDim);
+//			
+//			struct rsFDRResult fdrResult = rsComputeTThresholdFDR(data, threshold, maskPoints, nPoints, file.dof);
+//			
+//			if (verbose) {
+//				fprintf(stdout, "Row: % 2d, Col: %02d, DOF: %02.0f, t-FDR: %02.9f, p-FDR: %02.9f, i-FDR: %d, iNorm-FDR: %.4f\n", row, col, file.dof, fdrResult.t, fdrResult.p, fdrResult.i, fdrResult.iNormalized);
+//			}
+//			
+//			free(data[0][0]);
+//			free(data[0]);
+//			free(data);
+//		}
+//	}
 
 //    #pragma omp parallel num_threads(threads) private(x,y,t,f,tValues,indices,fIndex,series) shared(randgen,buffer,nFiles,files,nOutputVolumes, nNiftis)
 //    {

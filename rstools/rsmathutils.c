@@ -1429,11 +1429,13 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 	
 	// Find largest p(i) that fulfills p(i) <= i/nVoxel * q/C(nVoxel)
 	struct rsFDRResult result;
+	result.i = -1;
+	
 	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
-		const double p = rsComputePValueFromTValue(tValues[i], df);
+		const double p = rsComputePValueFromTValue(tValues[i], df)*2;
 		const double threshold = (((double)i+1.0)/(double)nVoxels) * (q/C);
 		
-		if ( p <= threshold ) {
+		if ( p <= threshold || result.i < 0) {
 			result.p = p;
 			result.i = i;
 			result.t = tValues[i];
@@ -1449,6 +1451,11 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 double rsComputePValueFromTValue(const double T, const int df)
 {
 	return 1.0-gsl_cdf_tdist_P(T, df);
+}
+
+double rsComputeTValueFromPValue(const double P, const int df)
+{
+	return gsl_cdf_tdist_Pinv(1.0-P, df);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

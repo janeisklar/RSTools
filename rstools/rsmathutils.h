@@ -143,6 +143,7 @@ double rsErfInv(const double x);
 double rsOneSampleTTest(const double *data, const unsigned int length, const double mu);
 struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const Point3D* mask, const unsigned long nVoxels, const int df);
 double rsComputePValueFromTValue(const double T, const int df);
+double rsComputeTValueFromPValue(const double P, const int df);
     
 void rsRankingResolveTies(double *ranks, const size_t *tiesTrace, const size_t n_ties);
 void rsSpearmannRank(double *ranks, const double *data, const size_t n);
