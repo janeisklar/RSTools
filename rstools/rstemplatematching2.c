@@ -48,6 +48,17 @@ void rsTemplateMatchinPrintHelp() {
 	);
 	
 	printf(
+    	"   -mcc <txt>             : the txt file in which a matrix with the\n"
+    	"                            matthews correlation coefficient will be\n"
+        "                            saved\n"
+	);
+
+	printf(
+    	"   -acc <txt>             : the txt file in which a matrix with the\n"
+    	"                            accuracy will be\n"
+	);
+	
+	printf(
     	"   -mask <nii>            : a mask specifying the region of interest\n"
     	"                            on which the computations will be\n"
         "                            performed on\n"
@@ -192,6 +203,8 @@ int main(int argc, char * argv[]) {
 	char *precisionpath = NULL;
 	char *recallpath    = NULL;
 	char *f1scorepath   = NULL;
+	char *mccpath       = NULL;
+	char *accpath       = NULL;
 	char *maskpath      = NULL;
 	char *templatepath  = NULL;
 	
@@ -232,6 +245,18 @@ int main(int argc, char * argv[]) {
 				return 1;
 			}
 			f1scorepath = argv[ac];
+		} else if ( ! strcmp(argv[ac], "-mcc") ) {
+            if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -mcc\n");
+				return 1;
+			}
+			mccpath = argv[ac];
+		} else if ( ! strcmp(argv[ac], "-acc") ) {
+            if( ++ac >= argc ) {
+				fprintf(stderr, "** missing argument for -acc\n");
+				return 1;
+			}
+			accpath = argv[ac];
 		} else if ( ! strcmp(argv[ac], "-mask") ) {
             if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -mask\n");
@@ -285,6 +310,9 @@ int main(int argc, char * argv[]) {
     if ( verbose ) {
         fprintf(stdout, "Precision file: %s\n", precisionpath);
 	    fprintf(stdout, "Recall file: %s\n", recallpath);
+	    fprintf(stdout, "F1-Score file: %s\n", f1scorepath);
+	    fprintf(stdout, "ACC file: %s\n", accpath);
+    	fprintf(stdout, "MCC file: %s\n", mccpath);
 		fprintf(stdout, "Mask file: %s\n", maskpath);
 		fprintf(stdout, "Template file: %s\n", templatepath);
 		if ( fdrThreshold > 0 ) {
@@ -409,12 +437,14 @@ int main(int argc, char * argv[]) {
 
 	// Prepare actual computation
 	short x, y, z, row, col, threadId, processedSlices = 0, nColumns=refFile.vDim;
-	double **hits          = d2matrix(nFiles-1, refFile.vDim-1); // aka true positives
-	double **misses        = d2matrix(nFiles-1, refFile.vDim-1); // aka false negatives
-	double **falseAlarms   = d2matrix(nFiles-1, refFile.vDim-1); // aka false positives
-	double ***_hits        = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1); // copy for multithreading
-	double ***_misses      = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
-	double ***_falseAlarms = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
+	double **hits                = d2matrix(nFiles-1, refFile.vDim-1); // aka true positives
+	double **misses              = d2matrix(nFiles-1, refFile.vDim-1); // aka false negatives
+	double **falseAlarms         = d2matrix(nFiles-1, refFile.vDim-1); // aka false positives
+	double **correctRejections   = d2matrix(nFiles-1, refFile.vDim-1); // aka true negatives
+	double ***_hits              = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1); // copy for multithreading
+	double ***_misses            = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
+	double ***_falseAlarms       = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
+	double ***_correctRejections = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
 	double ***templateData = d3matrix(refFile.zDim-1, refFile.yDim-1, refFile.xDim-1);
     rsExtractVolumeFromBuffer(template.fslio, templateData[0][0], template.data, template.slope, template.inter, 0, refFile.xDim, refFile.yDim, refFile.zDim);
 	
@@ -423,14 +453,16 @@ int main(int argc, char * argv[]) {
 		for (col=0; col<nColumns; col=col+1) {
 			
 			for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-				_hits[thread][row][col]        = 0;
-				_misses[thread][row][col]      = 0;
-				_falseAlarms[thread][row][col] = 0;
+				_hits[thread][row][col]              = 0;
+				_misses[thread][row][col]            = 0;
+				_falseAlarms[thread][row][col]       = 0;
+				_correctRejections[thread][row][col] = 0;
 			}
 			
-			hits[row][col]        = 0;
-			misses[row][col]      = 0;
-			falseAlarms[row][col] = 0;
+			hits[row][col]              = 0;
+			misses[row][col]            = 0;
+			falseAlarms[row][col]       = 0;
+			correctRejections[row][col] = 0;
 		}
 	}
 	
@@ -491,6 +523,8 @@ int main(int argc, char * argv[]) {
 							} else {
 								if ( voxelSignificant ) {
 									_falseAlarms[threadId][row][col] += 1;
+								} else {
+									_correctRejections[threadId][row][col] += 1;
 								}
 							}
 						}
@@ -545,6 +579,18 @@ int main(int argc, char * argv[]) {
 					for (row=0; row<nFiles; row=row+1) {
 						for (col=0; col<nColumns; col=col+1) {
 							falseAlarms[row][col] += _falseAlarms[thread][row][col];
+						}
+					}
+				}
+			}
+			
+			// Aggregate correctRejections from all threads
+			#pragma omp section
+			{
+				for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
+					for (row=0; row<nFiles; row=row+1) {
+						for (col=0; col<nColumns; col=col+1) {
+							correctRejections[row][col] += _correctRejections[thread][row][col];
 						}
 					}
 				}
@@ -631,10 +677,57 @@ int main(int argc, char * argv[]) {
 					fclose(hFile);
 				}
 			}
+			
+			// Compute Matthews correlation coefficient
+			// @see http://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+			#pragma omp section
+			{
+				if ( mccpath != NULL ) {
+
+					FILE *hFile; 
+					hFile = fopen(mccpath,"w");
+				
+					for ( row = 0; row < nFiles; row = row + 1 ) {
+						for ( col = 0; col<nColumns; col=col+1 ) {
+							const double enumerator  = hits[row][col]*correctRejections[row][col] - falseAlarms[row][col]*misses[row][col];
+							const double denominator = sqrt((hits[row][col]+falseAlarms[row][col])*(hits[row][col]+misses[row][col])*(correctRejections[row][col]+falseAlarms[row][col])*(correctRejections[row][col]+misses[row][col]));
+							const double mcc = enumerator / denominator;
+							fprintf(hFile, "%.10f\t", mcc);
+						}
+						fprintf(hFile, "\n");
+					}
+					
+					fclose(hFile);
+				}
+			}
+			
+			// Compute Accuracy
+			// @see http://en.wikipedia.org/wiki/Accuracy
+			#pragma omp section
+			{
+				if ( accpath != NULL ) {
+
+					FILE *hFile; 
+					hFile = fopen(accpath,"w");
+				
+					for ( row = 0; row < nFiles; row = row + 1 ) {
+						for ( col = 0; col<nColumns; col=col+1 ) {
+							const double enumerator  = hits[row][col] + correctRejections[row][col];
+							const double denominator = enumerator +falseAlarms[row][col] + misses[row][col];
+							const double acc = enumerator / denominator;
+							fprintf(hFile, "%.10f\t", acc);
+						}
+						fprintf(hFile, "\n");
+					}
+					
+					fclose(hFile);
+				}
+			}
 		}
     }
 	
 	free(hits);
 	free(misses);
 	free(falseAlarms);
+	free(correctRejections);
 }
