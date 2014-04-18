@@ -11,6 +11,7 @@
 #include <omp.h>
 #include "rsmathutils.h"
 #include "rsniftiutils.h"
+#include "matio.h"
 
 void rsTemplateMatchinPrintHelp() {
     printf(
@@ -33,30 +34,9 @@ void rsTemplateMatchinPrintHelp() {
     );
     
     printf(
-        "   -precision <txt>       : the txt file in which a matrix with the\n"
-        "                            precision values will be saved\n"
+        "   -output <mat>          : a mat file in which all output variables\n"
+        "                            will be stored\n"
     );
-
-	printf(
-    	"   -recall <txt>          : the txt file in which a matrix with the\n"
-    	"                            recall values will be saved\n"
-	);
-	
-	printf(
-    	"   -f1score <txt>         : the txt file in which a matrix with the\n"
-    	"                            f1-scores will be saved\n"
-	);
-	
-	printf(
-    	"   -mcc <txt>             : the txt file in which a matrix with the\n"
-    	"                            matthews correlation coefficient will be\n"
-        "                            saved\n"
-	);
-
-	printf(
-    	"   -acc <txt>             : the txt file in which a matrix with the\n"
-    	"                            accuracy will be\n"
-	);
 	
 	printf(
     	"   -mask <nii>            : a mask specifying the region of interest\n"
@@ -67,17 +47,22 @@ void rsTemplateMatchinPrintHelp() {
 	printf(
     	"   -template <nii>        : template file that will be compared against\n"
 	);
-
+	
 	printf(
-		"   -p <float>             : uncorrected p-value that will be used to\n"
-		"                            threshold both the input volumes and the\n"
-		"                            template before comparing them\n"
-		"                            (defaults to p<0.001)\n"
+    	"   -pTemplate <float>     : uncorrected p-threshold that's used for the\n"
+        "                            template\n"
+	);
+	
+	printf(
+    	"   -steps <float>         : number of thresholds that should be tested\n"
+        "                            within the supplied range of p-values\n"
 	);
 
 	printf(
-    	"   -q <float>             : FDR q-limit that will be used as a threshold\n"
-        "                            instead of a p-value\n"
+		"   -p <float>             : range of uncorrected p-values that will be\n"
+		"                            used to threshold both the input volumes\n"
+		"                            and the template before comparing them\n"
+		"                            (defaults to p<0.001)\n"
 	);
 
     printf(
@@ -200,18 +185,15 @@ struct rsInputFile *rsReadFileListFromStandardInput(unsigned int *nFiles) {
 
 int main(int argc, char * argv[]) {
     	
-	char *precisionpath = NULL;
-	char *recallpath    = NULL;
-	char *f1scorepath   = NULL;
-	char *mccpath       = NULL;
-	char *accpath       = NULL;
+	char *outputpath    = NULL;
 	char *maskpath      = NULL;
 	char *templatepath  = NULL;
 	
 	BOOL verbose = FALSE;
     int threads = 1;
-	float fdrThreshold = -1.0;
-	float pThreshold = 0.001;
+	double pRange[2] = {0.0005, 0.01};
+	size_t pSteps = 95;
+	double pTemplate = 0.001;
 	
 	int ac;
     
@@ -227,36 +209,12 @@ int main(int argc, char * argv[]) {
             return 1;
 		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
 			verbose = TRUE;
-		} else if ( ! strcmp(argv[ac], "-precision") ) {
+		} else if ( ! strcmp(argv[ac], "-output") ) {
             if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -precision\n");
+				fprintf(stderr, "** missing argument for -output\n");
 				return 1;
 			}
-			precisionpath = argv[ac];
-		} else if ( ! strcmp(argv[ac], "-recall") ) {
-            if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -recall\n");
-				return 1;
-			}
-			recallpath = argv[ac];
-		} else if ( ! strcmp(argv[ac], "-f1score") ) {
-            if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -f1score\n");
-				return 1;
-			}
-			f1scorepath = argv[ac];
-		} else if ( ! strcmp(argv[ac], "-mcc") ) {
-            if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -mcc\n");
-				return 1;
-			}
-			mccpath = argv[ac];
-		} else if ( ! strcmp(argv[ac], "-acc") ) {
-            if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -acc\n");
-				return 1;
-			}
-			accpath = argv[ac];
+			outputpath = argv[ac];
 		} else if ( ! strcmp(argv[ac], "-mask") ) {
             if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -mask\n");
@@ -275,18 +233,26 @@ int main(int argc, char * argv[]) {
            		return 1;
            	}
            	threads = atoi(argv[ac]);
-        } else if ( ! strcmp(argv[ac], "-q") ) {
-	  		if( ++ac >= argc ) {
-	       		fprintf(stderr, "** missing argument for -q\n");
+		} else if ( ! strcmp(argv[ac], "-pTemplate") ) {
+  			if( ++ac >= argc ) {
+           		fprintf(stderr, "** missing argument for -pTemplate\n");
+           		return 1;
+           	}
+           	pSteps = atoi(argv[ac]);
+        } else if ( ! strcmp(argv[ac], "-steps") ) {
+ 			if( ++ac >= argc ) {
+          		fprintf(stderr, "** missing argument for -steps\n");
+          		return 1;
+          	}
+          	pSteps = atoi(argv[ac]);
+        } else if ( ! strcmp(argv[ac], "-p") ) {
+	  		if( (++ac+1) >= argc ) {
+	       		fprintf(stderr, "** missing argument(s) for -p\n");
 	       		return 1;
 	       	}
-	       	fdrThreshold = atof(argv[ac]);
-	    } else if ( ! strcmp(argv[ac], "-p") ) {
-	  		if( ++ac >= argc ) {
-	       		fprintf(stderr, "** missing argument for -p\n");
-	       		return 1;
-	       	}
-	       	pThreshold = atof(argv[ac]);
+	       	pRange[0] = atof(argv[ac]);
+			++ac;
+	       	pRange[1] = atof(argv[ac]);			
 	    } else {
 			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
 		}
@@ -302,24 +268,17 @@ int main(int argc, char * argv[]) {
 		return 1;
 	}
 	
-	if ( fdrThreshold <= 0 && pThreshold <= 0 ) {
+	if ( pRange[0] <= 0 || pRange[1] <= 0 || pRange[0] > pRange[1] ) {
 		fprintf(stderr, "Given thresholds are invalid!\n");
 		return 1;
 	}
 	
     if ( verbose ) {
-        fprintf(stdout, "Precision file: %s\n", precisionpath);
-	    fprintf(stdout, "Recall file: %s\n", recallpath);
-	    fprintf(stdout, "F1-Score file: %s\n", f1scorepath);
-	    fprintf(stdout, "ACC file: %s\n", accpath);
-    	fprintf(stdout, "MCC file: %s\n", mccpath);
 		fprintf(stdout, "Mask file: %s\n", maskpath);
 		fprintf(stdout, "Template file: %s\n", templatepath);
-		if ( fdrThreshold > 0 ) {
-			fprintf(stdout, "FDR-threshold: %.9f\n", fdrThreshold);
-		} else {
-			fprintf(stdout, "p-threshold: %.9f\n", pThreshold);
-		}
+		fprintf(stdout, "p-threshold range: %.9f...%.9f\n", pRange[0], pRange[1]);
+		fprintf(stdout, "Number of p-values to test: %ld\n", pSteps);
+		fprintf(stdout, "Writing statistics to: %s\n", outputpath);
     }
 
 	rsSetThreadsNum(threads);
@@ -347,6 +306,17 @@ int main(int argc, char * argv[]) {
 
 		fileListLength = fileListLength + strlen(file.path) + 5;
     }
+
+
+	// Open output file
+	mat_t *mat;
+	matvar_t *struct_fields[10] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+	mat = Mat_CreateVer(outputpath,NULL,MAT_FT_MAT73);
+	
+	if ( mat == NULL ) {
+		fprintf(stderr, "Mat file could not be written to '%s'\n", outputpath);
+		return 1;
+	}
     
     if ( nFiles < 1 ) {
         fprintf(stderr, "No files were supplied via standard input!\n");
@@ -383,86 +353,38 @@ int main(int argc, char * argv[]) {
 		fprintf(stdout, "\nComputing thresholds\n");
 	}
 	
-	// Compute FDR-threshold if requested
-	if ( fdrThreshold > 0 ) {
-	
-		// Find the file with the largest DOF
-		struct rsInputFile fileWithLargestDOF = files[0];
-		for ( int row = 1; row < nFiles; row = row + 1 ) {
-			const struct rsInputFile file = files[row];
-			if ( file.dof > fileWithLargestDOF.dof ) {
-				fileWithLargestDOF = file;
-			}
-		}
-	
-		// Compute FDR-threshold for the file with the largest DOF
-		struct rsFDRResult fdrResult;
-		double ***data;
-		data = d3matrix(fileWithLargestDOF.zDim-1,  fileWithLargestDOF.yDim-1, fileWithLargestDOF.xDim-1);
-		rsExtractVolumeFromBuffer(fileWithLargestDOF.fslio, data[0][0], fileWithLargestDOF.data, fileWithLargestDOF.slope, fileWithLargestDOF.inter, fileWithLargestDOF.vDim-1, fileWithLargestDOF.xDim, fileWithLargestDOF.yDim, fileWithLargestDOF.zDim);
-		fdrResult = rsComputeTThresholdFDR(data, fdrThreshold, maskPoints, nPoints, fileWithLargestDOF.dof);
-	
-		// Compute corresponding t-threshold for all other files
-		for ( int row = 0; row < nFiles; row = row + 1 ) {
-			struct rsInputFile file = files[row];
-			file.tThreshold = rsComputeTValueFromPValue(fdrResult.p / 2, file.dof);
-			if (verbose) {
-				fprintf(stdout, "File: %s, DOF: %02.0f, t-FDR: %02.9f, uncorrected-p: %02.9f\n", file.path, file.dof, file.tThreshold, fdrResult.p);
-			}
-		}
-		
-		// Compute corresponding t-threshold for the template itself
-		template.tThreshold = rsComputeTValueFromPValue(fdrResult.p / 2, template.dof);
-		if (verbose) {
-			fprintf(stdout, "File: %s, DOF: %02.0f, t-FDR: %02.9f, uncorrected-p: %02.9f\n", template.path, template.dof, template.tThreshold, fdrResult.p);
-		}
-		
-	} else { // use the supplied/default p-value instead
-		
-		// Compute t-threshold that corresponds to the given p-value for all files
-		for ( int row = 0; row < nFiles; row = row + 1 ) {
-			struct rsInputFile file = files[row];
-			file.tThreshold = rsComputeTValueFromPValue(pThreshold / 2, file.dof);
-			if (verbose) {
-				fprintf(stdout, "File: %s, DOF: %02.0f, t-threshold: %02.9f, uncorrected-p: %02.9f\n", file.path, file.dof, file.tThreshold, pThreshold);
-			}
-		}
-		
-		// Compute corresponding t-threshold for the template itself
-		template.tThreshold = rsComputeTValueFromPValue(pThreshold / 2, template.dof);
-		if (verbose) {
-			fprintf(stdout, "File: %s, DOF: %02.0f, t-FDR: %02.9f, uncorrected-p: %02.9f\n", template.path, template.dof, template.tThreshold, pThreshold);
-		}
+	// compute thresholds that are going to be tested
+	double pThresholds[pSteps];
+	pThresholds[0] = pRange[0];
+	for ( int i=1; i<pSteps; i=i+1 ) {
+		pThresholds[i] = pThresholds[i-1] + (pRange[1]-pRange[0])/(pSteps-1);
 	}
-
+	
+	// Compute corresponding t-threshold for the template 
+	template.tThreshold = rsComputeTValueFromPValue(pTemplate / 2, template.dof);
+	if (verbose) {
+		fprintf(stdout, "File: %s, DOF: %02.0f, t: %02.9f, uncorrected-p: %02.9f\n", template.path, template.dof, template.tThreshold, pTemplate);
+	}
+	
 	// Prepare actual computation
-	short x, y, z, row, col, threadId, processedSlices = 0, nColumns=refFile.vDim;
-	double **hits                = d2matrix(nFiles-1, refFile.vDim-1); // aka true positives
-	double **misses              = d2matrix(nFiles-1, refFile.vDim-1); // aka false negatives
-	double **falseAlarms         = d2matrix(nFiles-1, refFile.vDim-1); // aka false positives
-	double **correctRejections   = d2matrix(nFiles-1, refFile.vDim-1); // aka true negatives
-	double ***_hits              = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1); // copy for multithreading
-	double ***_misses            = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
-	double ***_falseAlarms       = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
-	double ***_correctRejections = d3matrix(rsGetThreadsNum()-1, nFiles-1, refFile.vDim-1);
-	double ***templateData = d3matrix(refFile.zDim-1, refFile.yDim-1, refFile.xDim-1);
+	short x, y, z, row, col, processedThresholds = 0, nColumns=refFile.vDim;
+	int p;
+	double ***hits              = d3matrix(pSteps-1, nFiles-1, refFile.vDim-1); // aka true positives
+	double ***misses            = d3matrix(pSteps-1, nFiles-1, refFile.vDim-1); // aka false negatives
+	double ***falseAlarms       = d3matrix(pSteps-1, nFiles-1, refFile.vDim-1); // aka false positives
+	double ***correctRejections = d3matrix(pSteps-1, nFiles-1, refFile.vDim-1); // aka true negatives
+	double ***templateData      = d3matrix(refFile.zDim-1, refFile.yDim-1, refFile.xDim-1);
     rsExtractVolumeFromBuffer(template.fslio, templateData[0][0], template.data, template.slope, template.inter, 0, refFile.xDim, refFile.yDim, refFile.zDim);
 	
 	// Reset statistics
-	for (row=0; row<nFiles; row=row+1) {
-		for (col=0; col<nColumns; col=col+1) {
-			
-			for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-				_hits[thread][row][col]              = 0;
-				_misses[thread][row][col]            = 0;
-				_falseAlarms[thread][row][col]       = 0;
-				_correctRejections[thread][row][col] = 0;
+	for ( p=0; p<pSteps; p=p+1 ) {
+		for (row=0; row<nFiles; row=row+1) {
+			for (col=0; col<nColumns; col=col+1) {
+				hits[p][row][col]              = 0;
+				misses[p][row][col]            = 0;
+				falseAlarms[p][row][col]       = 0;
+				correctRejections[p][row][col] = 0;
 			}
-			
-			hits[row][col]              = 0;
-			misses[row][col]            = 0;
-			falseAlarms[row][col]       = 0;
-			correctRejections[row][col] = 0;
 		}
 	}
 	
@@ -470,132 +392,92 @@ int main(int argc, char * argv[]) {
 		fprintf(stdout, "\nComparing volumes to the template\n");
 	}
 	
-    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,row,col,threadId) shared(processedSlices,templateData,template,hits,misses,falseAlarms,_hits,_misses,_falseAlarms,nFiles,files,mask)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(p,z,y,x,row,col) shared(processedThresholds,templateData,template,hits,misses,falseAlarms,nFiles,files,mask)
     {
-		/* Iterate over all voxels in the mask that should be compared */
+		/* Iterate over all thresholds, voxels, files(rows) and volumes(columns) in the mask that should be compared to the template */
         #pragma omp for schedule(guided)
-        for (z=0; z<refFile.zDim; z=z+1) {
-            for (y=0; y<refFile.yDim; y=y+1) {
-                for (x=0; x<refFile.xDim; x=x+1) {
+		for ( p = 0; p < pSteps; p = p + 1 ) {
+ 	       for ( row = 0; row < nFiles; row = row + 1 ) {
+				const struct rsInputFile *file = &files[row];
+		
+				// Compute t-threshold that corresponds to the given p-value for all files
+				double tThreshold = rsComputeTValueFromPValue(pThresholds[p] / 2, (*file).dof);
+
+		        for (z=0; z<refFile.zDim; z=z+1) {
+		            for (y=0; y<refFile.yDim; y=y+1) {
+		                for (x=0; x<refFile.xDim; x=x+1) {
 	
-                    /* If it's not in the mask skip it to improve the performance */
-                    if (mask != NULL && mask[z][y][x] < 0.1) {
-                        continue;
-                    }
+		                    /* If it's not in the mask skip it to improve the performance */
+		                    if (mask != NULL && mask[z][y][x] < 0.1) {
+		                        continue;
+		                    }
 
-					/* Don't compare voxels correspond to a NAN-value in the template */
-					if ( templateData[z][y][x] != templateData[z][y][x] ) {
-						continue;
-					}
+							/* Don't compare voxels correspond to a NAN-value in the template */
+							if ( templateData[z][y][x] != templateData[z][y][x] ) {
+								continue;
+							}
 					
-					threadId = omp_get_thread_num();
-					
-					const BOOL voxelShouldBeSignificant = templateData[z][y][x] >= template.tThreshold;
+							const BOOL voxelShouldBeSignificant = templateData[z][y][x] >= template.tThreshold;
 
-					/* Otherwise go through the list of files and compare them to the template */
-                    for ( row = 0; row < nFiles; row = row + 1 ) {
-						const struct rsInputFile *file = &files[row];
-						
-	                    /* read out columns for the current row */
-	                    double *columns = (double*)malloc(refFile.vDim*sizeof(double));
-	                    rsExtractTimecourseFromBuffer(
-							(*file).fslio, 
-							&columns[0], 
-							(*file).data, 
-							(*file).slope, 
-							(*file).inter, 
-							MakePoint3D(x,y,z), 
-							(*file).xDim, 
-							(*file).yDim, 
-							(*file).zDim, 
-							(*file).vDim
-						);
-                 	
-						for ( col = 0; col<refFile.vDim; col=col+1 ) {
-							const BOOL voxelSignificant = columns[col] >= (*file).tThreshold;
+		                    /* read out columns for the current row */
+		                    double *columns = (double*)malloc(refFile.vDim*sizeof(double));
+		                    rsExtractTimecourseFromBuffer(
+								(*file).fslio, 
+								&columns[0], 
+								(*file).data, 
+								(*file).slope, 
+								(*file).inter, 
+								MakePoint3D(x,y,z), 
+								(*file).xDim, 
+								(*file).yDim, 
+								(*file).zDim, 
+								(*file).vDim
+							);
+                	
+							for ( col = 0; col<refFile.vDim; col=col+1 ) {
+								const BOOL voxelSignificant = columns[col] >= tThreshold;
 
-							if ( voxelShouldBeSignificant ) {
-								if ( voxelSignificant ) {
-									_hits[threadId][row][col] += 1;
+								if ( voxelShouldBeSignificant ) {
+									if ( voxelSignificant ) {
+										hits[p][row][col] += 1;
+									} else {
+										misses[p][row][col] += 1;
+									}
 								} else {
-									_misses[threadId][row][col] += 1;
-								}
-							} else {
-								if ( voxelSignificant ) {
-									_falseAlarms[threadId][row][col] += 1;
-								} else {
-									_correctRejections[threadId][row][col] += 1;
+									if ( voxelSignificant ) {
+										falseAlarms[p][row][col] += 1;
+									} else {
+										correctRejections[p][row][col] += 1;
+									}
 								}
 							}
-						}
-	                    
-	                    free(columns);
-					}
-                }
-            }
+                    
+		                    free(columns);
+		                }
+		            }
+		        }
+			}
 			
 			/* show progress */
 			if (verbose) {
             	#pragma omp atomic
-            	processedSlices += 1;
-            
-            	if (processedSlices > 0 && processedSlices % (short)(refFile.zDim / 10) == 0) {
-                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)refFile.zDim));
+            	processedThresholds += 1;
+       
+            	if (pSteps > 9 && processedThresholds > 0 && processedThresholds % (short)(pSteps / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedThresholds*100.0 / (float)pSteps));
             	}
 			}
-        }
+		}
 
+		// Create output mat-file
+	    matvar_t *struct_matvar;
+		//matvar_t *struct_fields[1] = {NULL};
+	    size_t    sDims[3] = {nFiles,nColumns,pSteps};
+	    int       iDims[3] = {nFiles,nColumns,pSteps};
+		size_t    length = (size_t)pSteps*(size_t)nFiles*(size_t)nColumns;
 		
 		#pragma omp sections
-		{
-			// Aggregate hits from all threads
-			#pragma omp section
-			{
-				for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-					for (row=0; row<nFiles; row=row+1) {
-						for (col=0; col<nColumns; col=col+1) {
-							hits[row][col] += _hits[thread][row][col];
-						}
-					}
-				}
-			}
-			
-			// Aggregate misses from all threads
-			#pragma omp section
-			{
-				for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-					for (row=0; row<nFiles; row=row+1) {
-						for (col=0; col<nColumns; col=col+1) {
-							misses[row][col] += _misses[thread][row][col];
-						}
-					}
-				}
-			}
-			
-			// Aggregate falseAlarm from all threads
-			#pragma omp section
-			{
-				for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-					for (row=0; row<nFiles; row=row+1) {
-						for (col=0; col<nColumns; col=col+1) {
-							falseAlarms[row][col] += _falseAlarms[thread][row][col];
-						}
-					}
-				}
-			}
-			
-			// Aggregate correctRejections from all threads
-			#pragma omp section
-			{
-				for ( int thread=0; thread<rsGetThreadsNum(); thread=thread+1 ) {
-					for (row=0; row<nFiles; row=row+1) {
-						for (col=0; col<nColumns; col=col+1) {
-							correctRejections[row][col] += _correctRejections[thread][row][col];
-						}
-					}
-				}
-			}
-			
+		{			
 			// Close files and cleanup
 			#pragma omp section
 			{
@@ -609,123 +491,158 @@ int main(int argc, char * argv[]) {
 				free(mask);
 				free(templateData);
 			}
-		}
+			
+			// Prepare hits, misses, correctRejections, falseAlarms
+			#pragma omp section
+			{
+				double *_hits              = malloc(length * sizeof(double));
+				double *_misses            = malloc(length * sizeof(double));
+				double *_correctRejections = malloc(length * sizeof(double));
+				double *_falseAlarms       = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
+				
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							_hits[lindex]              = hits[p][row][col];
+							_falseAlarms[lindex]       = falseAlarms[p][row][col];
+							_correctRejections[lindex] = correctRejections[p][row][col];
+							_misses[lindex]            = misses[p][row][col];
+						}
+					}
+				}
+				
+				struct_fields[0] = Mat_VarCreate("hits",              MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims,   _hits,              0);
+				struct_fields[1] = Mat_VarCreate("misses",            MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims,   _misses,            0);
+				struct_fields[2] = Mat_VarCreate("falseAlarms",       MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims,   _falseAlarms,       0);
+				struct_fields[3] = Mat_VarCreate("correctRejections", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims,   _correctRejections, 0);
+				struct_fields[4] = Mat_VarCreate("thresholds",        MAT_C_DOUBLE, MAT_T_DOUBLE, 1, &pSteps, &pThresholds[0],    0);
 
-		#pragma omp sections
-		{		
+				free(index);
+				free(_hits);
+				free(_misses);
+				free(_correctRejections);
+				free(_falseAlarms);
+			}
+			
 			// Compute Precision
 			#pragma omp section
 			{
-				if ( precisionpath != NULL ) {
-
-					FILE *hFile; 
-					hFile = fopen(precisionpath,"w");
+				double *precision = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
 				
-	                for ( row = 0; row < nFiles; row = row + 1 ) {
-						for ( col = 0; col<nColumns; col=col+1 ) {
-							const double precision = hits[row][col] / (hits[row][col] + falseAlarms[row][col]);
-							fprintf(hFile, "%.10f\t", precision);
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							precision[lindex] = hits[p][row][col] / (hits[p][row][col] + falseAlarms[p][row][col]);
 						}
-						fprintf(hFile, "\n");
 					}
-					
-					fclose(hFile);
 				}
+				struct_fields[5] = Mat_VarCreate("precision", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims, precision, 0);
 				
+				free(index);
+				free(precision);
 			}
 			
 			// Compute Recall
 			#pragma omp section
 			{
-				if ( recallpath != NULL ) {
-
-					FILE *hFile; 
-					hFile = fopen(recallpath,"w");
+				double *recall = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
 				
-					for ( row = 0; row < nFiles; row = row + 1 ) {
-						for ( col = 0; col<nColumns; col=col+1 ) {
-							const double recall = hits[row][col] / (hits[row][col] + misses[row][col]);
-							fprintf(hFile, "%.10f\t", recall);
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							recall[lindex] = hits[p][row][col] / (hits[p][row][col] + misses[p][row][col]);
 						}
-						fprintf(hFile, "\n");
 					}
-					
-					fclose(hFile);
 				}
+				struct_fields[6] = Mat_VarCreate("recall", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims, recall, 0);
 
+				free(index);
+				free(recall);
 			}
 			
 			// Compute F1 score
 			// @see http://en.wikipedia.org/wiki/F1_score
 			#pragma omp section
 			{
-				if ( f1scorepath != NULL ) {
-
-					FILE *hFile; 
-					hFile = fopen(f1scorepath,"w");
+				double *f1score = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
 				
-					for ( row = 0; row < nFiles; row = row + 1 ) {
-						for ( col = 0; col<nColumns; col=col+1 ) {
-							const double precision = hits[row][col] / (hits[row][col] + falseAlarms[row][col]);
-							const double recall    = hits[row][col] / (hits[row][col] + misses[row][col]);
-							const double f1score   = (precision * recall) / (precision + recall);
-							fprintf(hFile, "%.10f\t", f1score);
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							const double precision = hits[p][row][col] / (hits[p][row][col] + falseAlarms[p][row][col]);
+							const double recall    = hits[p][row][col] / (hits[p][row][col] + misses[p][row][col]);
+							f1score[lindex] = (precision * recall) / (precision + recall);
 						}
-						fprintf(hFile, "\n");
 					}
-					
-					fclose(hFile);
 				}
+				struct_fields[7] = Mat_VarCreate("f1score", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims, f1score, 0);
+
+				free(index);
+				free(f1score);
 			}
 			
 			// Compute Matthews correlation coefficient
 			// @see http://en.wikipedia.org/wiki/Matthews_correlation_coefficient
 			#pragma omp section
 			{
-				if ( mccpath != NULL ) {
-
-					FILE *hFile; 
-					hFile = fopen(mccpath,"w");
+				double *mcc = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
 				
-					for ( row = 0; row < nFiles; row = row + 1 ) {
-						for ( col = 0; col<nColumns; col=col+1 ) {
-							const double enumerator  = hits[row][col]*correctRejections[row][col] - falseAlarms[row][col]*misses[row][col];
-							const double denominator = sqrt((hits[row][col]+falseAlarms[row][col])*(hits[row][col]+misses[row][col])*(correctRejections[row][col]+falseAlarms[row][col])*(correctRejections[row][col]+misses[row][col]));
-							const double mcc = enumerator / denominator;
-							fprintf(hFile, "%.10f\t", mcc);
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							const double enumerator  = hits[p][row][col]*correctRejections[p][row][col] - falseAlarms[p][row][col]*misses[p][row][col];
+							const double denominator = sqrt((hits[p][row][col]+falseAlarms[p][row][col])*(hits[p][row][col]+misses[p][row][col])*(correctRejections[p][row][col]+falseAlarms[p][row][col])*(correctRejections[p][row][col]+misses[p][row][col]));
+							mcc[lindex] = enumerator / denominator;
 						}
-						fprintf(hFile, "\n");
 					}
-					
-					fclose(hFile);
 				}
+				struct_fields[8] = Mat_VarCreate("mcc", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims, mcc, 0);
+
+				free(index);
+				free(mcc);
 			}
 			
 			// Compute Accuracy
 			// @see http://en.wikipedia.org/wiki/Accuracy
 			#pragma omp section
 			{
-				if ( accpath != NULL ) {
-
-					FILE *hFile; 
-					hFile = fopen(accpath,"w");
+				double *acc = malloc(length * sizeof(double));
+				int *index = malloc(3 * sizeof(int));
 				
-					for ( row = 0; row < nFiles; row = row + 1 ) {
-						for ( col = 0; col<nColumns; col=col+1 ) {
-							const double enumerator  = hits[row][col] + correctRejections[row][col];
-							const double denominator = enumerator +falseAlarms[row][col] + misses[row][col];
-							const double acc = enumerator / denominator;
-							fprintf(hFile, "%.10f\t", acc);
+				for ( p = 0; p < pSteps; p = p + 1 ) {              index[2] = p+1;
+	            	for ( row = 0; row < nFiles; row = row + 1 ) {  index[0] = row+1;
+						for ( col = 0; col<nColumns; col=col+1 ) {  index[1] = col+1;
+							const int lindex = Mat_CalcSingleSubscript(3, iDims, index);
+							const double enumerator  = hits[p][row][col] + correctRejections[p][row][col];
+							const double denominator = enumerator +falseAlarms[p][row][col] + misses[p][row][col];
+							acc[lindex] = enumerator / denominator;
 						}
-						fprintf(hFile, "\n");
 					}
-					
-					fclose(hFile);
 				}
+				struct_fields[9] = Mat_VarCreate("accuracy", MAT_C_DOUBLE, MAT_T_DOUBLE, 3, sDims, acc, 0);
+
+				free(index);
+				free(acc);
 			}
-		}
+		}		
     }
-	
+
+	for ( int i=0; i<9; i=i+1 ) {
+		Mat_VarWrite(mat, struct_fields[i], MAT_COMPRESSION_NONE);
+		Mat_VarFree(struct_fields[i]);
+	}
+
+	Mat_Close(mat);
 	free(hits);
 	free(misses);
 	free(falseAlarms);

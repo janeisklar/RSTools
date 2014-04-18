@@ -170,7 +170,7 @@ powerestimation:
 	$(CC) $(CFLAGS) -c rsvarsubjectsttest2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
 	$(CC) $(CFLAGS) rsvarsubjectsttest2.o -o rsvarsubjectsttest2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
 	$(CC) $(CFLAGS) -c rstemplatematching2.c $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) -fopenmp
-	$(CC) $(CFLAGS) rstemplatematching2.o -o rstemplatematching2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -fopenmp
+	$(CC) $(CFLAGS) rstemplatematching2.o -o rstemplatematching2 $(FSLIO_INCS) $(NIFTI_INCS) $(ZNZ_INCS) $(FSLIO_LIBS) $(NIFTI_LIBS) $(ZNZ_LIBS) $(RSNIFTI_LIBS) $(RSMATH_LIBS) -lmatio -lhdf5 -fopenmp
 
 centrality:
 	@echo
