@@ -238,7 +238,7 @@ int main(int argc, char * argv[]) {
            		fprintf(stderr, "** missing argument for -pTemplate\n");
            		return 1;
            	}
-           	pSteps = atoi(argv[ac]);
+           	pTemplate = atof(argv[ac]);
         } else if ( ! strcmp(argv[ac], "-steps") ) {
  			if( ++ac >= argc ) {
           		fprintf(stderr, "** missing argument for -steps\n");
@@ -277,6 +277,7 @@ int main(int argc, char * argv[]) {
 		fprintf(stdout, "Mask file: %s\n", maskpath);
 		fprintf(stdout, "Template file: %s\n", templatepath);
 		fprintf(stdout, "p-threshold range: %.9f...%.9f\n", pRange[0], pRange[1]);
+		fprintf(stdout, "Template p-threshold: %.9f\n", pTemplate);
 		fprintf(stdout, "Number of p-values to test: %ld\n", pSteps);
 		fprintf(stdout, "Writing statistics to: %s\n", outputpath);
     }
@@ -356,12 +357,16 @@ int main(int argc, char * argv[]) {
 	// compute thresholds that are going to be tested
 	double pThresholds[pSteps];
 	pThresholds[0] = pRange[0];
+	const double pRangeWidth = pRange[1]-pRange[0];
 	for ( int i=1; i<pSteps; i=i+1 ) {
-		pThresholds[i] = pThresholds[i-1] + (pRange[1]-pRange[0])/(pSteps-1);
+		// sample thresholds in a way that the edges of the value range are tested much less than the center
+		// this is achived by the following formula: y=tan(2x-1)/(6*cos(2x-1))+0.5
+		const double x = (double)(i+1.0) / (double)(pSteps-1.0); // walk from 1/nSteps to 1
+		pThresholds[i] = pRange[0] + (tan(2*x-1)/(6*cos(2*x-1))+0.5) * pRangeWidth;
 	}
 	
 	// Compute corresponding t-threshold for the template 
-	template.tThreshold = rsComputeTValueFromPValue(pTemplate / 2, template.dof);
+	template.tThreshold = rsComputeTValueFromPValue(pTemplate / 2.0, template.dof);
 	if (verbose) {
 		fprintf(stdout, "File: %s, DOF: %02.0f, t: %02.9f, uncorrected-p: %02.9f\n", template.path, template.dof, template.tThreshold, pTemplate);
 	}
