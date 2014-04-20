@@ -359,10 +359,10 @@ int main(int argc, char * argv[]) {
 	pThresholds[0] = pRange[0];
 	const double pRangeWidth = pRange[1]-pRange[0];
 	for ( int i=1; i<pSteps; i=i+1 ) {
-		// sample thresholds in a way that the edges of the value range are tested much less thoroughly than the center
-		// this is achieved through the following formula: y=tan(0.5x-0.25)/(cos(0.5x-0.25))+0.5
-		const double x = (double)(i+1.0) / (double)(pSteps-1.0); // walk from 1/nSteps to 1
-		pThresholds[i] = pRange[0] + (tan(0.5*x-0.25)/(cos(0.5*x-0.25))+0.5) * pRangeWidth;
+		// sample thresholds in a way that lower probabilites are tested more thoroughly than higher ones
+		// as they will show more changes in the rate of classification
+		const double x = (double)(i) / (double)(pSteps-1.0); // walk from 1/nSteps to 1
+		pThresholds[i] = pRange[0] + pow(x,10) * pRangeWidth;
 	}
 	
 	// Compute corresponding t-threshold for the template 
