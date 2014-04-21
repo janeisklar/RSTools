@@ -137,6 +137,7 @@ void rs_vector_fprintfl(FILE *stream, const long double *x, const long n, const 
 void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* fmt);
 BOOL rsSaveMatrix(const char *filename, const double** A, const long m, const long n);
 BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n);
+int rsCountDigits(int n);
     
 float  rsFastErfInv(float x);
 double rsErfInv(const double x);
