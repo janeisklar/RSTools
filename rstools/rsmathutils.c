@@ -9,6 +9,7 @@
 #include "rsmathutils.h"
 
 static int rsFFTFilterEngine = RSFFTFILTER_ENGINE_GSL;
+static gsl_rng *rsRandomNumberGenerator = NULL;
 
 void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose)
 {
@@ -1425,6 +1426,22 @@ double rsOneSampleTTest(const double *data, const unsigned int length, const dou
     std = sqrt(std);
     
     return (mean - mu) / (std / sqrt(length));
+}
+
+gsl_rng *rsGetRandomNumberGenerator()
+{
+	if ( ! rsRandomNumberGenerator ) {
+		gsl_rng_env_setup();
+		rsRandomNumberGenerator = gsl_rng_alloc(gsl_rng_default);
+	}
+	
+	return rsRandomNumberGenerator;
+}
+
+void rsDestroyRandomNumberGenerator()
+{
+	gsl_rng_free(rsRandomNumberGenerator);
+	rsRandomNumberGenerator = NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
