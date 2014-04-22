@@ -642,7 +642,7 @@ int main(int argc, char * argv[]) {
 		}		
     }
 
-	for ( int i=0; i<9; i=i+1 ) {
+	for ( int i=0; i<10; i=i+1 ) {
 		Mat_VarWrite(mat, struct_fields[i], MAT_COMPRESSION_NONE);
 		Mat_VarFree(struct_fields[i]);
 	}
