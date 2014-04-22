@@ -204,7 +204,7 @@ int main(int argc, char * argv[]) {
             fprintf(stdout, "File: %s, Volumes: %d\n", file.path, file.vDim);
         }
 
-		fileListLength = fileListLength + strlen(file.path) + 5;
+		fileListLength = fileListLength + strlen(file.path) + 2 + rsCountDigits(file.vDim);
     }
     
     if ( nFiles < 1 ) {
@@ -217,7 +217,7 @@ int main(int argc, char * argv[]) {
     for (int n=0; n<nFiles; n=n+1) {
         const struct rsInputFile file = files[n];
 		sprintf(&fileList[bytesWritten], "%s,%04d\n", file.path, file.vDim);
-		bytesWritten = bytesWritten + strlen(file.path) + 6;
+		bytesWritten = bytesWritten + strlen(file.path) + 2 + rsCountDigits(file.vDim);
 	}
 	fileList[fileListLength-1] = '\0';
     
