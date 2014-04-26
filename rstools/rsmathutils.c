@@ -1432,7 +1432,7 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 	result.i = -1;
 	
 	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
-		const double p = rsComputePValueFromTValue(tValues[i], df)*2;
+		const double p = rsComputePValueFromTValue(tValues[i], df)*2.0;
 		const double threshold = (((double)i+1.0)/(double)nVoxels) * (q/C);
 		
 		if ( p <= threshold || result.i < 0) {
@@ -1450,12 +1450,20 @@ struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const 
 
 double rsComputePValueFromTValue(const double T, const int df)
 {
-	return 1.0-gsl_cdf_tdist_P(T, df);
+	if ( T < 0 ) {
+		return -gsl_cdf_tdist_P(T, df);
+	} else {
+		return gsl_cdf_tdist_Q(T, df);
+	}
 }
 
 double rsComputeTValueFromPValue(const double P, const int df)
 {
-	return gsl_cdf_tdist_Pinv(1.0-P, df);
+	if ( P < 0 ) {
+		return gsl_cdf_tdist_Pinv(-P, df);
+	} else {
+		return gsl_cdf_tdist_Qinv(P, df);
+	}
 }
 
 int rsCountDigits(int n)
