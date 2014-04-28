@@ -34,7 +34,7 @@ alg_sum.values = {
                     'eigen1'
                     'wtmean'
 }';
-alg_sum.def    = @(val)spm_get_defaults('rstools.roiextraction.sumalgorithm', val{:});
+%alg_sum.def    = @(val)spm_get_defaults('rstools.roiextraction.sumalgorithm', val{:});
 
 % ---------------------------------------------------------------------
 % roi ROI binary mask
