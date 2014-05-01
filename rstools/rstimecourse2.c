@@ -15,10 +15,11 @@
 #include "rsniftiutils.h"
 #include "rsmathutils.h"
 
-#define RSTIMECOURSE_ALGORITHM_MEAN 1
-#define RSTIMECOURSE_ALGORITHM_PCA  2
-#define RSTIMECOURSE_ALGORITHM_TPCA 3
-#define RSTIMECOURSE_ALGORITHM_CTP  4
+#define RSTIMECOURSE_ALGORITHM_MEAN   1
+#define RSTIMECOURSE_ALGORITHM_PCA    2
+#define RSTIMECOURSE_ALGORITHM_TPCA   3
+#define RSTIMECOURSE_ALGORITHM_CTP    4
+#define RSTIMECOURSE_ALGORITHM_STDDEV 5
 
 void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps);
 void rsTimecourseTest();
@@ -41,7 +42,7 @@ int show_help( void )
    printf(
       "options:\n"
       "  -a[lgorithm] <algorithm>   : the algorithm used to aggregate the data within\n"
-      "                               a ROI, e.g. mean, pca, tpca or ctp\n"
+      "                               a ROI, e.g. mean, stddev, pca, tpca or ctp\n"
    );
 
    printf(
@@ -194,6 +195,8 @@ int main(int argc, char * argv[])
 				algorithm = RSTIMECOURSE_ALGORITHM_TPCA;
 			} else if ( ! strcmp(argv[ac], "ctp") ) {
 				algorithm = RSTIMECOURSE_ALGORITHM_CTP;
+			} else if ( ! strcmp(argv[ac], "stddev") ) {
+				algorithm = RSTIMECOURSE_ALGORITHM_STDDEV;
 			} else {
 				fprintf(stderr, "** the requested algorithm is not supported\n");
 				return 1;
@@ -263,6 +266,8 @@ int main(int argc, char * argv[])
 	    	fprintf(stdout, "Voxel: %d %d %d\n", x, y, z);
 		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
         	fprintf(stdout, "Algorithm: Mean\n");
+		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_STDDEV ) {
+			fprintf(stdout, "Algorithm: Standard Deviation\n");
 		} else if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA || algorithm == RSTIMECOURSE_ALGORITHM_TPCA || algorithm == RSTIMECOURSE_ALGORITHM_CTP ) {
 			if ( algorithm == RSTIMECOURSE_ALGORITHM_PCA ) {
 				fprintf(stdout, "Algorithm: sPCA\n");
@@ -450,7 +455,7 @@ int main(int argc, char * argv[])
 			fprintf(stdout, "Removed %ld voxels, %ld remaining\n", nNanPoints, (nPoints - nNanPoints));
 		}
 
-		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN ) {
+		if ( algorithm == RSTIMECOURSE_ALGORITHM_MEAN || algorithm == RSTIMECOURSE_ALGORITHM_STDDEV ) {
         
 	        int t;
 
@@ -465,23 +470,37 @@ int main(int argc, char * argv[])
 	            for ( t = 0; t<vDim; t=t+1 ) {
             
 	                double sum = 0;
+					const double length = nPoints - nNanPoints;
                 
 	                /* Read out datapoints from the buffer */
 	                double *pointValues = malloc(nPoints*sizeof(double));
 	                rsExtractPointsFromBuffer(fslio, pointValues, buffer, slope, inter, maskPoints, nPoints, t, xDim, yDim, zDim, vDim);
                 
-	                /* Iterate over all points in the mask */
+	                /* Iterate over all points in the mask and compute mean */
 	                for ( unsigned long i=0; i<nPoints; i=i+1) {
 						if ( isNanPoint[i] ) {
 							continue;
 						}
 	                    sum = sum + pointValues[i];
 	                }
+	                timecourse[t] = sum / length;
                 
+					/* If necessary iterate over them once more to compute the standard scores(std. dev) */
+					if ( algorithm == RSTIMECOURSE_ALGORITHM_STDDEV ) {
+						
+						sum = 0.0;
+
+		                for ( unsigned long i=0; i<nPoints; i=i+1) {
+							if ( isNanPoint[i] ) {
+								continue;
+							}
+							sum = sum + pow(pointValues[i]-timecourse[t], 2.0) / (length-1.0);
+					    }
+
+					    timecourse[t] = sqrt(sum);
+					}
+
 	                free(pointValues);
-                
-	                /* Create average */
-	                timecourse[t] = sum / (nPoints - nNanPoints);
 	            }
 	        }
         
