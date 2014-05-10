@@ -7,12 +7,12 @@
 //
 
 #include <stdio.h>
-#include "rsmathutils.h"
+#include "src/maths/rsmathutils.h"
 
 void rsFillHolesPrintHelp() {
     printf(
  	    RSTOOLS_VERSION_LABEL "\n\n"
-        "basic usage:  rsfillholes2 -input <volume> -output <volume> -mask <volume>\n"
+        "basic usage:  rsfillholes -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
     

@@ -12,8 +12,8 @@
 
 #include <nifti1.h>
 #include <fslio.h>
-#include "rsniftiutils.h"
-#include "rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
 
 #define RSTIMECOURSE_ALGORITHM_MEAN   1
 #define RSTIMECOURSE_ALGORITHM_PCA    2
@@ -35,7 +35,7 @@ int show_help( void )
    );
     
    printf(
-      "basic usage:  rstimecourse2 [-m <mask> [-a <algorithm>] [-savemask <mask>]] [-p <X> <Y> <Z>] -input <volume>\n"
+      "basic usage:  rstimecourse [-m <mask> [-a <algorithm>] [-savemask <mask>]] [-p <X> <Y> <Z>] -input <volume>\n"
       "\n"
    );
     

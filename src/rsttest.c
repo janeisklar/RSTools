@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "rsmathutils.h"
-#include "rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
 
 void rsTTestPrintHelp() {
     printf(
@@ -21,7 +21,7 @@ void rsTTestPrintHelp() {
         "index will be compared. If only a single nifti is supplied\n"
         "all of its volumes will be compared to each other.\n"
         "\n"
-        "basic usage:  stdin | rsttest2 -output <volume>\n"
+        "basic usage:  stdin | rsttest -output <volume>\n"
         "\n"
     );
     

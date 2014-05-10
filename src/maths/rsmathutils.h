@@ -19,7 +19,7 @@
 #include <gsl/gsl_randist.h>
 
 
-#include "rsniftiutils.h"
+#include "src/nifti/rsniftiutils.h"
 
 #if !defined(RS_FFTW_ENABLED)
 #define RS_FFTW_ENABLED 0

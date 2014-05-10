@@ -7,7 +7,7 @@
 //
 
 #include <stdio.h>
-#include "rsmathutils.h"
+#include "src/maths/rsmathutils.h"
 
 void rsTestPowerIteration();
 void rsCentralityPrintHelp() {

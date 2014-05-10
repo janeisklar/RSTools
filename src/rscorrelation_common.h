@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <nifti1.h>
 #include <fslio.h>
-#include "rsniftiutils.h"
-#include "rsmathutils.h"
+#include "nifti/rsniftiutils.h"
+#include "maths/rsmathutils.h"
 
 #define RSTOOLS_CORRELATION_CONVERSION_NONE 1
 #define RSTOOLS_CORRELATION_CONVERSION_Z    2

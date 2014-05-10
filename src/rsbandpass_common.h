@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <nifti1.h>
 #include <fslio.h>
-#include "rsniftiutils.h"
-#include "rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
 
 struct rsBandpassParameters {
     char *inputpath;

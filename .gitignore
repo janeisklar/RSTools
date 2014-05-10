@@ -4,10 +4,12 @@
 
 # Object files
 *.o
+*.lo
 
 # Libraries
 *.lib
 *.a
+*.la
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -37,3 +39,29 @@ utils/nifti1_test
 utils/nifti_stats
 include/*
 
+# Libtool
+argz.h
+Makefile
+autom4te.cache/
+bootstrap.log
+checkout-fixup
+config.h
+config.log
+config.status
+configure-output.log
+doc/.dirstamp
+doc/stamp-vti
+doc/version.texi
+libltdl/.deps/
+libltdl/.dirstamp
+libltdl/.libs
+libltdl/config.h
+libltdl/loaders/.deps/
+libltdl/loaders/.dirstamp
+libltdl/stamp-h1
+libtool
+libtoolize
+make.log.err
+stamp-h1
+tests/atconfig
+configure.lineno

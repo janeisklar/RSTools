@@ -7,12 +7,12 @@
 //
 
 #include <stdio.h>
-#include "rsmathutils.h"
+#include "src/maths/rsmathutils.h"
 
 void rsMaskPrintHelp() {
     printf(
 	    RSTOOLS_VERSION_LABEL "\n\n"
-        "basic usage:  rsmask2 -input <volume> -output <volume> -mask <volume>\n"
+        "basic usage:  rsmask -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
     

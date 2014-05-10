@@ -7,13 +7,13 @@
 //
 
 #include <stdio.h>
-#include "rsmathutils.h"
+#include "maths/rsmathutils.h"
 #include "rsregression_common.h"
 
 void rsMaskPrintHelp() {
     printf(
 	   RSTOOLS_VERSION_LABEL "\n"
-        "basic usage:  rsmotionscrubbing2 -input <volume> -rp <rp.txt> -output <volume> -mask <volume>\n"
+        "basic usage:  rsmotionscrubbing -input <volume> -rp <rp.txt> -output <volume> -mask <volume>\n"
         "\n"
     );
     

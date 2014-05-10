@@ -5,7 +5,7 @@
 
 #include <nifti1.h>
 #include <fslio.h>
-#include "rscommon.h"
+#include "src/rscommon.h"
 
 #if !defined(__NIFTIUTILS_H)
 #define __NIFTIUTILS_H
