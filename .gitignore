@@ -72,6 +72,8 @@ libtool
 libtoolize
 ltmain.sh
 Makefile.in
+INSTALL
+COPYING
 missing
 make.log.err
 stamp-h1
