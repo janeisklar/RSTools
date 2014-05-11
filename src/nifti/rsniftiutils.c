@@ -99,9 +99,10 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     
     /* Count how many points we'll get */
     *nPoints = (unsigned long)0L;
-    for (unsigned int x=0; x<newX; x=x+1) {
-        for (unsigned int y=0; y<newY; y=y+1) {
-            for (unsigned int z=0; z<newZ; z=z+1) {
+	unsigned int x=0,y=0,z=0;
+    for (x=0; x<newX; x=x+1) {
+        for (y=0; y<newY; y=y+1) {
+            for (z=0; z<newZ; z=z+1) {
                 if ( resampledMask[z][y][x] > 0.01 ) {
                     *nPoints = *nPoints + ((unsigned long)1L);
                 }
@@ -118,9 +119,9 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     
     /* Create array with all points that are in the mask */
     int i=0;
-    for (unsigned int x=0; x<newX; x=x+1) {
-        for (unsigned int y=0; y<newY; y=y+1) {
-            for (unsigned int z=0; z<newZ; z=z+1) {
+    for (x=0; x<newX; x=x+1) {
+        for (y=0; y<newY; y=y+1) {
+            for (z=0; z<newZ; z=z+1) {
                 if ( resampledMask[z][y][x] > 0.01 ) {
                     points[i] = MakePoint3D(x,y,z);
                     i = i+1;

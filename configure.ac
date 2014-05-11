@@ -16,7 +16,7 @@ AC_DEFINE_UNQUOTED(RSTOOLS_VERSION_DATE,
                    ["$RSTOOLS_VERSION_DATE"],
                    [A string containing the date of the last commit])
 
-CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99" $CFLAGS
+CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99 " $CFLAGS
 
 # prepare for automake
 AM_INIT_AUTOMAKE
@@ -95,6 +95,40 @@ AC_SEARCH_LIBS([FslGetDim], [fslio],
        echo 'Download from: http://sourceforge.net/projects/niftilib/files/nifticlib/'
        echo 
        exit 1 ])
+       
+# Checking for Atlas
+AC_ARG_ENABLE(
+    [atlas],
+    [  --disable-atlas    Do not use ATLAS for BLAS-operations],
+    [case "${enableval}" in
+        yes) atlas=true ;;
+        no)  atlas=false ;;
+        *) AC_MSG_ERROR([bad value ${enableval} for --disable-atlas]) ;;
+    esac],
+    [atlas=true])
+AM_CONDITIONAL([ATLAS], [test x$atlas = xtrue])
+
+AM_COND_IF([ATLAS],
+    [
+        AC_SEARCH_LIBS([cblas_ssymv], [atlas],
+            [  echo 'Using ATLAS over GSL for BLAS-operations' 
+               AC_DEFINE(USE_ATLAS, 1, [linked against ATLAS libraries])
+            ] ,
+            [  echo 'ATLAS not found, GSL will be used instead'
+               echo 'Download from: http://math-atlas.sourceforge.net'
+               echo 'or'
+               echo 'apt-get install libatlas-base-dev'
+               echo  
+               AC_DEFINE(USE_ATLAS, 0, [linked against ATLAS libraries])
+            ])
+        AC_SEARCH_LIBS([ssymv], [cblas], [], [])
+        AC_SEARCH_LIBS([pthread_create], [pthread], [], [])
+    ],
+    [
+        echo 'Using GSL for BLAS-operations'
+        AC_DEFINE(USE_ATLAS, 0, [linked against ATLAS libraries])
+    ]
+)
 
 # Check for GSL
 PKG_CHECK_MODULES([GSL], [gsl >= 1.15])
