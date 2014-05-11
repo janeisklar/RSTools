@@ -1,0 +1,80 @@
+# General
+*.DS_Store
+*.backup
+
+# Object files
+*.o
+*.lo
+
+# Libraries
+*.lib
+*.a
+*.la
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+*.dSYM
+*depend.mk
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Data files
+*.nii
+*.ima
+*.nii.gz
+
+# Binaries
+bin/*
+rstools/rstimecourse
+rstools/rsniftiutils
+rstools/rsregression
+utils/nifti_tool
+utils/nifti1_test
+utils/nifti_stats
+include/*
+
+# Libtool
+aclocal.m4
+autoscan.log
+argz.h
+Makefile
+autom4te.cache/
+bootstrap.log
+checkout-fixup
+compile
+config.h
+config.h.in
+config.log
+config.status
+config.sub
+config.guess
+configure-output.log
+configure
+depcomp
+doc/.dirstamp
+doc/stamp-vti
+doc/version.texi
+install-sh
+libltdl/.deps/
+libltdl/.dirstamp
+libltdl/.libs
+libltdl/config.h
+libltdl/loaders/.deps/
+libltdl/loaders/.dirstamp
+libltdl/stamp-h1
+libtool
+libtoolize
+ltmain.sh
+Makefile.in
+missing
+make.log.err
+stamp-h1
+tests/atconfig
+configure.lineno
+rstools-*.zip

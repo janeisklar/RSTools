@@ -2,7 +2,7 @@ SUBDIRS = nifti maths .
 
 bin_PROGRAMS = rsbandpass rscentrality rscorrelation rsfastcentrality rsfillholes rsinfo rsmask rsmotionscrubbing rsregression rsroi rstimecourse rsttest
 
-rslibraries=librsmathutils.a librsniftiutils.a
+rslibraries=maths/librsmathutils.a nifti/librsniftiutils.a
 
 LDADD=$(rslibraries)
 
