@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([RSTools], [0.8.1], [andre.hoffmann@meduniwien.ac.at])
 
 # determine git version information
