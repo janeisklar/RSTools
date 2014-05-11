@@ -10,13 +10,15 @@ RSTOOLS_VERSION_DATE="esyscmd([git --git-dir=./.git --work-tree=. log -1 --prett
 
 AC_DEFINE_UNQUOTED(RSTOOLS_VERSION_HASH,
                    ["$RSTOOLS_VERSION_HASH"],
-                   [A string containing the Git hash of the last commit])
+                   [A string containing the Git hash of the last commit]
+)
 
 AC_DEFINE_UNQUOTED(RSTOOLS_VERSION_DATE,
                    ["$RSTOOLS_VERSION_DATE"],
-                   [A string containing the date of the last commit])
+                   [A string containing the date of the last commit]
+)
 
-CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99 " $CFLAGS
+CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99 -fopenmp $CFLAGS"
 
 # prepare for automake
 AM_INIT_AUTOMAKE
