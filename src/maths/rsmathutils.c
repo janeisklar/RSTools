@@ -1399,6 +1399,73 @@ BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n)
     return success;
 }
 
+/**
+  * Computes the FDR T-value threshold for the specified FDR-limit q 
+  * 
+  * see: Controlling the False Discovery Rate: a pratical and powerful approach to multiple testing, Benajamini & Hochberg
+  */
+struct rsFDRResult rsComputeTThresholdFDR(double ***data, const double q, const Point3D* mask, const unsigned long nVoxels, const int df)
+{
+	// C(nVoxels) = sum_{i=1..nVoxels} 1/i	
+	double C = 1.0;
+	for ( unsigned long i = 1L; i<=nVoxels; i=i+1L ) {
+		C += 1.0/((double)i);
+	}
+	//C=1.0;
+	
+	// Sort T-values
+	double *tValues = (double*)malloc((size_t)nVoxels * sizeof(double));
+	
+	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
+		Point3D point = mask[i];
+		tValues[i] = fabs(data[point.z][point.y][point.x]) * -1.0; // multiply by -1 to switch sort order
+	}
+	
+	gsl_sort(&tValues[0], 1, nVoxels); // sort ascending
+	
+	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
+		tValues[i] = tValues[i] * -1.0; // revert multiplying by -1
+	}
+	
+	// Find largest p(i) that fulfills p(i) <= i/nVoxel * q/C(nVoxel)
+	struct rsFDRResult result;
+	result.i = -1;
+	
+	for ( unsigned long i = 0L; i<nVoxels; i=i+1L ) {
+		const double p = rsComputePValueFromTValue(tValues[i], df)*2.0;
+		const double threshold = (((double)i+1.0)/(double)nVoxels) * (q/C);
+		
+		if ( p <= threshold || result.i < 0) {
+			result.p = p;
+			result.i = i;
+			result.t = tValues[i];
+			result.iNormalized = (i+1)/nVoxels;
+		} else {
+			break;
+		}
+	}
+		
+	return result;
+}
+
+double rsComputePValueFromTValue(const double T, const int df)
+{
+	if ( T < 0 ) {
+		return -gsl_cdf_tdist_P(T, df);
+	} else {
+		return gsl_cdf_tdist_Q(T, df);
+	}
+}
+
+double rsComputeTValueFromPValue(const double P, const int df)
+{
+	if ( P < 0 ) {
+		return gsl_cdf_tdist_Pinv(-P, df);
+	} else {
+		return gsl_cdf_tdist_Qinv(P, df);
+	}
+}
+
 int rsCountDigits(int n)
 {
     return (n == 0) ? 1 : floor(log10(abs(n))) + 1;
