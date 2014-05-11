@@ -35,3 +35,5 @@ install-exec-hook:
 	       $(DESTDIR)$(bindir)/rsttest2$(EXEEXT)
 	ln -fs $(DESTDIR)$(bindir)/rstimecourse$(EXEEXT) \
 	       $(DESTDIR)$(bindir)/rstimecourse2$(EXEEXT)
+	ln -fs $(DESTDIR)$(bindir)/rscorrelation$(EXEEXT) \
+               $(DESTDIR)$(bindir)/rscorrelation2$(EXEEXT)
