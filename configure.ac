@@ -26,7 +26,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
  		 src/maths/Makefile
- 		 src/nifti/Makefile])
+ 		 src/nifti/Makefile
+		 src/playground/Makefile])
 
 # Checks for programs.
 AC_PROG_CC
@@ -136,6 +137,13 @@ AC_SUBST([GSL_CFLAGS])
 AC_SUBST([GSL_LIBS])
 LIBS=["$GSL_LIBS $LIBS"]
 CFLAGS=["$GSL_CFLAGS $CFLAGS"]
+
+# Check for matio
+PKG_CHECK_MODULES([MATIO], [matio >= 1.5.2])
+AC_SUBST([MATIO_CFLAGS])
+AC_SUBST([MATIO_LIBS])
+LIBS=["$MATIO_LIBS $LIBS"]
+CFLAGS=["$MATIO_CFLAGS $CFLAGS"]
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h string.h strings.h])

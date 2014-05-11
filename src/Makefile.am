@@ -1,4 +1,4 @@
-SUBDIRS = nifti maths .
+SUBDIRS = nifti maths . playground
 
 bin_PROGRAMS = rsbandpass rscentrality rscorrelation rsfastcentrality rsfillholes rsinfo rsmask rsmotionscrubbing rsregression rsroi rstimecourse rsttest
 

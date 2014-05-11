@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <omp.h>
-#include "rsmathutils.h"
-#include "rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
 #include "matio.h"
 
 void rsTemplateMatchinPrintHelp() {

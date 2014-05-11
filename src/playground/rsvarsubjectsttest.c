@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "rsmathutils.h"
-#include "rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
 
 #define RSTTEST_OUTPUT_T 0
 #define RSTTEST_OUTPUT_P 1
