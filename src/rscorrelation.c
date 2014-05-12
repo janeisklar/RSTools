@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) {
     
     // Load file
     // Prepare buffer
-    size_t buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
+    size_t buffsize = rsGetBufferSize(p.xDim, p.yDim, p.zDim, p.vDim, p.dt);
     void  *buffer   = malloc(buffsize);
     
     if (buffer == NULL) {

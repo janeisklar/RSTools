@@ -51,8 +51,8 @@ struct rsInputFile {
     short   yDim;
     short   zDim;
     short   vDim;
-    size_t  dt;
-    short   pixtype;
+    short   dt;
+    size_t  pixtype;
     float   inter;
     float   slope;
     double* data;
@@ -90,10 +90,10 @@ struct rsInputFile rsOpenInputFile(char* path) {
     }
 	
 	/* determine datatype */
-	f.dt = FslGetDataType(f.fslio, &f.pixtype);
+	f.pixtype = FslGetDataType(f.fslio, &f.dt);
     
     /* read in file */
-    f.data = malloc((size_t)f.xDim*(size_t)f.yDim*(size_t)f.zDim*(size_t)f.vDim*(size_t)f.dt/(size_t)8);
+    f.data = malloc(rsGetBufferSize(f.xDim, f.yDim, f.zDim, f.vDim, f.dt));
     
     FslReadVolumes(f.fslio, f.data, f.vDim);
     
@@ -236,7 +236,7 @@ int main(int argc, char * argv[]) {
     FslCloneHeader(fslioOutput, refFile.fslio);
     FslSetDim(fslioOutput, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
     FslSetDimensionality(fslioOutput, 4);
-    FslSetDataType(fslioOutput, refFile.pixtype);
+    FslSetDataType(fslioOutput, refFile.dt);
 	FslSetIntent(fslioOutput, NIFTI_INTENT_TTEST, (nFiles > 1) ? (nFiles-1) : (refFile.vDim-1), 0, 0);
 	char *comment1 = rsMergeStringArray(argc, argv);
 	char *comment2 = "\nFilelist:\n";
@@ -246,7 +246,7 @@ int main(int argc, char * argv[]) {
 	comment[commentLength-1] = '\0';	
     rsWriteNiftiHeader(fslioOutput, &comment[0]);
     
-    void *buffer = malloc((size_t)refFile.xDim*(size_t)refFile.yDim*(size_t)refFile.zDim*nOutputVolumes*(size_t)refFile.dt/(size_t)8);
+    void *buffer = malloc(rsGetBufferSize(refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes, refFile.dt));
     
     short t,x,y,z;
     

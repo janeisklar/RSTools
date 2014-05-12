@@ -253,7 +253,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     }
 	
 	/* determine datatype and initalize buffer */
-	p.dt = FslGetDataType(p.fslio, &p.pixtype);
+	p.pixtype = FslGetDataType(p.fslio, &p.dt);
     
     /* prepare correlation file */
    	void *correlationBuffer;
@@ -268,7 +268,7 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     FslCloneHeader(p.fslioCorrelation, p.fslio);
     FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
     FslSetDimensionality(p.fslioCorrelation, 4);
-    FslSetDataType(p.fslioCorrelation, p.pixtype);
+    FslSetDataType(p.fslioCorrelation, p.dt);
 	if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE) {
 		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_CORREL, p.vDim-2, 0, 0);
 	} else if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_T) {
@@ -305,7 +305,7 @@ void rsCorrelationWriteCorrelationFile(struct rsCorrelationParameters* p) {
     
     /* Write correlation file */
     if ((*p).verbose) fprintf(stdout, "Writing correlation file\n");
-    size_t buffsize = (size_t)((size_t)(*p).xDim*(size_t)(*p).yDim*(size_t)(*p).zDim*(size_t)(*p).dt/(size_t)8);
+    size_t buffsize = rsGetBufferSize((*p).xDim, (*p).yDim, (*p).zDim, 1, (*p).dt);
     void *correlationBuffer;
     correlationBuffer = malloc(buffsize);
     

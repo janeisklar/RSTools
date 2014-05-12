@@ -96,8 +96,8 @@ int main(int argc, char * argv[])
 	char *maskpath         = NULL;
 	
 	short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     float inter = 0.0, slope = 1.0;
     
     double sphereradius    = -1.0;
@@ -238,16 +238,16 @@ int main(int argc, char * argv[])
     }
 	
 	/* determine datatype and initalize buffer */
-	dt = FslGetDataType(fslio, &pixtype);
+	pixtype = FslGetDataType(fslio, &dt);
 	
     if ( verbose ) {
-        fprintf(stdout, "Dt: %ld Pixtype: %d\n", dt, pixtype);
+        fprintf(stdout, "Dt: %d Pixtype: %ld\n", dt, pixtype);
     }
     
     /* prepare mask file */
     FSLIO *fslioMask;
    	/* Init buffer */
-    buffsize = (unsigned long)xDim * (unsigned long)yDim * (unsigned long)zDim * (unsigned long)(dt/8);
+    buffsize = rsGetBufferSize(xDim, yDim, zDim, 1, dt);
     buffer   = malloc(buffsize);
     
     /* Read in first volume */

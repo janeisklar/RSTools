@@ -283,11 +283,11 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
     }
 	
 	/* determine datatype and initalize buffer */
-	p.dt       = FslGetDataType(p.fslio, &p.pixtype);
+	p.pixtype  = FslGetDataType(p.fslio, &p.dt);
     p.wordsize = p.fslio->niftiptr->nbyper;
     
     if ( p.verbose ) {
-        fprintf(stdout, "Dt: %ld Pixtype: %d\n", p.dt, p.pixtype);
+        fprintf(stdout, "Dt: %d Pixtype: %ld\n", p.dt, p.pixtype);
     }
     
     if ( p.maskpath != NULL ) {

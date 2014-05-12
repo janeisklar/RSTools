@@ -52,8 +52,8 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
 	unsigned long buffsize;
     
     short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     float inter = 0.0, slope = 1.0;
     
     int pointCount = 0;
@@ -74,10 +74,10 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
     }
     
     /* Determine datatype */
-	dt = FslGetDataType(fslio, &pixtype);
+	pixtype = FslGetDataType(fslio, &dt);
     
     /* Init buffer */
-    buffsize = (unsigned long)xDim * (unsigned long)yDim * (unsigned long)zDim * (unsigned long)(dt/8);
+    buffsize = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
     buffer   = malloc(buffsize);
     
     /* Read in first volume */
@@ -142,12 +142,12 @@ Point3D* ReadMask(char *path, unsigned short newX, unsigned short newY, unsigned
         }
     } else {
         
-        dt = FslGetDataType(maskPrototype, &pixtype);
+        pixtype = FslGetDataType(maskPrototype, &dt);
         
         FslCloneHeader(fslioResampled, maskPrototype);
         FslSetDim(fslioResampled, newX,newY,newZ,1);
         FslSetDimensionality(fslioResampled, 3);
-        FslSetDataType(fslioResampled, pixtype);
+        FslSetDataType(fslioResampled, dt);
         FslWriteHeader(fslioResampled);
         
         void *maskBuffer = malloc((unsigned long)newX * (unsigned long)newY * (unsigned long)newZ * (unsigned long)(dt/8));
@@ -465,34 +465,24 @@ size_t rsWordLength(const int datatype) {
 	switch (datatype) {
         case NIFTI_TYPE_UINT8:
             return sizeof(THIS_UINT8);
-            break;
         case NIFTI_TYPE_INT8:
             return sizeof(THIS_INT8);
-            break;
         case NIFTI_TYPE_UINT16:
             return sizeof(THIS_UINT16);
-            break;
         case NIFTI_TYPE_INT16:
             return sizeof(THIS_INT16);
-            break;
         case NIFTI_TYPE_UINT32:
             return sizeof(THIS_UINT32);
-            break;
         case NIFTI_TYPE_INT32:
             return sizeof(THIS_INT32);
-            break;
         case NIFTI_TYPE_UINT64:
             return sizeof(THIS_UINT64);
-            break;
         case NIFTI_TYPE_INT64:
 			return sizeof(THIS_INT64);
-            break;
         case NIFTI_TYPE_FLOAT32:
             return sizeof(THIS_FLOAT32);
-            break;
         case NIFTI_TYPE_FLOAT64:
 			return sizeof(THIS_FLOAT64);
-            break;
         case NIFTI_TYPE_FLOAT128:
         case NIFTI_TYPE_COMPLEX128:
         case NIFTI_TYPE_COMPLEX256:
@@ -508,6 +498,11 @@ size_t rsVolumeOffset(const int xh, const int yh, const int zh, const int t) {
 
 size_t rsVolumeLength(const int xh, const int yh, const int zh) {
 	return rsVolumeOffset(xh, yh, zh, 1);
+}
+
+size_t rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype)
+{
+	return rsVolumeOffset(xh, yh, zh, th) * rsWordLength(nifti_datatype);
 }
 
 /*

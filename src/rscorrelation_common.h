@@ -37,8 +37,8 @@ struct rsCorrelationParameters {
     
     short delay;
     
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     
     float inter;
     float slope;

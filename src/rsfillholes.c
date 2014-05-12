@@ -69,8 +69,8 @@ int main(int argc, char * argv[]) {
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     float inter = 0.0, slope = 1.0;
     
     short kernelsize = 15;
@@ -171,7 +171,7 @@ int main(int argc, char * argv[]) {
     }
 	
 	/* determine datatype and initalize buffer */
-	dt = FslGetDataType(fslio, &pixtype);
+	pixtype = FslGetDataType(fslio, &dt);
     
     /* prepare centrality file */    
     fslioFilled = FslOpen(outputpath, "wb");
@@ -184,7 +184,7 @@ int main(int argc, char * argv[]) {
     FslCloneHeader(fslioFilled, fslio);
     FslSetDim(fslioFilled, xDim, yDim, zDim, 1);
     FslSetDimensionality(fslioFilled, 4);
-    FslSetDataType(fslioFilled, pixtype);
+    FslSetDataType(fslioFilled, dt);
 	char *callString = rsMergeStringArray(argc, argv);
     rsWriteNiftiHeader(fslioFilled, callString);
 	free(callString);
@@ -201,7 +201,7 @@ int main(int argc, char * argv[]) {
     }
     
     // Prepare buffer
-    buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
+    buffsize = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
     buffer   = malloc(buffsize);
         
     if (buffer == NULL) {

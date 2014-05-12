@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
         FslCloneHeader(fslioResiduals, p.fslio);
         FslSetDim(fslioResiduals, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioResiduals, 4);
-        FslSetDataType(fslioResiduals, p.pixtype);
+        FslSetDataType(fslioResiduals, p.dt);
 		rsWriteNiftiHeader(fslioResiduals, comment);
     }
     
@@ -86,11 +86,11 @@ int main(int argc, char * argv[])
         FslCloneHeader(fslioBetas, p.fslio);
         FslSetDim(fslioBetas, p.xDim, p.yDim, p.zDim, (p.nRegressors+1L));
         FslSetDimensionality(fslioBetas, 4);
-        FslSetDataType(fslioBetas, p.pixtype);
+        FslSetDataType(fslioBetas, p.dt);
 		rsWriteNiftiHeader(fslioBetas, comment);
         
         // prepare buffer
-        buffsize = (size_t)((size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)(p.nRegressors+1)*(size_t)p.dt/(size_t)8);
+		buffsize = rsGetBufferSize(p.xDim, p.yDim, p.zDim, p.nRegressors+1, p.dt);
         betasBuffer = malloc(buffsize);
     }
     
@@ -110,11 +110,11 @@ int main(int argc, char * argv[])
         FslCloneHeader(fslioFitted, p.fslio);
         FslSetDim(fslioFitted, p.xDim, p.yDim, p.zDim, p.vDim);
         FslSetDimensionality(fslioFitted, 4);
-        FslSetDataType(fslioFitted, p.pixtype);
+        FslSetDataType(fslioFitted, p.dt);
 		rsWriteNiftiHeader(fslioFitted, comment);
         
         // prepare buffer
-        buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
+		buffsize = rsGetBufferSize(p.xDim, p.yDim, p.zDim, p.vDim, p.dt);
         fittedBuffer = malloc(buffsize);
     }
 	free(callString);
@@ -128,7 +128,7 @@ int main(int argc, char * argv[])
     }
     
     // Prepare buffer
-    buffsize = (size_t)p.xDim*(size_t)p.yDim*(size_t)p.zDim*(size_t)p.vDim*(size_t)p.dt/(size_t)8;
+	buffsize = rsGetBufferSize(p.xDim, p.yDim, p.zDim, p.vDim, p.dt);
     buffer   = malloc(buffsize);
         
     if (buffer == NULL) {

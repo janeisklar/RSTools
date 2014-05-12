@@ -100,8 +100,8 @@ int main(int argc, char * argv[]) {
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     float inter = 0.0, slope = 1.0;
 
 	float fdthreshold=1.0, dvarsthreshold=0.05;
@@ -269,10 +269,10 @@ int main(int argc, char * argv[]) {
 	}
 	
 	/* determine datatype */
-	dt = FslGetDataType(fslio, &pixtype);
+	pixtype = FslGetDataType(fslio, &dt);
     
     // Prepare buffer
-    buffsize       = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
+    buffsize       = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
     buffer         = malloc(buffsize);
         
     if (buffer == NULL) {
@@ -433,13 +433,13 @@ int main(int argc, char * argv[]) {
     FslCloneHeader(fslioOutput, fslio);
     FslSetDim(fslioOutput, xDim, yDim, zDim, remainingFrames);
     FslSetDimensionality(fslioOutput, 4);
-    FslSetDataType(fslioOutput, pixtype);
+    FslSetDataType(fslioOutput, dt);
 	char *callString = rsMergeStringArray(argc, argv);
     rsWriteNiftiHeader(fslioOutput, callString);
 	free(callString);
 
    	/* create resulting file */
-	buffsize     = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)remainingFrames*(size_t)dt/(size_t)8;
+	buffsize     = rsGetBufferSize(xDim, yDim, zDim, remainingFrames, dt);
     outputBuffer = malloc(buffsize);
         
     if (outputBuffer == NULL) {

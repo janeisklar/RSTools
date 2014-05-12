@@ -43,6 +43,7 @@ BOOL         rsExtractVolumeFromBuffer(const FSLIO *fslio, double *data, const v
 size_t       rsWordLength(const int datatype);
 size_t       rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
 size_t       rsVolumeLength(const int xh, const int yh, const int zh);
+size_t       rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype);
     
 BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh, BOOL multidim);

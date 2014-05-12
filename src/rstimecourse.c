@@ -102,7 +102,7 @@ int show_help( void )
 	);
 
     printf(                        
-      "   -threads <int>            : number of threads used for processing\n"
+      "  -threads <int>             : number of threads used for processing\n"
     );
 
     printf(
@@ -128,8 +128,8 @@ int main(int argc, char * argv[])
 	
 	int x=-1, y=-1, z=-1, t=0;
 	short xDim, yDim, zDim, vDim;
-	short pixtype;
-	size_t dt;
+	size_t pixtype;
+	short dt;
     float inter = 0.0, slope = 1.0;
     int threads = 1;
 	float minVariance = 1.0;
@@ -307,10 +307,10 @@ int main(int argc, char * argv[])
     }
 	
 	/* determine datatype and initalize buffer */
-	dt = FslGetDataType(fslio, &pixtype);
+	pixtype = FslGetDataType(fslio, &dt);
 	
     if ( verbose ) {
-        fprintf(stdout, "Dt: %ld Pixtype: %d\n", dt, pixtype);
+        fprintf(stdout, "Dt: %d Pixtype: %ld\n", dt, pixtype);
     }
 	
     if ( x >= 0 ) {
@@ -333,7 +333,7 @@ int main(int argc, char * argv[])
             return 1;
         }
         
-        buffsize = vDim*dt/8;
+        buffsize = rsGetBufferSize(1, 1, 1, vDim, dt);
         
         if ( verbose ) {
             fprintf(stdout, "Buffsize: %ld\n", buffsize);
@@ -402,7 +402,7 @@ int main(int argc, char * argv[])
         double timecourse[vDim];
         
         /* Read in volume */
-        buffsize = (size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)dt/(size_t)8;
+        buffsize = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
         buffer = malloc(buffsize);
         FslReadVolumes(fslio, buffer, vDim);
         
@@ -706,7 +706,7 @@ int main(int argc, char * argv[])
 void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix *maps)
 {
 	int x=-1, y=-1, z=-1, t=0;
-	short xDim, yDim, zDim, vDim, pixType;
+	short xDim, yDim, zDim, vDim, dt;
 	size_t buffsize;
     float inter = 0.0, slope = 1.0;
 	void *buffer;
@@ -724,7 +724,7 @@ void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix
     }
 	
 	/* determine dimensions */
-	FslGetDataType(reference, &pixType);
+	FslGetDataType(reference, &dt);
 	FslGetDim(reference, &xDim, &yDim, &zDim, &vDim);
 	
 	/* prepare file */
@@ -735,7 +735,7 @@ void rsWriteSpatialMap(char *file, FSLIO *reference, Point3D *points, gsl_matrix
     FslWriteHeader(fslio);
     
 	/* prepare buffer */
-    buffer = malloc((size_t)xDim*(size_t)yDim*(size_t)zDim*(size_t)vDim*(size_t)reference->niftiptr->nbyper);
+    buffer = malloc(rsGetBufferSize(xDim, yDim, zDim, vDim, DT_FLOAT32));
 	rsResetBufferToValue(reference->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, nMaps, sqrt(-1.0));
 	
 	/* write spatial maps to buffer */
