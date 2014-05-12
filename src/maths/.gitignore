@@ -3,6 +3,3 @@
 !*.cpp
 !*.h
 !Makefile.am
-!.gitignore
-!maths/
-!nifti/

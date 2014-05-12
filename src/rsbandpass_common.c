@@ -71,8 +71,8 @@ void rsBandpassPrintHelp() {
     );
     
     printf(
-      "   -sigmoidrolloff <double> : uses a sigmoid function for rolling of the passband. The\n"
-      "                              specified number controls how fast it is rolled of with\n"
+      "   -sigmoidrolloff <double> : uses a sigmoid function for rolling off the passband. The\n"
+      "                              specified number controls how fast it is rolled off with\n"
       "                              higher numbers corresponding to a quicker rolloff. A good\n"
       "                              starting point would be 10, then double-check by saving\n"
       "                              the attenuation file.\n"

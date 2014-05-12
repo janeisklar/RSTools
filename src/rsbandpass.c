@@ -11,8 +11,8 @@ int show_help( )
 {
     printf(
 	   RSTOOLS_VERSION_LABEL "\n"
-       "rsbandpass2: Given a 4D-Nifti and a frequency band this tool will apply\n"
-       "             FFT filtering on it.\n"
+       "rsbandpass: Given a 4D-Nifti and a frequency band this tool will apply\n"
+       "            FFT filtering on it.\n"
        "\n"
     );
     
