@@ -292,7 +292,7 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
     
     if ( p.maskpath != NULL ) {
         unsigned long nPoints = 0L;
-        p.mask = d3matrix(p.zDim, p.yDim, p.xDim);
+        p.mask = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
         Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
@@ -332,7 +332,7 @@ struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
     p.nAllRegressors = p.filterActive ? p.nRegressors + 1 + p.nFrequencyRegressors : p.nRegressors + 1;
     
     if ( p.filterActive ) {
-        p.allRegressors = d2matrix(p.nAllRegressors, p.vDim);
+        p.allRegressors = d2matrix(p.nAllRegressors-1, p.vDim-1);
         
         for (int i=0; i<p.nAllRegressors; i=i+1) {
             
@@ -481,7 +481,7 @@ double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double c
     
     /* Initialize result matrix */
     rewind(f);
-    double **result = d2matrix(*nRegressors+1, *nValues);
+    double **result = d2matrix(*nRegressors, *nValues-1);
     
     /* Fill with constant regressor */
     for ( long v=0L; v<n; v = v+1L ) {

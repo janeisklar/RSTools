@@ -120,7 +120,7 @@ void rsLinearRegressionFilter(
     // Create new regressor matrix
     const int nRegressors2 = nRegressors + nFrequencyRegressors;
     double **regressors2;
-    regressors2 = d2matrix(nRegressors2, nSamples);
+    regressors2 = d2matrix(nRegressors2-1, nSamples-1);
     
     for (int i=0; i<nRegressors2; i=i+1) {
         

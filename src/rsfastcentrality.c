@@ -194,7 +194,7 @@ int main(int argc, char * argv[]) {
     
     /* load mask */
     unsigned long nPoints = 0L;
-    double ***mask = d3matrix(zDim, yDim, xDim);
+    double ***mask = d3matrix(zDim-1, yDim-1, xDim-1);
     Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
@@ -419,7 +419,7 @@ void rsTestPowerIteration() {
      0.8407    0.2543    0.8143    0.2435    0.9293
     */
     
-    double **m = d2matrix(5,5);
+    double **m = d2matrix(4,4);
     
     // 1st row
     m[0][0] = 0.2760;

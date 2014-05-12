@@ -362,7 +362,7 @@ int main(int argc, char * argv[])
         free(oldMask);
     }
     
-    convertScaledDoubleToBuffer(fslioMask->niftiptr->datatype, buffer, mask[0][0], slope, inter, xDim, yDim, zDim, FALSE);
+    convertScaledDoubleToBuffer(fslioMask->niftiptr->datatype, buffer, mask[0][0], slope, inter, xDim, yDim, zDim);
     FslWriteVolumes(fslioMask, buffer, 1);
     free(buffer);
     free(mask);

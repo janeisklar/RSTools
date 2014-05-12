@@ -279,13 +279,13 @@ struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) 
     rsWriteNiftiHeader(p.fslioCorrelation, comment);
     
     /* prepare buffer */
-    p.correlation = d3matrix(p.zDim, p.yDim, p.xDim);
+    p.correlation = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
     
     /* load mask */
     p.mask = NULL;
     if ( p.maskpath != NULL ) {
         unsigned long nPoints = 0L;
-        p.mask = d3matrix(p.zDim, p.yDim, p.xDim);
+        p.mask = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
         Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
@@ -317,8 +317,7 @@ void rsCorrelationWriteCorrelationFile(struct rsCorrelationParameters* p) {
         (*p).fslioCorrelation->niftiptr->scl_inter,
         (*p).xDim,
         (*p).yDim,
-        (*p).zDim,
-        TRUE
+        (*p).zDim
     );
     
     FslWriteVolumes((*p).fslioCorrelation, correlationBuffer, 1);
