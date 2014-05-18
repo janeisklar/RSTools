@@ -249,7 +249,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim-1, yDim-1, xDim-1);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
@@ -271,7 +271,7 @@ int main(int argc, char * argv[]) {
         
         // Prepare buffer
         buffsize = rsGetBufferSize(xDim, yDim, zDim, 1, dt);
-        buffer   = malloc(buffsize);
+        buffer   = rsMalloc(buffsize);
         
         if (buffer == NULL) {
             fprintf(stdout, "Not enough free memory :-(\n");
@@ -305,14 +305,14 @@ int main(int argc, char * argv[]) {
             for (p1 = 0L; p1<nPoints; p1=p1+1L) {
                 for (p2 = p1; p2<nPoints; p2=p2+1L) {
                     
-                    const Point3D point1 = maskPoints[p1];
-                    const Point3D point2 = maskPoints[p2];
+                    const Point3D *point1 = &maskPoints[p1];
+                    const Point3D *point2 = &maskPoints[p2];
                     
                     /* read out timecourses from buffer */
                     signal1 = malloc(vDim*sizeof(double));
                     signal2 = malloc(vDim*sizeof(double));
-                    rsExtractTimecourseFromBuffer(fslio, signal1, buffer, slope, inter, point1, xDim, yDim, zDim, vDim);
-                    rsExtractTimecourseFromBuffer(fslio, signal2, buffer, slope, inter, point2, xDim, yDim, zDim, vDim);
+                    rsExtractTimecourseFromBuffer(dt, signal1, buffer, slope, inter, point1, xDim, yDim, zDim, vDim);
+                    rsExtractTimecourseFromBuffer(dt, signal2, buffer, slope, inter, point2, xDim, yDim, zDim, vDim);
                     
                     /* compute correlation */
                     double correlation;
@@ -376,10 +376,10 @@ int main(int argc, char * argv[]) {
     rsResetBufferToValue(fslioCentrality->niftiptr->datatype, buffer, slope, inter, xDim, yDim, zDim, 1, sqrt(-1.0));
     
     for (unsigned long p = 0L; p<nPoints; p=p+1L) {
-        Point3D point     = maskPoints[p];
+        Point3D *point     = &maskPoints[p];
         double centrality = fabs(eigenvector[p]);
         
-        rsWriteTimecourseToBuffer(fslioCentrality, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);
+        rsWriteTimecourseToBuffer(dt, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);
     }
     
     FslWriteVolumes(fslioCentrality, buffer, 1);

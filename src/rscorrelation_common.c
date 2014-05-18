@@ -1,345 +1,222 @@
-//
-//  rscorrelation_common.c
-//  rstools
-//
-//  Created by André Hoffmann on 7/9/13.
-//
-//
-
 #include "rscorrelation_common.h"
 
-void rsCorrelationPrintHelp() {
-    printf(
-	   RSTOOLS_VERSION_LABEL "\n"
-       "rscorrelation: This tool will correlate the timecourse of\n"
-       "               of every voxel in the supplied volume with\n"
-       "               a timecourse that is supplied via standard\n"
-       "               input."
-       "\n"
-    );
-    
-    printf(
-       "basic usage:  rscorrelation -input <volume> -mask <volume> -output <volume> [-verbose]\n"
-       "\n"
-    );
-    
-    printf(
-       "options:\n"
-    );
-    
-    printf(
-       "   -help                  : show this help\n"
-    );
-    
-    printf(
-       "   -input <volume>        : the volume for which the correlation of the\n"
-       "                            timecourse for each voxel is computed\n"
-    );
-    
-    printf(
-       "   -output <volume>       : the volume in which the correlation values will\n"
-       "                            be saved in\n"
-    );
-    
-    printf(
-       "   -mask <mask>           : a mask specifying the ROI for improved performance\n"
-    );
-    
-	printf(
-	   "   -montecarlo <n> <m>    : repeats the computation of the correlation n times and uses\n"
-	   "                            m randomly drawn timepoint in each run. eventually the average\n"
-	   "                            is being saved. (using it enforces the conversion to z-scores)\n"
-	);
-    
-    printf(
-       "   -conversion <mode>     : <mode> specifies what is stored in the output file, it can\n"
-       "                            take the follwing values: \n"
-       "                             * none: the correlation coefficients will be stored without\n"
-       "                                     converting them\n"
-       "                             * z:    the correlation coefficients will be converted to\n"
-       "                                     z-values before being stored(default)\n"
-       "                             * t:    the correlation coefficients will be converted to\n"
-       "                                     values of the T-statistic\n"
-    );
+void rsCorrelationInit(rsCorrelationParameters* p)
+{
+	p->parametersValid = FALSE;
 
-    printf(
-       "   -threads <int>         : number of threads used for processing\n"
-    );
-    
-    printf(
-       "   -comment <txt>         : adds a comment about the origin of thereference timecourse\n"
-       "                            to the nifti header of the correlation map\n"
-    );
-
-    printf(
-       "   -delay <int>           : delay the regressor by the defined volumes(or TR)\n"
-    );
-    
-    printf(
-       "   -v[erbose]             : show debug information\n"
-       "\n"
-    );
-}
-
-struct rsCorrelationParameters rsCorrelationInitParameters() {
-    struct rsCorrelationParameters p;
-    
-    p.inputpath             = NULL;
-    p.maskpath              = NULL;
-    p.outputpath            = NULL;
-    p.savemaskpath          = NULL;
-	p.commentpath           = NULL;
-	p.comment               = NULL;
-    p.xDim                  = 0;
-    p.yDim                  = 0;
-    p.zDim                  = 0;
-    p.vDim                  = 0;
-    p.delay                 = 0;
-    p.pixtype               = 0;
-    p.dt                    = 4;
-    p.inter                 = 0.0;
-    p.slope                 = 1.0;
-    p.verbose               = FALSE;
-    p.fslio                 = NULL;
-    p.fslioCorrelation      = NULL;
-    p.correlation           = NULL;
-    p.parametersValid       = FALSE;
-    p.mask                  = NULL;
-    p.nRegressorValues      = 0;
-    p.regressor             = NULL;
-    p.threads               = 1;
-    p.conversionMode        = RSTOOLS_CORRELATION_CONVERSION_Z;
-	p.monteCarloRepetitions = 0;
-	p.monteCarloSampleSize  = 0;
-
-
-    return p;
-}
-
-struct rsCorrelationParameters rsCorrelationLoadParams(int argc, char * argv[]) {
-
-    struct rsCorrelationParameters p = rsCorrelationInitParameters();
-    
-    int ac;
-        
-	/* parse parameters */
-	for( ac = 1; ac < argc; ac++ ) {
-		if ( ! strcmp(argv[ac], "-input") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -input\n");
-				return p;
-			}
-			p.inputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-output") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -output\n");
-				return p;
-			}
-			p.outputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-montecarlo") ) {
-  			if( (++ac)+1 >= argc ) {
-           		fprintf(stderr, "** missing arguments for -montecarlo\n");
-           		return p;
-           	}
-           	p.monteCarloRepetitions = atoi(argv[ac]);
-			++ac;
-           	p.monteCarloSampleSize  = atoi(argv[ac]);
-	    } else if ( ! strncmp(argv[ac], "-m", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -m\n");
-				return p;
-			}
-			p.maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-s", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -savemask\n");
-				return p;
-			}
-			p.savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-comment") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -comment\n");
-				return p;
-			}
-			p.commentpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-conversion") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -conversion\n");
-				return p;
-			}
-            
-            if ( ! strcmp(argv[ac], "none") ) {
-                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_NONE;
-            } else if ( ! strcmp(argv[ac], "z") ) {
-                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_Z;
-            } else if ( ! strcmp(argv[ac], "t") ) {
-                p.conversionMode = RSTOOLS_CORRELATION_CONVERSION_T;
-            } else {
-                fprintf(stderr, "** invalid value for -conversion\n");
-				return p;
-            }
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -threads\n");
-           		return p;
-           	}
-           	p.threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
-        } else if ( ! strcmp(argv[ac], "-delay") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -delay\n");
-           		return p;
-           	}
-           	p.delay = atoi(argv[ac]);
-        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			p.verbose = TRUE;
-		} else {
-			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
-			return p;
-		}
-	}
-	
-	if ( p.inputpath == NULL ) {
+	/* check if the required arguments have been provided */
+	if ( p->inputpath == NULL ) {
 		fprintf(stderr, "No input volume specified!\n");
-		return p;
+		return;
 	}
 	
-	if ( p.outputpath == NULL ) {
+	if ( p->outputpath == NULL ) {
 		fprintf(stderr, "No output volume specified!\n");
-		return p;
+		return;
 	}
 	
-	if ( p.commentpath != NULL ) {
-		p.comment = rsReadCommentFile(p.commentpath);
+	rsSetThreadsNum(p->threads);
+	
+	/* if an additional comment file was specified load it */
+	if ( p->commentpath != NULL ) {
+		p->comment = rsReadCommentFile(p->commentpath);
 	}
 	
-	char *callString = rsMergeStringArray(argc, argv);
+	/* assemble the comment that will be stored in the resulting output nifti */
 	char *comment;
-	if ( p.comment == NULL ) {
-		comment = callString;
+	if ( p->comment == NULL ) {
+		comment = p->callString;
 	} else {
 		char *separator = "\nReference Timecourse Info:\n";
-		comment = malloc(sizeof(char)*(strlen(callString)+strlen(separator)+strlen(p.comment)+1));
-		sprintf(&comment[0], "%s%s%s", callString, separator, p.comment);
-		free(callString);
+		comment = malloc(sizeof(char)*(strlen(p->callString)+strlen(separator)+strlen(p->comment)+1));
+		sprintf(&comment[0], "%s%s%s", p->callString, separator, p->comment);
 	}
+	free(p->comment);
+	p->comment = comment;
 	
-    /* Read seed timecourse from stdin */
-    p.regressor = rsReadRegressorFromStandardInput(&p.nRegressorValues);
-    
-    if ( p.verbose ) {
-        fprintf(stdout, "Input file: %s\n", p.inputpath);
-        fprintf(stdout, "Mask file: %s\n", p.maskpath);
-        fprintf(stdout, "Seed length: %u\n", p.nRegressorValues);
-        fprintf(stdout, "Seed delay: %u\n", p.delay);
-    }
+    /* read seed timecourse from stdin */
+    p->regressor = rsReadRegressorFromStandardInput(&p->nRegressorValues);
     
     /* open input file */
-    p.fslio = FslOpen(p.inputpath, "rb");
-    if (p.fslio == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n", p.inputpath);
-        return p;
-    }
-    
-	/* determine dimensions */
-	FslGetDim(p.fslio, &p.xDim, &p.yDim, &p.zDim, &p.vDim);
-    
-    if ( p.verbose ) {
-        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p.xDim, p.yDim, p.zDim, p.vDim);
-    }
-    
-    if (p.fslio->niftiptr->scl_slope != 0) {
-        p.slope = p.fslio->niftiptr->scl_slope;
-        p.inter = p.fslio->niftiptr->scl_inter;
-    }
-	
-	/* determine datatype and initalize buffer */
-	p.pixtype = FslGetDataType(p.fslio, &p.dt);
-    
-    /* prepare correlation file */
-   	void *correlationBuffer;
-    
-    p.fslioCorrelation = FslOpen(p.outputpath, "wb");
-    
-    if (p.fslioCorrelation == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n", p.outputpath);
-        return p;
-    }
-    
-    FslCloneHeader(p.fslioCorrelation, p.fslio);
-    FslSetDim(p.fslioCorrelation, p.xDim, p.yDim, p.zDim, 1);
-    FslSetDimensionality(p.fslioCorrelation, 4);
-    FslSetDataType(p.fslioCorrelation, p.dt);
-	if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE) {
-		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_CORREL, p.vDim-2, 0, 0);
-	} else if (p.conversionMode == RSTOOLS_CORRELATION_CONVERSION_T) {
-		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_TTEST, p.vDim-2, 0, 0);
-	} else {
-		FslSetIntent(p.fslioCorrelation, NIFTI_INTENT_ZSCORE, 0, 0, 0);
+	p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
+
+	if ( ! p->input->readable ) {
+		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+        return;
 	}
-    rsWriteNiftiHeader(p.fslioCorrelation, comment);
+    
+    if ( p->verbose ) {
+        fprintf(stdout, "Input file: %s\n", p->inputpath);
+        fprintf(stdout, "Mask file: %s\n", p->maskpath);
+        fprintf(stdout, "Seed length: %u\n", p->nRegressorValues);
+        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+		if (p->delay != 0) {
+        	fprintf(stdout, "Seed delay: %u\n", p->delay);
+		}
+		if (p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE) {
+			fprintf(stdout, "Conversion: correlation coefficient\n");
+		} else if (p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_T) {
+			fprintf(stdout, "Conversion: T-values\n");
+		} else {
+			fprintf(stdout, "Conversion: z-score\n");
+		}
+    }
+
+    /* create correlation file (output) */
+	p->output = rsCloneNiftiFile(p->outputpath, p->input, RSNIFTI_OPEN_ALLOC, 1);
+	
+	if ( ! p->output->readable ) {
+		fprintf(stderr, "\nError: The nifti file containing the correlation output (%s) could not be created.\n", p->outputpath);
+        return;
+	}
+	
+	if (p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE) {
+		FslSetIntent(p->output->fslio, NIFTI_INTENT_CORREL, p->input->vDim-2, 0, 0);
+	} else if (p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_T) {
+		FslSetIntent(p->output->fslio, NIFTI_INTENT_TTEST, p->input->vDim-2, 0, 0);
+	} else {
+		FslSetIntent(p->output->fslio, NIFTI_INTENT_ZSCORE, 0, 0, 0);
+	}
     
     /* prepare buffer */
-    p.correlation = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
+    p->correlation = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
     
     /* load mask */
-    p.mask = NULL;
-    if ( p.maskpath != NULL ) {
+    p->mask = NULL;
+    if ( p->maskpath != NULL ) {
         unsigned long nPoints = 0L;
-        p.mask = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
-        Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
+        p->mask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
+        Point3D *maskPoints = rsReadMask(p->maskpath, p->input->xDim, p->input->yDim, p->input->zDim, &nPoints, p->savemaskpath, p->input->fslio, p->mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
-            FslClose(p.fslio);
-            FslClose(p.fslioCorrelation);
-            return p;
+			return;
         }
         free(maskPoints);
     }
     
-    p.parametersValid = TRUE;
-    
-    return p;
+    p->parametersValid = TRUE;    
 }
 
-void rsCorrelationWriteCorrelationFile(struct rsCorrelationParameters* p) {
+void rsCorrelationRun(rsCorrelationParameters *p)
+{
+	
+	short x,y,z,processedSlices = 0;
+    double *timecourse;
+    
+    /* Iterate over all voxels for which the correlation is to be computed */
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse) shared(p,processedSlices)
+    {
+        #pragma omp for schedule(guided)
+        for (short z=0; z<p->input->zDim; z=z+1) {
+            for (short y=0; y<p->input->yDim; y=y+1) {
+                for (short x=0; x<p->input->xDim; x=x+1) {
+                    
+                    /* If it's not in the mask skip it to improve the performance */
+                    if (p->mask != NULL && p->mask[z][y][x] < 0.1) {
+                        
+                        /* set the value in the correlation file to NaN so that it is skipped in later processing steps */
+                        p->correlation[z][y][x] = log(-1.0);
+                        
+                        continue;
+                    }
+                    
+                    /* read out timecourse */
+                    double *fullTimecourse = malloc(p->input->vDim*sizeof(double));
+					rsExtractTimecourseFromRSNiftiFileBuffer(p->input, fullTimecourse, rsMakePoint3D(x, y, z));
+                    
+                    /* add the defined delay to the regressor and adjust the timecourse */
+                    double *regressor = &p->regressor[(short)fmax(0, -1*p->delay)];
+                    timecourse = &fullTimecourse[(short)fmax(0, p->delay)];
+                    const size_t regressorLength = p->nRegressorValues - fabs(p->delay);
+                    
+                    /* compute correlation */
+					if ( p->monteCarloRepetitions > 0 ) {
+						p->correlation[z][y][x] = rsMonteCarloZCorrelation(timecourse, regressor, regressorLength, p->monteCarloRepetitions, p->monteCarloSampleSize);
+					} else if ( p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_Z ) {
+                        p->correlation[z][y][x] = rsZCorrelation(timecourse, regressor, regressorLength);
+                    } else if ( p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_NONE ) {
+                        p->correlation[z][y][x] = rsCorrelation(timecourse, regressor, regressorLength);
+                    } else if ( p->conversionMode == RSTOOLS_CORRELATION_CONVERSION_T ) {
+                        p->correlation[z][y][x] = rsTCorrelation(timecourse, regressor, regressorLength);
+                    }
+                    
+                    free(fullTimecourse);
+                }
+            }
+
+			/* show progress */
+			if (p->verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
+            
+            	if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
+            	}
+			}
+        }
+    }
     
     /* Write correlation file */
-    if ((*p).verbose) fprintf(stdout, "Writing correlation file\n");
-    size_t buffsize = rsGetBufferSize((*p).xDim, (*p).yDim, (*p).zDim, 1, (*p).dt);
+    rsCorrelationWriteCorrelationFile(p);
+}
+
+void rsCorrelationWriteCorrelationFile(rsCorrelationParameters* p)
+{
+    
+    /* Write correlation file */
+    if (p->verbose) fprintf(stdout, "Writing correlation file\n");
+	rsWriteNiftiHeader(p->output->fslio, p->comment);
+
+    size_t buffsize = rsGetBufferSize(p->output->xDim, p->output->yDim, p->output->zDim, 1, p->output->dt);
     void *correlationBuffer;
-    correlationBuffer = malloc(buffsize);
+    correlationBuffer = rsMalloc(buffsize);
     
     convertScaledDoubleToBuffer(
-        (*p).fslioCorrelation->niftiptr->datatype,
+        p->output->dt,
         correlationBuffer,
-        &(*p).correlation[0][0][0],
-        (*p).fslioCorrelation->niftiptr->scl_slope,
-        (*p).fslioCorrelation->niftiptr->scl_inter,
-        (*p).xDim,
-        (*p).yDim,
-        (*p).zDim
+        &p->correlation[0][0][0],
+        p->output->slope,
+        p->output->inter,
+        p->output->xDim,
+        p->output->yDim,
+        p->output->zDim
     );
     
-    FslWriteVolumes((*p).fslioCorrelation, correlationBuffer, 1);
+    FslWriteVolumes(p->output->fslio, correlationBuffer, 1);
     
     free(correlationBuffer);
 }
 
-void rsCorrelationFree(struct rsCorrelationParameters* p) {
-    FslClose((*p).fslioCorrelation);
-    FslClose((*p).fslio);
-    free((*p).fslioCorrelation);
-    free((*p).fslio);
+void rsCorrelationDestroy(rsCorrelationParameters* p)
+{
+  	if ( p->input != NULL ) {
+		rsCloseNiftiFileAndFree(p->input);
+		p->input = NULL;
+	}
+	
+	if ( p->output != NULL ) {
+		p->output->data = NULL;
+		rsCloseNiftiFileAndFree(p->output);
+		p->output = NULL;
+	}
+	
+	if ( p->maskpath != NULL ) {
+        free(p->mask);
+		p->mask = NULL;
+    }
+
+	rsCorrelationFreeParams(p);
 }
 
-double *rsReadRegressorFromStandardInput(unsigned int *nValues) {
+double *rsReadRegressorFromStandardInput(unsigned int *nValues)
+{
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
     double value;
     unsigned int nBuffer = 10;
     *nValues = 0;
-    double *regressor = (double*)malloc(nBuffer * sizeof(double));
+    double *regressor = (double*)rsMalloc(nBuffer * sizeof(double));
     
     while ((read = getline(&line, &len, stdin)) != -1) {
         value = atof(line);

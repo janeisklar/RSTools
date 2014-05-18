@@ -35,7 +35,7 @@ extern "C" {
 #define RSFFTFILTER_ENGINE_GSL 1
 #define RSFFTFILTER_ENGINE_FFTW 2
 
-struct rsFFTFilterParams {
+typedef struct {
     int T;
     long paddedT;
     double sampling_rate;
@@ -53,11 +53,11 @@ struct rsFFTFilterParams {
 #if RS_FFTW_ENABLED == 1
     fftw_plan plan_r2hc, plan_hc2r;
 #endif
-};
+} rsFFTFilterParams;
 
-struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose);
-void rsFFTFilter(struct rsFFTFilterParams p, double *data);
-void rsFFTFilterFree(struct rsFFTFilterParams p);
+rsFFTFilterParams* rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose);
+void rsFFTFilter(rsFFTFilterParams *p, double *data);
+void rsFFTFilterFree(rsFFTFilterParams *p);
 void rsFFTSetEngine(int engine);
 
 #ifdef __cplusplus

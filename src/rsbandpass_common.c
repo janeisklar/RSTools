@@ -1,326 +1,189 @@
-//
-//  rsbandpass_common.c
-//  rstools
-//
-//  Created by André Hoffmann on 6/28/13.
-//
-//
-
 #include "rsbandpass_common.h"
+#include "rsbandpass_ui.h"
 
-
-void rsBandpassPrintHelp() {
-
-    printf(
-      "basic usage:  rsbandpass -input <volume> -filtered <volume> -f1 <double> -f2 <double> -sampling_rate <double> [-savemask <mask>] [-verbose]\n"
-      "\n"
-    );
-
-    printf(
-      "options:\n"
-    );
-
-    printf(
-      "   -input <volume>          : the volume to be regressed\n"
-    );
-
-    printf(
-      "   -filtered <volume>       : the volume in which the filtered data will be saved\n"
-    );
-
-    printf(
-      "   -f1 <double>             : the lower frequency of the bandpass filter\n"
-    );
-
-    printf(
-      "   -f2 <double>             : the upper frequency of the bandpass filter\n"
-    );
-
-    printf(
-      "   -samplingrate <double>   : the sampling_rate used for the FFT\n"
-    );
-
-    printf(
-      "   -mask <mask>             : a mask specifying the ROI for improved performance\n"
-    );
-
-    printf(
-      "   -savemask <mask>         : optional path where the rescaled mask specified with\n"
-      "                              -mask will be saved. The saved file with have the same\n"
-      "                              dimensions as the input volume.\n"
-    );
+void rsBandpassInit(rsBandpassParameters *p)
+{
+	p->parametersValid = FALSE;
+	
+	if ( p->inputpath == NULL ) {
+		fprintf(stderr, "No input volume specified(--input)!\n");
+		return;
+	}
+	
+	if ( p->saveFilteredPath == NULL ) {
+		fprintf(stderr, "An output path for the filtered data must be specified(--filtered)!\n");
+		return;
+	}
+	
+	if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
+		fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
+		return;
+	}
     
-    printf(
-      "   -keepMean                : keeps the first bin of the FFT(the mean) independent of\n"
-      "                              tbe selected frequency range\n"
-    );
+	rsSetThreadsNum(p->threads);
 
-    printf(
-      "   -threads <int>           : number of threads used for processing\n"
-    );
-    
+    if ( p->verbose ) {
+        fprintf(stdout, "Input file: %s\n", p->inputpath);
+        fprintf(stdout, "Mask file: %s\n", p->maskpath);
+        fprintf(stdout, "Filtered file: %s\n", p->saveFilteredPath);
+        fprintf(stdout, "lower freq.: %.4f\n", p->freqLow);
+        fprintf(stdout, "upper freq.: %.4f\n", p->freqHigh);
+        fprintf(stdout, "TR: %.4f\n", p->TR);
+    }
+
+	rsFFTSetEngine(RSFFTFILTER_ENGINE_GSL);
 #if RS_FFTW_ENABLED == 1
-    printf(
-      "   -fftw                    : use FFTW3 instead of GSL for FFT\n"
-    );
+	if ( p->fftw ) rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
 #endif
     
-    printf(
-      "   -saveattenuation <file>  : save txt file that contains the bin's frequencies and the \n"
-      "                              corresponding attenuation weight that was used.\n"
-    );
-    
-    printf(
-      "   -sigmoidrolloff <double> : uses a sigmoid function for rolling off the passband. The\n"
-      "                              specified number controls how fast it is rolled off with\n"
-      "                              higher numbers corresponding to a quicker rolloff. A good\n"
-      "                              starting point would be 10, then double-check by saving\n"
-      "                              the attenuation file.\n"
-    );
+    p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
 
-    printf(
-      "   -v[erbose]               : show debug information\n"
-      "\n"
-    );
-}
-
-struct rsBandpassParameters rsBandpassInitParameters() {
-    struct rsBandpassParameters p;
-    
-    p.inputpath            = NULL;
-    p.maskpath             = NULL;
-    p.savemaskpath         = NULL;
-    p.saveFilteredPath     = NULL;
-    p.saveAttenuationPath  = NULL;
-    p.xDim                 = 0;
-    p.yDim                 = 0;
-    p.zDim                 = 0;
-    p.vDim                 = 0;
-    p.paddedT              = 0;
-    p.pixtype              = 0;
-    p.dt                   = 4;
-    p.inter                = 0.0;
-    p.slope                = 1.0;
-    p.f1                   = -1.0;
-    p.f2                   = -1.0;
-    p.sampling_rate        = -1.0;
-    p.verbose              = FALSE;
-    p.fslio                = NULL;
-    p.parametersValid      = FALSE;
-    p.mask                 = NULL;
-    p.threads              = 1;
-    p.rolloff_method       = RSFFTFILTER_CUTOFF;
-    p.rolloff              = 10.0;
-    p.keepMean             = FALSE;
-    
-    return p;
-}
-
-struct rsBandpassParameters rsBandpassLoadParams(int argc, char * argv[]) {
-
-    struct rsBandpassParameters p = rsBandpassInitParameters();
-    
-    /* parse parameters */
-	for( int ac = 1; ac < argc; ac++ ) {
-		if ( ! strcmp(argv[ac], "-input") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -input\n");
-				return p;
-			}
-			p.inputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-filtered") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -filtered\n");
-				return p;
-			}
-			p.saveFilteredPath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-f1") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -f1\n");
-				return p;
-			}
-			p.f1 = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-f2") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -f2\n");
-				return p;
-			}
-			p.f2 = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-samplingrate") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -samplingrate\n");
-				return p;
-			}
-			p.sampling_rate = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -m\n");
-				return p;
-			}
-			p.maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-savemask") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -savemask\n");
-				return p;
-			}
-			p.savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-    		if( ++ac >= argc ) {
-    			fprintf(stderr, "** missing argument for -threads\n");
-    			return p;
-    		}
-    		p.threads = atoi(argv[ac]);
-    	} else if ( ! strcmp(argv[ac], "-datalength") ) {
-    		if( ++ac >= argc ) {
-    			fprintf(stderr, "** missing argument for -datalength\n");
-    			return p;
-    		}
-    		p.paddedT = atol(argv[ac]);
-    	} else if ( ! strcmp(argv[ac], "-saveattenuation") ) {
-            if( ++ac >= argc ) {
-    			fprintf(stderr, "** missing argument for -saveattenuation\n");
-    			return p;
-    		}
-    		p.saveAttenuationPath = argv[ac];
-        } else if ( ! strcmp(argv[ac], "-sigmoidrolloff") ) {
-            if( ++ac >= argc ) {
-    			fprintf(stderr, "** missing argument for -sigmoidrolloff\n");
-    			return p;
-    		}
-    		p.rolloff_method = RSFFTFILTER_SIGMOID;
-            p.rolloff = atof(argv[ac]);
-        } else if ( ! strcmp(argv[ac], "-fftw") ) {
-            rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
-        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			p.verbose = TRUE;
-		} else if ( ! strcmp(argv[ac], "-keepMean") ) {
-			p.keepMean = TRUE;
-		} else if ( ! strcmp(argv[ac], "-test") ) {
-            testFFTFilter();
-			return p;
-		} else {
-			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
-		}
+	if ( ! p->input->readable ) {
+		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+        return;
 	}
-	
-	if ( p.inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified(-input)!\n");
-		return p;
-	}
-	
-	if ( p.saveFilteredPath == NULL ) {
-		fprintf(stderr, "An output path for the filtered data must be specified(-filtered)!\n");
-		return p;
-	}
-	
-	if ( p.f1 < 0 || p.f2 < 0 || p.sampling_rate < 0 ) {
-		fprintf(stderr, "Bandpass frequencies and sampling rate have to be specified!(-f1, -f2, -samplingrate)!\n");
-		return p;
-	}
-    
-    if ( p.verbose ) {
-        fprintf(stdout, "Input file: %s\n", p.inputpath);
-        fprintf(stdout, "Mask file: %s\n", p.maskpath);
-        fprintf(stdout, "Filtered file: %s\n", p.saveFilteredPath);
-        fprintf(stdout, "F1: %.4f\n", p.f1);
-        fprintf(stdout, "F2: %.4f\n", p.f2);
-        fprintf(stdout, "Sampling rate: %.4f\n", p.sampling_rate);
-    }
-    
-    p.fslio = FslOpen(p.inputpath, "rb");
-    if (p.fslio == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n",p.inputpath);
-        return p;
-    }
-    
-	/* determine dimensions */
-	FslGetDim(p.fslio, &p.xDim, &p.yDim, &p.zDim, &p.vDim);
 	   
-    if ( p.verbose ) {
-        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p.xDim, p.yDim, p.zDim, p.vDim);
+    if ( p->verbose ) {
+        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
 
-    if ( p.paddedT == 0 ) {
-        p.paddedT = p.vDim;
-    } else if ( p.verbose ) {
-        fprintf(stdout, "Padding data to have a sampling length of %ld\n", p.paddedT);
+    if ( p->paddedT == 0 ) {
+        p->paddedT = p->input->vDim;
+    } else if ( p->verbose ) {
+        fprintf(stdout, "Padding data to have a sampling length of %ld\n", p->paddedT);
     }
     
-    if ( p.vDim > p.paddedT ) {
-        fprintf(stderr, "\nError, datalength(%ld) needs to be longer or equal to the temporal length(%d) of the supplied nifti file: %s.\n",p.paddedT, p.vDim, p.inputpath);
-        return p;
+    if ( p->input->vDim > p->paddedT ) {
+        fprintf(stderr, "\nError: datalength(%ld) needs to be longer or equal to the temporal length(%d) of the supplied nifti file: %s.\n",p->paddedT, p->input->vDim, p->inputpath);
+        return;
     }
     
-    if (p.fslio->niftiptr->scl_slope != 0) {
-        p.slope = p.fslio->niftiptr->scl_slope;
-        p.inter = p.fslio->niftiptr->scl_inter;
-    }
-	
-	/* determine datatype and initalize buffer */
-	p.pixtype = FslGetDataType(p.fslio, &p.dt);
-	
-    if ( p.verbose ) {
-        fprintf(stdout, "Dt: %d Pixtype: %ld\n", p.dt, p.pixtype);
-    }
-    
-    if ( p.maskpath != NULL ) {
+	// Load mask
+    if ( p->maskpath != NULL ) {
         unsigned long nPoints = 0L;
-        p.mask = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
-        Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
+        p->mask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
+        Point3D *maskPoints = rsReadMask(p->maskpath, p->input->xDim, p->input->yDim, p->input->zDim, &nPoints, p->savemaskpath, p->input->fslio, p->mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
-            FslClose(p.fslio);
-            return p;
+            return;
         }
         free(maskPoints);
     }
     
     // Prepare FFT filter
-    p.fftParams = rsFFTFilterInit(p.vDim, p.paddedT, p.sampling_rate, p.f1, p.f2, p.rolloff_method, p.rolloff, p.keepMean, p.verbose);
+    p->fftParams = rsFFTFilterInit(p->input->vDim, p->paddedT, p->TR, p->freqLow, p->freqHigh, p->rolloff_method, p->rolloff, p->keepMean, p->verbose);
     
-    if ( p.saveAttenuationPath != NULL ) {
-        if ( p.verbose ) {
-            fprintf(stdout, "Writing attenuation weights to: %s\n", p.saveAttenuationPath);
+    if ( p->saveAttenuationPath != NULL ) {
+        if ( p->verbose ) {
+            fprintf(stdout, "Writing attenuation weights to: %s\n", p->saveAttenuationPath);
         }
         FILE *file;
-        file = fopen(p.saveAttenuationPath, "wb");
+        file = fopen(p->saveAttenuationPath, "wb");
         
-        for ( int i=0; i<p.fftParams.paddedT; i=i+1 ) {
-            fprintf(file,"%.10f\t%.10f\n", p.fftParams.frequencyBins[i], p.fftParams.binAttenuation[i]);
+        for ( int i=0; i<p->fftParams->paddedT; i=i+1 ) {
+            fprintf(file,"%.10f\t%.10f\n", p->fftParams->frequencyBins[i], p->fftParams->binAttenuation[i]);
         }
         
         fclose(file);
     }
+
+	// Create output volume
+	p->filteredOutput = rsCloneNiftiFile(p->saveFilteredPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
+	
+	if ( ! p->filteredOutput->readable ) {
+		fprintf(stderr, "\nError: The nifti file containing the filtered output (%s) could not be created.\n", p->saveFilteredPath);
+        return;
+	}
     
-    p.parametersValid = TRUE;
-    return p;
+    p->parametersValid = TRUE;
+    return;
 }
 
-void testFFTFilter() {
-    /* Create artifical data */
-    double sampling_rate=1.8;
-    int    T = 170;
-    double f = 0.025;
+void rsBandpassRun(rsBandpassParameters *p)
+{
+    // Prepare empty timecourse
+    double emptybuffer[p->input->vDim];
     
-    double angular_frequency = (2 * M_PI * f) * sampling_rate;
-    double angular_frequency2 = (2 * M_PI * 0.09) * sampling_rate;
-    double angular_frequency3 = (2 * M_PI * 0.07) * sampling_rate;
-    double wave[T];
-    double data[T];
+    for (int i=0; i<p->input->vDim; i=i+1){
+        emptybuffer[i] = log(-1.0);
+    }
+
+    // Run FFT bandpass filter
+    short x,y,z, processedSlices = 0;
+    double *signal;
+    Point3D *point;
     
-    for (int i=0; i<T; i=i+1) {
-        wave[i] = 0.0;
-//        wave[i] = 1000L * sin((i+1L)*angular_frequency)  + 1000L;
-//        wave[i] = 700L  * sin((i+1L)*angular_frequency2) + wave[i];
-        wave[i] = 1000L  * sin((i+1L)*angular_frequency3) + wave[i];
-        data[i] = wave[i];
-        fprintf(stdout, "%.10f\n", data[i]);
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(z,y,x,signal,point) shared(emptybuffer,processedSlices)
+    {
+        #pragma omp for schedule(guided)
+        for (z=0; z<p->input->zDim; z=z+1) {
+            for (y=0; y<p->input->yDim; y=y+1) {
+                for (x=0; x<p->input->xDim; x=x+1) {
+                    
+                    point = rsMakePoint3D(x, y, z);
+                    
+                    /* If it's not in the mask skip it to improve the performance */
+                    if (p->mask != NULL && p->mask[z][y][x] < 0.1) {
+                    
+                        /* set the value in the filtered data to NaN so that the nifti isn't empty */
+						rsWriteTimecourseToRSNiftiFileBuffer(p->input, emptybuffer, point);
+                        continue;
+                    }
+                    
+                    /* read out timecourse from buffer */
+                    signal = rsMalloc(p->input->vDim*sizeof(double));
+                    rsExtractTimecourseFromRSNiftiFileBuffer(p->input, signal, point);
+                    
+                    /* apply filter */
+                    rsFFTFilter(p->fftParams, signal);
+                    
+                    /* write out filtered data to buffer */
+					rsWriteTimecourseToRSNiftiFileBuffer(p->filteredOutput, signal, point);
+
+                    free(signal);
+                }
+            }
+			
+			/* show progress */
+			if (p->verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
+            
+            	if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
+            	}
+			}
+        }
     }
     
-    struct rsFFTFilterParams fftParams = rsFFTFilterInit(T, T, sampling_rate, 0.01, 0.04, RSFFTFILTER_CUTOFF, 0.0, FALSE, FALSE);
-    rsFFTFilter(fftParams, data);
+	if ( p->verbose ) {
+    	fprintf(stdout, "Write out result to: %s\n", p->saveFilteredPath);
+	}
     
-    for (int i=0; i<T; i=i+1) {
-        fprintf(stderr, "%.10f\n", data[i]);
+	rsWriteNiftiHeader(p->filteredOutput->fslio, p->callString);
+    FslWriteVolumes(p->filteredOutput->fslio, p->filteredOutput->data, p->filteredOutput->vDim);    
+}
+
+void rsBandpassDestroy(rsBandpassParameters *p)
+{
+	if ( p->input != NULL ) {
+		rsCloseNiftiFileAndFree(p->input);
+		p->input = NULL;
+	}
+	
+	if ( p->filteredOutput != NULL ) {
+		p->filteredOutput->data = NULL;
+		rsCloseNiftiFileAndFree(p->filteredOutput);
+		p->filteredOutput = NULL;
+	}
+	
+	if ( p->maskpath != NULL ) {
+        free(p->mask);
+		p->mask = NULL;
     }
+
+	rsFFTFilterFree(p->fftParams);
+	p->fftParams = NULL;
+	
+	rsBandpassFreeParams(p);
 }

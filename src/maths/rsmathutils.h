@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "correlation.h"
 #include "filter.h"
 #include "geom.h"

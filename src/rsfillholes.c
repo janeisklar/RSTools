@@ -192,7 +192,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim-1, yDim-1, xDim-1);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
@@ -219,34 +219,34 @@ int main(int argc, char * argv[]) {
         #pragma omp for schedule(guided, 1)
         for (p = 0L; p<nPoints; p=p+1L) {
 
-            const Point3D point = maskPoints[p];
+            const Point3D *point = &maskPoints[p];
             short kernellength  = 0;
             double pointValue   = 0;
             double norm         = 0;
             double average      = 0;
             
-            rsExtractTimecourseFromBuffer(fslio, &pointValue, buffer, slope, inter, point, xDim, yDim, zDim, 1);
+            rsExtractTimecourseFromBuffer(dt, &pointValue, buffer, slope, inter, point, xDim, yDim, zDim, 1);
             
             if ( pointValue == pointValue && pointValue != 0 ) {
                 continue;
             }
             
-            for (int x=max(point.x-kerneldist,0); x<min(point.x+kerneldist, yDim-1); x=x+1) {
-                for (int y=max(point.y-kerneldist,0); y<min(point.y+kerneldist, yDim-1); y=y+1) {
-                    for (int z=max(point.z-kerneldist,0); z<min(point.z+kerneldist, zDim-1); z=z+1) {
+            for (int x=max(point->x-kerneldist,0); x<min(point->x+kerneldist, yDim-1); x=x+1) {
+                for (int y=max(point->y-kerneldist,0); y<min(point->y+kerneldist, yDim-1); y=y+1) {
+                    for (int z=max(point->z-kerneldist,0); z<min(point->z+kerneldist, zDim-1); z=z+1) {
                         
-                        if ( x==point.x && y==point.y && z==point.z ) {
+                        if ( x==point->x && y==point->y && z==point->z ) {
                             continue;
                         }
                         
                         double kernelPointValue = 0;
-                        rsExtractTimecourseFromBuffer(fslio, &kernelPointValue, buffer, slope, inter, MakePoint3D(x, y, z), xDim, yDim, zDim, 1);
+                        rsExtractTimecourseFromBuffer(dt, &kernelPointValue, buffer, slope, inter, rsMakePoint3D(x, y, z), xDim, yDim, zDim, 1);
                         
                         if ( kernelPointValue != kernelPointValue || kernelPointValue == 0 ) {
                             continue;
                         }
                         
-                        const double weight = 3 * kernelsize - abs(point.x-x) - abs(point.y-y) - abs(point.z-z);
+                        const double weight = 3 * kernelsize - abs(point->x-x) - abs(point->y-y) - abs(point->z-z);
                         average      = average + kernelPointValue * weight;
                         norm         = norm + weight;
                         kernellength = kernellength + 1;
@@ -255,13 +255,13 @@ int main(int argc, char * argv[]) {
             }
             
             if (kernellength < 1) {
-                if(verbose) fprintf(stderr, "Couldn't fill hole for X%03dY%03dZ%03d. Kernel too small?\n", point.x, point.y, point.z);
+                if(verbose) fprintf(stderr, "Couldn't fill hole for X%03dY%03dZ%03d. Kernel too small?\n", point->x, point->y, point->z);
                 continue;
             }
             
             average = average / norm;
             
-            rsWriteTimecourseToBuffer(fslio, &average, buffer, slope, inter, point, xDim, yDim, zDim, 1);
+            rsWriteTimecourseToBuffer(dt, &average, buffer, slope, inter, point, xDim, yDim, zDim, 1);
         }
     }
     

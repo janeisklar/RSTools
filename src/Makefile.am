@@ -6,20 +6,20 @@ rslibraries=maths/librsmathutils.a nifti/librsniftiutils.a
 
 LDADD=$(rslibraries)
 
-rsbandpass_SOURCES = rsbandpass_common.c rsbandpass.c
+rsbandpass_SOURCES = rsbandpass_ui.c rsbandpass_common.c rsbandpass.c
 #rsbandpass_LDADD = $(LIBOBJS)
 #rsbandpass_LDADD = -Lnifti -Lmaths -lrsmathutils -lrsniftiutils
 rscentrality_SOURCES = rscentrality.c
-rscorrelation_SOURCES = rscorrelation_common.c rscorrelation.c
+rscorrelation_SOURCES = rscorrelation_ui.c rscorrelation_common.c rscorrelation.c 
 rsfastcentrality_SOURCES = rsfastcentrality.c
 rsfillholes_SOURCES = rsfillholes.c
 rsinfo_SOURCES = rsinfo.c
 rsmask_SOURCES = rsmask.c
-rsmotionscrubbing_SOURCES = rsmotionscrubbing.c
-rsmotionscrubbing_LDADD = rsregression_common.o @LIBOBJS@ $(rslibraries)
-rsregression_SOURCES = rsregression.c rsregression_common.c
+rsmotionscrubbing_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c rsmotionscrubbing.c
+#rsmotionscrubbing_LDADD = rsregression_common.o @LIBOBJS@ $(rslibraries)
+rsregression_SOURCES = rsregression_ui.c rsregression_common.c rsregression.c
 rsroi_SOURCES = rsroi.c
-rstimecourse_SOURCES = rstimecourse.c
+rstimecourse_SOURCES = rstimecourse_ui.c rstimecourse_common.c rstimecourse.c
 rsttest_SOURCES = rsttest.c
 
 pkginclude_HEADERS = rscommon.h maths/rsmathutils.h nifti/rsniftiutils.h

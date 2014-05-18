@@ -195,7 +195,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim-1, yDim-1, xDim-1);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, savemaskpath, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
@@ -225,11 +225,11 @@ int main(int argc, char * argv[]) {
 	if ( verbose ) fprintf(stdout, "Removing voxels that are NaN..\n");
   	
 	for (n=0; n<nPoints; n=n+1) {
-        const Point3D point = maskPoints[n];
+        const Point3D *point = &maskPoints[n];
 		
         // load signal
         double *signalData = malloc(sizeof(double) * vDim);
-        rsExtractTimecourseFromBuffer(fslioCentrality, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+        rsExtractTimecourseFromBuffer(dt, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
         
         for ( int t=0; t<vDim; t=t+1 ) {
 			if ( signalData[t] != signalData[t] ) {
@@ -246,12 +246,12 @@ int main(int argc, char * argv[]) {
 	/* remove voxels that are nan */
 	
 	long newIndex = 0;
-	Point3D *newMaskPoints = malloc(sizeof(Point3D)*(nPoints-nNanPoints));
+	Point3D *newMaskPoints = rsMalloc(sizeof(Point3D)*(nPoints-nNanPoints));
 	
 	for ( n=0; n<nPoints; n=n+1 ) {
 		
 		if ( ! rsVectorContains(nanPoints, nNanPoints, n) ) {
-			newMaskPoints[newIndex] = maskPoints[n];
+			memcpy(&newMaskPoints[newIndex], &maskPoints[n], sizeof(Point3D));
 			newIndex = newIndex + 1;
 		}
 	}
@@ -280,11 +280,11 @@ int main(int argc, char * argv[]) {
     {
         #pragma omp for schedule(guided)
         for (n=0; n<nPoints; n=n+1) {
-            const Point3D point = maskPoints[n];
+            const Point3D *point = &maskPoints[n];
             
             // load signal
             double *signalData = malloc(sizeof(double) * vDim);
-            rsExtractTimecourseFromBuffer(fslioCentrality, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+            rsExtractTimecourseFromBuffer(dt, signalData, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
             
             // remove mean and convert to unit variance
             const double mean = gsl_stats_mean(&signalData[0], 1, vDim);
@@ -390,9 +390,9 @@ int main(int argc, char * argv[]) {
     {
         #pragma omp for schedule(guided)
         for (n = 0L; n<nPoints; n=n+1L) {
-            const Point3D point      = maskPoints[n];
+            const Point3D *point      = &maskPoints[n];
             const double  centrality = vScaled[n];
-            rsWriteTimecourseToBuffer(fslioCentrality, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);
+            rsWriteTimecourseToBuffer(dt, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);
         }
     }
     

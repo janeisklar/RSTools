@@ -1,11 +1,3 @@
-//
-//  rsttest2.c
-//  rstools
-//
-//  Created by André Hoffmann on 9/23/13.
-//
-//
-
 #include <stdio.h>
 #include <string.h>
 #include "src/maths/rsmathutils.h"
@@ -43,76 +35,12 @@ void rsTTestPrintHelp() {
     );
 }
 
-struct rsInputFile {
-    char*   path;
-	BOOL    readable;
-    FSLIO*  fslio;
-    short   xDim;
-    short   yDim;
-    short   zDim;
-    short   vDim;
-    short   dt;
-    size_t  pixtype;
-    float   inter;
-    float   slope;
-    double* data;
-};
-
-
-struct rsInputFile rsOpenInputFile(char* path) {
-    struct rsInputFile f;
-    
-    f.path     = (char*)malloc((strlen(path)+1)*sizeof(char));
-    strcpy(f.path, path);
-    f.path     = rsTrimString(f.path);
-    f.readable = FALSE;
-    
-    /* open file */
-    f.fslio = FslOpen(f.path, "rb");
-    
-    if (f.fslio == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n", f.path);
-        return f;
-    }
-    
-    f.readable = TRUE;
-    
-	/* determine dimensions */
-	FslGetDim(f.fslio, &f.xDim, &f.yDim, &f.zDim, &f.vDim);
-    
-    /* determine scaling */
-    f.inter = 0.0;
-    f.slope = 1.0;
-    
-    if (f.fslio->niftiptr->scl_slope != 0) {
-        f.slope = f.fslio->niftiptr->scl_slope;
-        f.inter = f.fslio->niftiptr->scl_inter;
-    }
-	
-	/* determine datatype */
-	f.pixtype = FslGetDataType(f.fslio, &f.dt);
-    
-    /* read in file */
-    f.data = malloc(rsGetBufferSize(f.xDim, f.yDim, f.zDim, f.vDim, f.dt));
-    
-    FslReadVolumes(f.fslio, f.data, f.vDim);
-    
-    return f;
-}
-
-void rsCloseInputFile(struct rsInputFile* f) {
-    free((*f).data);
-    FslClose((*f).fslio);
-    free((*f).fslio);
-    (*f).readable = FALSE;
-}
-
-struct rsInputFile *rsReadFileListFromStandardInput(unsigned int *nFiles) {
+rsNiftiFile **rsReadFileListFromStandardInput(unsigned int *nFiles) {
     char *line = NULL;
     size_t len = 0;
     size_t read;
     int sizeFilesBuffer = 1;
-    struct rsInputFile *files = (struct rsInputFile*)malloc(sizeof(struct rsInputFile)*sizeFilesBuffer);
+    rsNiftiFile **files = (rsNiftiFile**)rsMalloc(sizeof(rsNiftiFile*)*sizeFilesBuffer);
     *nFiles=0;
     
     while ((read = getline(&line, &len, stdin)) != -1) {
@@ -121,7 +49,7 @@ struct rsInputFile *rsReadFileListFromStandardInput(unsigned int *nFiles) {
         // Check if we're running out of memory and extend the array if necessary
         if ( *nFiles >= sizeFilesBuffer ) {
             sizeFilesBuffer = sizeFilesBuffer + 10;
-            struct rsInputFile* tmpFiles = (struct rsInputFile*)realloc(files, sizeFilesBuffer * sizeof(struct rsInputFile));
+            rsNiftiFile **tmpFiles = (rsNiftiFile**)realloc(files, sizeFilesBuffer * sizeof(rsNiftiFile*));
             if (tmpFiles) {
                 files = tmpFiles;
             } else {
@@ -130,7 +58,7 @@ struct rsInputFile *rsReadFileListFromStandardInput(unsigned int *nFiles) {
             }
         }
         
-        files[*nFiles-1] = rsOpenInputFile(line);
+        files[*nFiles-1] = rsOpenNiftiFile(line, RSNIFTI_OPEN_READ);
     }
     
     if (line) free(line);
@@ -139,8 +67,6 @@ struct rsInputFile *rsReadFileListFromStandardInput(unsigned int *nFiles) {
 }
 
 int main(int argc, char * argv[]) {
-    
-    FSLIO *fslioOutput;
 	
 	char *outputpath = NULL;
 	
@@ -189,22 +115,22 @@ int main(int argc, char * argv[]) {
     
     // Load list of files
     unsigned int nFiles = 0;
-    struct rsInputFile *files = rsReadFileListFromStandardInput(&nFiles);
+    rsNiftiFile **files = rsReadFileListFromStandardInput(&nFiles);
 	size_t fileListLength = 1;
     
     for (int n=0; n<nFiles; n=n+1) {
-        const struct rsInputFile file = files[n];
+        const rsNiftiFile *file = files[n];
         
-        if ( ! file.readable ) {
-            fprintf(stderr, "File '%s' is not accessible.\n", file.path);
+        if ( ! file->readable ) {
+            fprintf(stderr, "File '%s' is not accessible.\n", file->path);
             return 1;
         }
         
         if (verbose) {
-            fprintf(stdout, "File: %s, Volumes: %d\n", file.path, file.vDim);
+            fprintf(stdout, "File: %s, Volumes: %d\n", file->path, file->vDim);
         }
 
-		fileListLength = fileListLength + strlen(file.path) + 2 + (size_t)fmaxf(rsCountDigits(file.vDim), 4);
+		fileListLength = fileListLength + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
     }
     
     if ( nFiles < 1 ) {
@@ -212,120 +138,120 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
+	// Prepare comment containing the file list
 	char fileList[fileListLength];
 	size_t bytesWritten = 0;
     for (int n=0; n<nFiles; n=n+1) {
-        const struct rsInputFile file = files[n];
-		sprintf(&fileList[bytesWritten], "%s,%04d\n", file.path, file.vDim);
-		bytesWritten = bytesWritten + strlen(file.path) + 2 + (size_t)fmaxf(rsCountDigits(file.vDim), 4);
+        const rsNiftiFile *file = files[n];
+		sprintf(&fileList[bytesWritten], "%s,%04d\n", file->path, file->vDim);
+		bytesWritten = bytesWritten + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
 	}
 	fileList[fileListLength-1] = '\0';
-    
-    // Prepare output buffer
-    const struct rsInputFile refFile = files[0];
-    
-    fslioOutput = FslOpen(outputpath, "wb");
-    
-    if (fslioOutput == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n", outputpath);
-        return 1;
-    }
-    
-    size_t nOutputVolumes = (nFiles > 1) ? refFile.vDim : 1;
-    
-    FslCloneHeader(fslioOutput, refFile.fslio);
-    FslSetDim(fslioOutput, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
-    FslSetDimensionality(fslioOutput, 4);
-    FslSetDataType(fslioOutput, refFile.dt);
-	FslSetIntent(fslioOutput, NIFTI_INTENT_TTEST, (nFiles > 1) ? (nFiles-1) : (refFile.vDim-1), 0, 0);
+	
 	char *comment1 = rsMergeStringArray(argc, argv);
 	char *comment2 = "\nFilelist:\n";
 	size_t commentLength = strlen(comment1)+strlen(comment2)+fileListLength+1;
 	char comment[commentLength];
 	sprintf(&comment[0], "%s%s%s\n", comment1, comment2, fileList);
-	comment[commentLength-1] = '\0';	
-    rsWriteNiftiHeader(fslioOutput, &comment[0]);
+	comment[commentLength-1] = '\0';
     
-    void *buffer = malloc(rsGetBufferSize(refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes, refFile.dt));
+    // Prepare output file
+    const rsNiftiFile *refFile = files[0];
+    const size_t nOutputVolumes = (nFiles > 1) ? refFile->vDim : 1;
+	rsNiftiFile *outputFile = rsCloneNiftiFile(outputpath, refFile, RSNIFTI_OPEN_ALLOC, nOutputVolumes);
     
+    if ( ! outputFile->readable ) {
+		exit(EXIT_FAILURE);
+    }
+    
+	FslSetIntent(outputFile->fslio, NIFTI_INTENT_TTEST, (nFiles > 1) ? (nFiles-1) : (refFile->vDim-1), 0, 0);
+    rsWriteNiftiHeader(outputFile->fslio, &comment[0]);
+        
     short t,x,y,z;
+	Point3D *point;
     
-    #pragma omp parallel num_threads(threads) private(x,y,t) shared(buffer,nFiles,files)
+	// Iterate over all voxels in the nifti
+    #pragma omp parallel num_threads(threads) private(x,y,t,point) shared(outputFile,nFiles,files)
     {
         #pragma omp for schedule(guided)
-        for (z=0; z<refFile.zDim; z=z+1) {
-            for (y=0; y<refFile.yDim; y=y+1) {
-                for (x=0; x<refFile.xDim; x=x+1) {
-                    Point3D point = MakePoint3D(x, y, z);
+        for (z=0; z<refFile->zDim; z=z+1) {
+			
+            for (y=0; y<refFile->yDim; y=y+1) {
+                for (x=0; x<refFile->xDim; x=x+1) {
+                    point = rsMakePoint3D(x, y, z);
+					
                     double *tValues = (double*)malloc(sizeof(double)*nOutputVolumes);
                     
+					// if more than one file is supplied compare the same volume indices with each other
                     if ( nFiles > 1 ) {
-                        for (t=0; t<refFile.vDim; t=t+1) {
-                            double *series = (double*)malloc(sizeof(double)*nFiles);
+                        for (t=0; t<refFile->vDim; t=t+1) {
+                            double *series = (double*)rsMalloc(sizeof(double)*nFiles);
 
                             for (int f=0; f<nFiles; f=f+1) {
-                                const struct rsInputFile *file = &files[f];
+                                const rsNiftiFile *file = files[f];
                                 rsExtractPointsFromBuffer(
-                                    (*file).fslio,
+                                    file->dt,
                                     &series[f],
-                                    (*file).data,
-                                    (*file).slope,
-                                    (*file).inter,
-                                    &point,
+                                    file->data,
+                                    file->slope,
+                                    file->inter,
+                                    point,
                                     1L,
                                     t,
-                                    (*file).xDim,
-                                    (*file).yDim,
-                                    (*file).zDim,
-                                    (*file).vDim
+                                    file->xDim,
+                                    file->yDim,
+                                    file->zDim,
+                                    file->vDim
                                 );
                             }
                             
                             tValues[t] = rsOneSampleTTest(series, nFiles, 0.0);
                             free(series);
                         }                            
-                    } else {
-                        double *series = (double*)malloc(sizeof(double)*refFile.vDim);
+                    } else { // otherwise perform the t-test along the different volumes in the 4D-nifti
+                        double *series = (double*)malloc(sizeof(double)*refFile->vDim);
                         
-                        for (t=0; t<refFile.vDim; t=t+1) {
+                        for (t=0; t<refFile->vDim; t=t+1) {
                             
                             rsExtractPointsFromBuffer(
-                                refFile.fslio,
+                                refFile->dt,
                                 &series[t],
-                                refFile.data,
-                                refFile.slope,
-                                refFile.inter,
-                                &point,
+                                refFile->data,
+                                refFile->slope,
+                                refFile->inter,
+                                point,
                                 1L,
                                 t,
-                                refFile.xDim,
-                                refFile.yDim,
-                                refFile.zDim,
-                                refFile.vDim
+                                refFile->xDim,
+                                refFile->yDim,
+                                refFile->zDim,
+                                refFile->vDim
                             );
                         }
                         
-                        tValues[0] = rsOneSampleTTest(series, refFile.vDim, 0.0);
+                        tValues[0] = rsOneSampleTTest(series, refFile->vDim, 0.0);
                         free(series);                            
                     }
                     
-                    rsWriteTimecourseToBuffer(fslioOutput, tValues, buffer, refFile.slope, refFile.inter, point, refFile.xDim, refFile.yDim, refFile.zDim, nOutputVolumes);
+                    rsWriteTimecourseToBuffer(outputFile->dt, tValues, outputFile->data, refFile->slope, refFile->inter, point, refFile->xDim, refFile->yDim, refFile->zDim, nOutputVolumes);
                     free(tValues);
+					free(point);
                 }
             }
         }
     }
     
-    FslWriteVolumes(fslioOutput, buffer, nOutputVolumes);
+	// Write result
+	
+    FslWriteVolumes(outputFile->fslio, outputFile->data, nOutputVolumes);
     
     // Close files
     
     for (int n=0; n<nFiles; n=n+1) {
-        struct rsInputFile file = files[n];
-        rsCloseInputFile(&file);
+        rsNiftiFile *file = files[n];
+        rsCloseNiftiFileAndFree(file);
     }
     
-    FslClose(fslioOutput);
-    free(buffer);
+    rsCloseNiftiFileAndFree(outputFile);
     free(files);
 }

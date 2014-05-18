@@ -1,514 +1,330 @@
-//
-//  rsregression_common.c
-//  rstools
-//
-//  Created by André Hoffmann on 6/27/13.
-//
-//
-
 #include "rsregression_common.h"
 
-void rsRegressionPrintHelp() {
-   printf(
-      "basic usage:  rsregression -input <volume> -regressors <txtFile> [-residuals <volume> | -fitted <volume> | -betas <volume> | -mask <volume>]\n"
-      "\n"
-   );
-    
-   printf(
-      "options:\n"
-   );
- 
-   printf(
-      "   -input <volume>         : the volume to be regressed\n"
-   );                             
-                                  
-   printf(                        
-      "   -residuals <volume>     : the volume in which the residuals will be saved\n"
-   );                             
-                                  
-   printf(                        
-      "   -fitted <volume>        : the volume in which the fitted volumes will be saved\n"
-   );                             
-                                  
-   printf(                        
-      "   -betas <volume>         : the volume in which the beta-coefficients will be saved\n"
-   );                             
-                                  
-   printf(                        
-      "   -mask <mask>            : a mask specifying the ROI for improved performance\n"
-   );                             
-                                  
-   printf(                        
-      "   -savemask <mask>        : optional path where the rescaled mask specified with -mask\n"
-      "                             will be saved. The saved file with have the same dimensions\n"
-      "                             as the input volume.\n"
-   );                             
-                                  
-   printf(                        
-      "   -regressors <txt>       : a tabbed/spaced textfile containing the regressors with the\n"
-      "                             different regressors in the columns and time course in the\n"
-      "                             rows. Decimal numbers may be formatted like this: 1.23e+45\n"
-   );                             
-                                  
-   printf(                        
-      "   -regressorComment <txt> : a text file that contains additional information about the\n"
-      "                             regressors that were supplied. These information will be \n"
-      "                             incorporated in the headers of all created niftis.\n"
-   );                              
-                                  
-   printf(                        
-      "   -zscore                 : performs a z-score based linear regression, i.e. the mean and\n"
-      "                             standard deviation are removed from the input data and the\n"
-      "                             regressors.\n"
-   );                             
-                                  
-   printf(                        
-      "   -f1 <double>            : (optional) the lower frequency of the bandpass\n"
-      "                             filter\n"
-   );                             
-                                  
-   printf(                        
-      "   -f2 <double>            : (optional) the upper frequency of the bandpass filter\n"
-      "                             filter\n"
-   );                             
-                                  
-   printf(                        
-      "   -samplingrate <double>  : (optional) only required if bandpass filtering is\n"
-      "                             requested.\n"
-   );                             
-                                  
-   printf(                        
-      "   -threads <int>          : number of threads used for processing\n"
-   );
-   
-   printf(
-      "   -v[erbose]              : show debug information\n"
-      "\n"
-   );
-}
+void rsRegressionInit(rsRegressionParameters* p)
+{
+	p->parametersValid = FALSE;
 
-struct rsRegressionParameters rsRegressionInitParameters() {
-    struct rsRegressionParameters p;
-    
-    p.inputpath            = NULL;
-    p.maskpath             = NULL;
-    p.regressorspath       = NULL;
-	p.regressorCommentPath = NULL;
-	p.regressorComment     = NULL;
-    p.savemaskpath         = NULL;
-    p.saveBetasPath        = NULL;
-    p.saveResidualsPath    = NULL;
-    p.saveFittedPath       = NULL;
-    p.xDim                 = 0;
-    p.yDim                 = 0;
-    p.zDim                 = 0;
-    p.vDim                 = 0;
-    p.pixtype              = 0;
-    p.dt                   = 4;
-    p.inter                = 0.0;
-    p.slope                = 1.0;
-    p.f1                   = -1.0;
-    p.f2                   = -1.0;
-    p.sampling_rate        = -1.0;
-    p.verbose              = FALSE;
-    p.filterActive         = FALSE;
-    p.zScoreRegression     = FALSE;
-    p.nRegressors          = 0;
-    p.nRegressorValues     = 0;
-    p.regressors           = NULL;
-    p.fslio                = NULL;
-    p.parametersValid      = FALSE;
-    p.mask                 = NULL;
-    p.nyquist_frequency    = 0.0;
-    p.bin_width            = 0.0;
-    p.nFrequencyBinsLow    = 0;
-    p.nFrequencyBinsHigh   = 0;
-    p.nFrequencyBins       = 0;
-    p.nFrequencyRegressors = 0;
-    p.frequencyBins        = 0;
-    p.nAllRegressors       = 0;
-    p.allRegressors        = 0;
-    p.threads              = 1;
-    
-    return p;
-}
-
-struct rsRegressionParameters rsRegressionLoadParams(int argc, char * argv[]) {
-
-    struct rsRegressionParameters p = rsRegressionInitParameters();
-    
-    /* parse parameters */
-	for( int ac = 1; ac < argc; ac++ ) {
-		if ( ! strcmp(argv[ac], "-input") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -input\n");
-				return p;
-			}
-			p.inputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-betas") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -betas\n");
-				return p;
-			}
-			p.saveBetasPath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-residuals") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -residuals\n");
-				return p;
-			}
-			p.saveResidualsPath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-fitted") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -fitted\n");
-				return p;
-			}
-			p.saveFittedPath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-regressors") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -regressors\n");
-				return p;
-			}
-			p.regressorspath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-regressorComment") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -regressorComment\n");
-				return p;
-			}
-			p.regressorCommentPath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -m\n");
-				return p;
-			}
-			p.maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-savemask") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -savemask\n");
-				return p;
-			}
-			p.savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-f1") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -f1\n");
-				return p;
-			}
-			p.f1 = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -threads\n");
-				return p;
-			}
-			p.threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-f2") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -f2\n");
-				return p;
-			}
-			p.f2 = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-samplingrate") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -samplingrate\n");
-				return p;
-			}
-			p.sampling_rate = atof(argv[ac]);  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-zscore") ) {
-			p.zScoreRegression = TRUE;
-		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			p.verbose = TRUE;
-		} else {
-			fprintf(stderr, "\nError, unrecognized command %s\n",argv[ac]);
-            return p;
-		}
+	// check if the required arguments have been provided
+	if ( p->inputpath == NULL ) {
+		fprintf(stderr, "No input volume specified(--input)!\n");
 	}
 	
-	if ( p.inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified(-input)!\n");
-		return p;
+	if ( p->regressorspath == NULL ) {
+		fprintf(stderr, "A file containing the regressors must be specified(--regressors)!\n");
 	}
 	
-	if ( p.regressorspath == NULL ) {
-		fprintf(stderr, "A file containing the regressors must be specified(-regressors)!\n");
-		return p;
-	}
-	
-	if ( p.regressorCommentPath != NULL ) {
-		p.regressorComment = rsReadCommentFile(p.regressorCommentPath);
-	}
+	rsSetThreadsNum(p->threads);
     
-    p.filterActive = p.sampling_rate >= 0.0 || p.f1 >= 0.0 || p.f2 >= 0.0;
+    p->filterActive = p->TR >= 0.0 || p->freqLow >= 0.0 || p->freqHigh >= 0.0;
     
-    if ( p.verbose ) {
-        fprintf(stdout, "Input file: %s\n", p.inputpath);
-        fprintf(stdout, "Regressors file: %s\n", p.regressorspath);
-        fprintf(stdout, "Mask file: %s\n", p.maskpath);
-        fprintf(stdout, "Residuals file: %s\n", p.saveResidualsPath);
-        fprintf(stdout, "Fitted file: %s\n", p.saveFittedPath);
-        fprintf(stdout, "Betas file: %s\n", p.saveBetasPath);
+    if ( p->verbose ) {
+        fprintf(stdout, "Input file: %s\n", p->inputpath);
+        fprintf(stdout, "Regressors file: %s\n", p->regressorspath);
+        fprintf(stdout, "Mask file: %s\n", p->maskpath);
+        fprintf(stdout, "Residuals file: %s\n", p->saveResidualsPath);
+        fprintf(stdout, "Fitted file: %s\n", p->saveFittedPath);
+        fprintf(stdout, "Betas file: %s\n", p->saveBetasPath);
         
-        if ( p.filterActive ) {
+        if ( p->filterActive ) {
             fprintf(stdout, "Bandpass filter active!\n");
-            fprintf(stdout, "Sampling rate: %.4f\n", p.sampling_rate);
-            fprintf(stdout, "Bandpass: (%.4f-%.4fHz)\n", p.f1, p.f2);
+            fprintf(stdout, "Sampling rate: %.4f\n", p->TR);
+            fprintf(stdout, "Bandpass: (%.4f-%.4fHz)\n", p->freqLow, p->freqHigh);
         }
     }
     
-    if ( p.filterActive && (p.sampling_rate < 0.0 || p.f1 < 0.0 || p.f2 < 0.0) ) {
-        fprintf(stderr, "Bandpass filter parameters are not complete. (-samplingrate, -f1, -f2)!\n");
-		return p;
-    }
-    
-    // load regressors
-    p.regressors = rsLoadRegressors(p.regressorspath, &p.nRegressors, &p.nRegressorValues, 1.0);
-    
-    if ( p.verbose ) {
-        fprintf(stdout, "Regressors: %ld, Samples: %ld\n", p.nRegressors, p.nRegressorValues);
-    }
-    
-    p.fslio = FslOpen(p.inputpath, "rb");
-    if (p.fslio == NULL) {
-        fprintf(stderr, "\nError, could not read header info for %s.\n", p.inputpath);
-        return p;
-    }
-    
-	/* determine dimensions */
-	FslGetDim(p.fslio, &p.xDim, &p.yDim, &p.zDim, &p.vDim);
-    
-    if ( p.verbose ) {
-        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p.xDim, p.yDim, p.zDim, p.vDim);
-    }
-    
-    if (p.fslio->niftiptr->scl_slope != 0) {
-        p.slope = p.fslio->niftiptr->scl_slope;
-        p.inter = p.fslio->niftiptr->scl_inter;
+    if ( p->filterActive && (p->TR < 0.0 || p->freqLow < 0.0 || p->freqHigh < 0.0) ) {
+        fprintf(stderr, "Bandpass filter parameters are not complete. (--TR, --f1, --f2)!\n");
+		return;
     }
 	
-	/* determine datatype and initalize buffer */
-	p.pixtype  = FslGetDataType(p.fslio, &p.dt);
-    p.wordsize = p.fslio->niftiptr->nbyper;
+	// load regressors
+	p->regressors = rsLoadRegressors(p->regressorspath, &p->nRegressors, &p->nRegressorValues, 1.0);
+
+	if ( p->verbose ) {
+	    fprintf(stdout, "Regressors: %ld, Samples: %ld\n", p->nRegressors, p->nRegressorValues);
+	}
     
-    if ( p.verbose ) {
-        fprintf(stdout, "Dt: %d Pixtype: %ld\n", p.dt, p.pixtype);
+    // open input file
+	p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
+
+	if ( ! p->input->readable ) {
+		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+        return;
+	}
+
+    // create residuals file (output)
+	if ( p->saveResidualsPath != NULL ) {
+     	
+		p->residuals = rsCloneNiftiFile(p->saveResidualsPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
+
+		if ( ! p->residuals->readable ) {
+			fprintf(stderr, "\nError: The nifti file containing the residuals output (%s) could not be created.\n", p->saveResidualsPath);
+	        return;
+		}		
+    }
+
+    // create betas file (output)
+	if ( p->saveBetasPath != NULL ) {
+     	
+		p->betas = rsCloneNiftiFile(p->saveBetasPath, p->input, RSNIFTI_OPEN_ALLOC, p->nRegressors+1);
+
+		if ( ! p->betas->readable ) {
+			fprintf(stderr, "\nError: The nifti file containing the betas output (%s) could not be created.\n", p->saveBetasPath);
+	        return;
+		}		
     }
     
-    if ( p.maskpath != NULL ) {
-        unsigned long nPoints = 0L;
-        p.mask = d3matrix(p.zDim-1, p.yDim-1, p.xDim-1);
-        Point3D *maskPoints = ReadMask(p.maskpath, p.xDim, p.yDim, p.zDim, &nPoints, p.savemaskpath, p.fslio, p.mask);
-        if ( maskPoints == NULL) {
-            fprintf(stderr, "\nError: Mask invalid.\n");
-            FslClose(p.fslio);
-            return p;
-        }
-        free(maskPoints);
+    // create fitted values file (output)
+	if ( p->saveFittedPath != NULL ) {
+     	
+		p->fitted = rsCloneNiftiFile(p->saveFittedPath, p->input, RSNIFTI_OPEN_ALLOC, RSNIFTI_CLONE_AS_INPUT);
+
+		if ( ! p->fitted->readable ) {
+			fprintf(stderr, "\nError: The nifti file containing the fitted values (%s) could not be created.\n", p->saveFittedPath);
+	        return;
+		}		
     }
+	
+	// prepare bandpass filter
+	if ( p->filterActive ) {
     
-    if ( p.filterActive ) {
-    
-        // Prepare bandpass filter
-        p.nyquist_frequency = 1.0 / (2.0 * p.sampling_rate);
-        p.bin_width         = p.nyquist_frequency / (p.vDim/2);
+        p->nyquist_frequency = 1.0 / (2.0 * p->TR);
+        p->bin_width         = p->nyquist_frequency / (p->input->vDim/2);
         
         // Compute the number of frequency regressors that will be added to the existing regressors
-        p.nFrequencyBinsLow    = (int)floor(p.f1 / p.bin_width);                         // number of frequency bins before the lower cutoff frequency
-        p.nFrequencyBinsHigh   = (int)floor((p.nyquist_frequency - p.f2) / p.bin_width); // number of frequency bins after the highter cutoff frequency
-        p.nFrequencyBins       = p.nFrequencyBinsLow + p.nFrequencyBinsHigh;             // number of frequency bins in total
-        p.nFrequencyRegressors = p.nFrequencyBins * 2;                                   // number of frequency regressors (both sine and cosine)
+        p->nFrequencyBinsLow    = (int)floor(p->freqLow / p->bin_width);                           // number of frequency bins before the lower cutoff frequency
+        p->nFrequencyBinsHigh   = (int)floor((p->nyquist_frequency - p->freqHigh) / p->bin_width); // number of frequency bins after the highter cutoff frequency
+        p->nFrequencyBins       = p->nFrequencyBinsLow + p->nFrequencyBinsHigh;                    // number of frequency bins in total
+        p->nFrequencyRegressors = p->nFrequencyBins * 2;                                           // number of frequency regressors (both sine and cosine)
         
         // Compute the frequencies for the bins
-        p.frequencyBins = malloc(p.nFrequencyBins * sizeof(double));
-        fprintf(stdout, "Bin width: %.4f\n", p.bin_width);
-        for ( int i=0; i<p.nFrequencyBins; i=i+1 ) {
-            if ( (i < p.nFrequencyBinsLow) ) {
-                p.frequencyBins[i] = (i + 1) * p.bin_width;
+		
+        if (p->verbose) 
+			fprintf(stdout, "Bin width: %.4f\n", p->bin_width);
+			
+        p->frequencyBins = rsMalloc(p->nFrequencyBins * sizeof(double));
+		
+        for ( int i=0; i<p->nFrequencyBins; i=i+1 ) {
+            if ( (i < p->nFrequencyBinsLow) ) {
+                p->frequencyBins[i] = (i + 1) * p->bin_width;
             } else {
-                p.frequencyBins[i] = (i - p.nFrequencyBinsLow + 1) * p.bin_width + p.f2;
+                p->frequencyBins[i] = (i - p->nFrequencyBinsLow + 1) * p->bin_width + p->freqHigh;
             }
             
-            fprintf(stdout, "Frequency bin %d(%s): %.4f\n", i, (i < p.nFrequencyBinsLow ? "low" : "high"), p.frequencyBins[i]);
+            if (p->verbose)
+				fprintf(stdout, "Frequency bin %d(%s): %.4f\n", i, (i < p->nFrequencyBinsLow ? "low" : "high"), p->frequencyBins[i]);
         }
     }
     
     // Add frequency regressors to the other regressors if requested
-    p.nAllRegressors = p.filterActive ? p.nRegressors + 1 + p.nFrequencyRegressors : p.nRegressors + 1;
+    p->nAllRegressors = p->filterActive ? p->nRegressors + 1 + p->nFrequencyRegressors : p->nRegressors + 1;
     
-    if ( p.filterActive ) {
-        p.allRegressors = d2matrix(p.nAllRegressors-1, p.vDim-1);
+    if ( p->filterActive ) {
+        p->allRegressors = d2matrix(p->nAllRegressors-1, p->input->vDim-1);
         
-        for (int i=0; i<p.nAllRegressors; i=i+1) {
+        for (int i=0; i<p->nAllRegressors; i=i+1) {
             
-            if ( i < p.nRegressors ) {
-                for (int t=0; t<p.vDim; t=t+1) {
-                    p.allRegressors[i][t] = p.regressors[i][t];
+            if ( i < p->nRegressors ) {
+                for (int t=0; t<p->input->vDim; t=t+1) {
+                    p->allRegressors[i][t] = p->regressors[i][t];
                 }
-            } else if ( i < (p.nRegressors + p.nFrequencyBins) ) {
-                const int j = i - p.nRegressors;
-                for (int t=0; t<p.vDim; t=t+1) {
-                    p.allRegressors[i][t] = rsSampleSineWave(p.sampling_rate, p.frequencyBins[j], t);
+            } else if ( i < (p->nRegressors + p->nFrequencyBins) ) {
+                const int j = i - p->nRegressors;
+                for (int t=0; t<p->input->vDim; t=t+1) {
+                    p->allRegressors[i][t] = rsSampleSineWave(p->TR, p->frequencyBins[j], t);
                 }
             } else {
-                const int j = i - p.nRegressors - p.nFrequencyBins;
-                for (int t=0; t<p.vDim; t=t+1) {
-                    p.allRegressors[i][t] = rsSampleCosineWave(p.sampling_rate, p.frequencyBins[j], t);
+                const int j = i - p->nRegressors - p->nFrequencyBins;
+                for (int t=0; t<p->input->vDim; t=t+1) {
+                    p->allRegressors[i][t] = rsSampleCosineWave(p->TR, p->frequencyBins[j], t);
                 }
             }
         }
     } else {
-        p.allRegressors = p.regressors;
+        p->allRegressors = p->regressors;
+    }
+
+	// if an additional regressor comment file was specified load it
+	if ( p->regressorCommentPath != NULL ) {
+		p->regressorComment = rsReadCommentFile(p->regressorCommentPath);
+	}
+
+	// assemble the comment that will be stored in the output niftis
+	char *comment;
+	if ( p->regressorComment == NULL ) {
+		comment = p->callString;
+	} else {
+		char *separator = "\nnRegressor Info:\n";
+		comment = malloc(sizeof(char)*(strlen(p->callString)+strlen(separator)+strlen(p->regressorComment)+1));
+		sprintf(&comment[0], "%s%s%s", p->callString, separator, p->regressorComment);
+	}
+	p->comment = comment;
+    
+    // load mask
+    p->mask = NULL;
+    if ( p->maskpath != NULL ) {
+        unsigned long nPoints = 0L;
+        p->mask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
+        Point3D *maskPoints = rsReadMask(p->maskpath, p->input->xDim, p->input->yDim, p->input->zDim, &nPoints, p->savemaskpath, p->input->fslio, p->mask);
+        if ( maskPoints == NULL) {
+            fprintf(stderr, "\nError: Mask invalid.\n");
+			return;
+        }
+        free(maskPoints);
     }
     
-    p.parametersValid = TRUE;
-    return p;
+    p->parametersValid = TRUE;    
 }
 
-/*
- * Reads in a single line from a file and returns it.
- */
-BOOL rsReadline(FILE *f, char *line, int *length) {
-    *length = 0;
-    int c;
+void rsRegressionRun(rsRegressionParameters *p)
+{
+	
+    // Prepare empty timecourse (containing NaNs)
+    int emptyValuesLength = p->input->vDim > p->nRegressors ? p->input->vDim : p->nRegressors+1;
+    double emptybuffer[emptyValuesLength];
     
-    while(TRUE) {
-        c = fgetc(f);
-        
-        if (c == '\n' || c == '\r' || c == EOF) {
-            break;
-        }
-        
-        line[*length] = (char)c;
-        *length = *length+1;
+    for (int i=0; i<emptyValuesLength; i=i+1){
+        emptybuffer[i] = log(-1.0);
     }
     
-    line[*length] = '\0';
+    short x,y,z, processedSlices = 0;
+    double *timecourse;
+    double *residuals;
+    double *betas;
+    double *fitted;
+    Point3D *point;
     
-    return c!=EOF;
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer)
+    {
+        #pragma omp for schedule(guided)
+        for (z=0; z<p->input->zDim; z=z+1) {
+            for (y=0; y<p->input->yDim; y=y+1) {
+                for (x=0; x<p->input->xDim; x=x+1) {
+                    
+                    point = rsMakePoint3D(x, y, z);
+                    
+                    // If it's not in the mask skip it to improve the performance
+                    if (p->mask != NULL && p->mask[z][y][x] < 0.1) {
+                    
+                        // set the value in the residuals to NaN so that the nifti isn't empty
+                        if ( p->residuals != NULL ) {
+							rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, emptybuffer, point);
+                        }
+                    
+                        // set the value in the betas to NaN so that the nifti isn't empty
+                        if ( p->betas != NULL ) {
+							rsWriteTimecourseToRSNiftiFileBuffer(p->betas, emptybuffer, point);
+                        }
+                    
+                        // set the fitted value to NaN so that the nifti isn't empty
+                        if ( p->fitted != NULL ) {
+							rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, emptybuffer, point);
+                        }
+                        
+						free(point);
+                        continue;
+                    }
+                    
+                    timecourse = rsMalloc(p->input->vDim*sizeof(double));
+                    residuals  = rsMalloc(p->input->vDim*sizeof(double));
+                    betas      = rsMalloc(p->nAllRegressors*sizeof(double));
+                    fitted     = rsMalloc(p->input->vDim*sizeof(double));
+                    
+					rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, point);
+                    
+                    // run the regression
+                    rsLinearRegression(
+                        (int)p->input->vDim,
+                        timecourse,
+                        p->nAllRegressors,
+                        (const double**)p->allRegressors,
+                        betas,
+                        residuals,
+                        fitted,
+                        p->zScoreRegression,
+                        p->verbose
+                    );
+
+                    // write the results to the buffers
+					if ( p->residuals != NULL ) {
+						rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, residuals, point);
+                    }
+
+					if ( p->betas != NULL ) {
+						rsWriteTimecourseToRSNiftiFileBuffer(p->betas, betas, point);
+					}
+
+					if ( p->fitted != NULL ) {
+						rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, fitted, point);
+					}
+                    
+                    free(timecourse);
+                    free(residuals);
+                    free(betas);
+                    free(fitted);
+					free(point);
+                }
+            }
+            
+			/* show progress */
+			if (p->verbose) {
+            	#pragma omp atomic
+            	processedSlices += 1;
+            
+            	if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
+            	}
+			}
+        }
+    }
+    
+    /* Write out buffers to the corresponding files */
+    if ( p->residuals != NULL ) {
+        if (p->verbose) fprintf(stdout, "Write out residuals to: %s\n", p->saveResidualsPath);
+		rsWriteNiftiHeader(p->residuals->fslio, p->comment);
+        FslWriteVolumes(p->residuals->fslio, p->residuals->data, p->residuals->vDim);
+    }
+    
+    if ( p->betas != NULL ) {
+        if (p->verbose) fprintf(stdout, "Write out betas to: %s\n", p->saveBetasPath);
+		rsWriteNiftiHeader(p->betas->fslio, p->comment);
+        FslWriteVolumes(p->betas->fslio, p->betas->data, p->betas->vDim);
+    }
+    
+    if ( p->fitted != NULL ) {
+        if (p->verbose) fprintf(stdout, "Write out fitted values to: %s\n", p->saveFittedPath);
+		rsWriteNiftiHeader(p->fitted->fslio, p->comment);
+        FslWriteVolumes(p->fitted->fslio, p->fitted->data, p->fitted->vDim);
+    }
 }
 
-/*
- * Reads in a line from the regressor file and returns the
- * tab- or space-separated values as an ar array of doubles.
- */
-double *rsParseRegressorLine(char *line, long *nRegressors) {
-    double *regressors;
-    char delimiter[] = " \t";
-    char *ptr;
-    *nRegressors = 0L;
-    BOOL endsWithSeparator = TRUE;
-    
-    size_t lineLength = strlen(line);
-    
-    // if it doesn't end with a tab or space we need to add one for strtok to work
-    if (line[lineLength-1] != '\t' || line[lineLength-1] != ' ') {
-        lineLength = lineLength + 1;
-        endsWithSeparator = FALSE;
-    }
-    
-    char lineCpy[lineLength+1];
-    strcpy(lineCpy, line);
-    
-    if ( !endsWithSeparator ) {
-        lineCpy[lineLength-1] = '\t';
-		lineCpy[lineLength]   = '\0';
-    }
-    
-    ptr = strtok(lineCpy, delimiter);
-    while (ptr != NULL) {
-        ptr = strtok(NULL, delimiter);
-        *nRegressors = *nRegressors+1;
-    }
-    
-    regressors = malloc(sizeof(double)*(*nRegressors));
-    
-    strcpy(lineCpy, line);
-    
-    if ( !endsWithSeparator ) {
-        lineCpy[lineLength-1] = '\t';
-    }
-    
-    long n=0L;
-    ptr = strtok(lineCpy, delimiter);
-    while(TRUE) {
-        if (ptr == NULL) {
-            break;
-        }
-        
-        regressors[n] = atof(ptr);
-        n = n+1L;
-        ptr = strtok(NULL, delimiter);
-    }
-    
-    return regressors;
-}
+void rsRegressionDestroy(rsRegressionParameters* p)
+{
+  	if ( p->input != NULL ) {
+		rsCloseNiftiFileAndFree(p->input);
+		p->input = NULL;
+	}
+	
+	if ( p->residuals != NULL ) {
+		p->residuals->data = NULL;
+		rsCloseNiftiFileAndFree(p->residuals);
+		p->residuals = NULL;
+	}
+	
+	if ( p->fitted != NULL ) {
+		rsCloseNiftiFileAndFree(p->fitted);
+		p->fitted = NULL;
+	}
 
-/*
- * Loads a regressor file where the regressors are in the columns
- * and the samples in the rows. Regressor values should be separated
- * by spaces or tabs.
- * Returns a 2D matrix in the following form: double[regressor][time]
- */
-double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double constantFactor) {
-    FILE *f = fopen(path, "r");
-    
-    if (f == NULL) {
-        fprintf(stderr, "Error: Regressors could not be read.\n");
-        return NULL;
+	if ( p->betas != NULL ) {
+		rsCloseNiftiFileAndFree(p->betas);
+		p->betas = NULL;
+	}
+	
+	if ( p->maskpath != NULL ) {
+        free(p->mask);
+		p->mask = NULL;
     }
-    
-    /* Read regressor file to get the number of regressors and samples */
-    char *line = malloc(sizeof(char)*10000);
-    int length = 0;
-    *nRegressors = -1L;
-    *nValues = 0L;
-    
-    rewind(f);
-    
-    long n = 0L;
-    double *regressors = NULL;
-    while( rsReadline(f, line, &length) ) {
-        if ( length < 1 ) {
-            continue;
-        }
-        
-        regressors = rsParseRegressorLine(line, &n);
-        if (*nRegressors < 0) {
-            *nRegressors = n;
-        }
-        
-        if (regressors != NULL) {
-            free(regressors);
-        }
-        *nValues = *nValues+1L;
-    }
-    
-    /* Initialize result matrix */
-    rewind(f);
-    double **result = d2matrix(*nRegressors, *nValues-1);
-    
-    /* Fill with constant regressor */
-    for ( long v=0L; v<n; v = v+1L ) {
-        result[0][v] = constantFactor;
-    }
-    
-    /* Save regressors in result matrix */
-    long v=0L;
-    while( rsReadline(f, line, &length) ) {
-        if ( length < 1 ) {
-            continue;
-        }
-        
-        regressors = rsParseRegressorLine(line, &n);
-        
-        for( long l=0L; l<n; l=l+1L ) {
-            result[l+1L][v] = regressors[l];
-        }
-        
-        if (regressors != NULL) {
-            free(regressors);
-        }
-        v=v+1L;
-    };
-    
-    free(line);
-    fclose(f);
-    
-    return result;
+
+	rsRegressionFreeParams(p);
 }

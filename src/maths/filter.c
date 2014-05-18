@@ -2,11 +2,11 @@
 
 static int rsFFTFilterEngine = RSFFTFILTER_ENGINE_GSL;
 
-struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose) {
+rsFFTFilterParams* rsFFTFilterInit(const int T, const long paddedT, const double sampling_rate, const double f1, const double f2, const int rolloff_method, const double rolloff, const BOOL keepMean, const int verbose) {
     
-    struct rsFFTFilterParams p;
-    double *F = malloc(paddedT * sizeof(double));
-    double *attenuation = malloc(paddedT*sizeof(double));
+    rsFFTFilterParams *p = rsMalloc(sizeof(rsFFTFilterParams));
+    double *F = rsMalloc(paddedT * sizeof(double));
+    double *attenuation = rsMalloc(paddedT*sizeof(double));
 
 #if RS_FFTW_ENABLED == 1
     if (rsFFTFilterEngine == RSFFTFILTER_ENGINE_FFTW) {
@@ -100,8 +100,8 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
         double *in  = (double*) fftw_malloc(sizeof(double) * paddedT);
         double *out = (double*) fftw_malloc(sizeof(double) * paddedT);
         
-        p.plan_r2hc = fftw_plan_r2r_1d(paddedT, in, out, FFTW_R2HC, FFTW_PATIENT);
-        p.plan_hc2r = fftw_plan_r2r_1d(paddedT, out, in, FFTW_HC2R, FFTW_PATIENT);
+        p->plan_r2hc = fftw_plan_r2r_1d(paddedT, in, out, FFTW_R2HC, FFTW_PATIENT);
+        p->plan_hc2r = fftw_plan_r2r_1d(paddedT, out, in, FFTW_HC2R, FFTW_PATIENT);
 
         fftw_free(in);
         fftw_free(out);
@@ -173,23 +173,23 @@ struct rsFFTFilterParams rsFFTFilterInit(const int T, const long paddedT, const 
         attenuation[0] = 1.0;
     }
     
-    p.frequencyBins  = F;
-    p.binAttenuation = attenuation;
-    p.f1             = f1;
-    p.f2             = f2;
-    p.verbose        = verbose;
-    p.sampling_rate  = sampling_rate;
-    p.T              = T;
-    p.paddedT        = paddedT;
-    p.rolloff_method = rolloff_method;
-    p.rolloff        = rolloff;
+    p->frequencyBins  = F;
+    p->binAttenuation = attenuation;
+    p->f1             = f1;
+    p->f2             = f2;
+    p->verbose        = verbose;
+    p->sampling_rate  = sampling_rate;
+    p->T              = T;
+    p->paddedT        = paddedT;
+    p->rolloff_method = rolloff_method;
+    p->rolloff        = rolloff;
     
     return p;
 }
 
 #if RS_FFTW_ENABLED == 1
 // FFT Filter Implementation using FFTW3
-void rsFFTFilterFFTW(struct rsFFTFilterParams p, double *data) {
+void rsFFTFilterFFTW(rsFFTFilterParams *p, double *data) {
     
     /* Pad data with zeros if desired */
     double *unpaddedData;
@@ -197,31 +197,31 @@ void rsFFTFilterFFTW(struct rsFFTFilterParams p, double *data) {
     
     unpaddedData = data;
     data = NULL;
-    data = (double*) fftw_malloc(p.paddedT*sizeof(double));
-    tmp  = (double*) fftw_malloc(p.paddedT*sizeof(double));
+    data = (double*) fftw_malloc(p->paddedT*sizeof(double));
+    tmp  = (double*) fftw_malloc(p->paddedT*sizeof(double));
     
-    for (int i=0; i<p.T; i=i+1) {
+    for (int i=0; i<p->T; i=i+1) {
         data[i] = unpaddedData[i];
     }
     
-    for (int i=p.T; i<p.paddedT; i=i+1) {
+    for (int i=p->T; i<p->paddedT; i=i+1) {
         data[i] = 0.0;
     }
     
     /* FFT */
-    fftw_execute_r2r(p.plan_r2hc, data, tmp);
+    fftw_execute_r2r(p->plan_r2hc, data, tmp);
     
     /* Multiply frequency bins with attenuation weight */
-    for (int i = 0; i<p.paddedT; i=i+1) {
-        tmp[i] = tmp[i] * p.binAttenuation[i];
+    for (int i = 0; i<p->paddedT; i=i+1) {
+        tmp[i] = tmp[i] * p->binAttenuation[i];
     }
     
     /* Inverse FFT */
-    fftw_execute_r2r(p.plan_hc2r, tmp, data);
+    fftw_execute_r2r(p->plan_hc2r, tmp, data);
     
     /* Remove padding and normalize */
-    for (int i=0; i<p.T; i=i+1) {
-        unpaddedData[i] = data[i] / p.paddedT;
+    for (int i=0; i<p->T; i=i+1) {
+        unpaddedData[i] = data[i] / p->paddedT;
     }
     
     /* Free memory */
@@ -232,47 +232,47 @@ void rsFFTFilterFFTW(struct rsFFTFilterParams p, double *data) {
 #endif
 
 // FFT Filter Implementation using GSL
-void rsFFTFilterGSL(struct rsFFTFilterParams p, double *data) {
+void rsFFTFilterGSL(rsFFTFilterParams *p, double *data) {
     
     /* Prepare FFT Filtering */
     gsl_fft_real_wavetable        *real;
     gsl_fft_halfcomplex_wavetable *hc;
     gsl_fft_real_workspace        *work;
     
-    work = gsl_fft_real_workspace_alloc(p.paddedT);
-    real = gsl_fft_real_wavetable_alloc(p.paddedT);
-    hc   = gsl_fft_halfcomplex_wavetable_alloc(p.paddedT);
+    work = gsl_fft_real_workspace_alloc(p->paddedT);
+    real = gsl_fft_real_wavetable_alloc(p->paddedT);
+    hc   = gsl_fft_halfcomplex_wavetable_alloc(p->paddedT);
     
     /* Pad data with zeros if desired */
     double *unpaddedData;
-    if ( p.paddedT > p.T ) {
+    if ( p->paddedT > p->T ) {
         unpaddedData = data;
         data = NULL;
-        data = malloc(p.paddedT*sizeof(double));
+        data = rsMalloc(p->paddedT*sizeof(double));
         
-        for (int i=0; i<p.T; i=i+1) {
+        for (int i=0; i<p->T; i=i+1) {
             data[i] = unpaddedData[i];
         }
         
-        for (int i=p.T; i<p.paddedT; i=i+1) {
+        for (int i=p->T; i<p->paddedT; i=i+1) {
             data[i] = 0.0;
         }
     }
     
     /* FFT */
-    gsl_fft_real_transform(data, 1, p.paddedT, real, work);
+    gsl_fft_real_transform(data, 1, p->paddedT, real, work);
     
     /* Multiply frequency bins with attenuation weight */
-    for (int i = 0; i<p.paddedT; i=i+1) {
-        data[i] = data[i] * p.binAttenuation[i];
+    for (int i = 0; i<p->paddedT; i=i+1) {
+        data[i] = data[i] * p->binAttenuation[i];
     }
     
     /* Inverse FFT */
-    gsl_fft_halfcomplex_inverse(data, 1, p.paddedT, hc, work);
+    gsl_fft_halfcomplex_inverse(data, 1, p->paddedT, hc, work);
     
     /* Remove padding */
-    if ( p.paddedT > p.T ) {
-        for (int i=0; i<p.T; i=i+1) {
+    if ( p->paddedT > p->T ) {
+        for (int i=0; i<p->T; i=i+1) {
             unpaddedData[i] = data[i];
         }
         free(data);
@@ -285,7 +285,7 @@ void rsFFTFilterGSL(struct rsFFTFilterParams p, double *data) {
     gsl_fft_real_workspace_free(work);
 }
 
-void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
+void rsFFTFilter(rsFFTFilterParams *p, double *data) {
 
 #if RS_FFTW_ENABLED == 1
     if (rsFFTFilterEngine == RSFFTFILTER_ENGINE_FFTW) {
@@ -299,16 +299,21 @@ void rsFFTFilter(struct rsFFTFilterParams p, double *data) {
     
 }
 
-void rsFFTFilterFree(struct rsFFTFilterParams p) {
-    free(p.frequencyBins);
-    free(p.binAttenuation);
+void rsFFTFilterFree(rsFFTFilterParams *p) {
+	if ( p == NULL ) {
+		return;
+	}
+	
+    free(p->frequencyBins);
+    free(p->binAttenuation);
     
 #if RS_FFTW_ENABLED == 1
     if (rsFFTFilterEngine == RSFFTFILTER_ENGINE_FFTW) {
-        fftw_destroy_plan(p.plan_r2hc);
-        fftw_destroy_plan(p.plan_hc2r);
+        fftw_destroy_plan(p->plan_r2hc);
+        fftw_destroy_plan(p->plan_hc2r);
     }
 #endif
+	free(p);
 }
 
 void rsFFTSetEngine(int engine) {

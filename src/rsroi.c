@@ -101,8 +101,8 @@ int main(int argc, char * argv[])
     float inter = 0.0, slope = 1.0;
     
     double sphereradius    = -1.0;
-    FloatPoint3D center    = MakeFloatPoint3D(-9999.9, -9999.9, -9999.9);
-    FloatPoint3D cubeDim   = MakeFloatPoint3D(-9999.9, -9999.9, -9999.9);
+    FloatPoint3D *center   = rsMakeFloatPoint3D(-9999.9, -9999.9, -9999.9);
+    FloatPoint3D *cubeDim  = rsMakeFloatPoint3D(-9999.9, -9999.9, -9999.9);
     BOOL resetVolume       = TRUE;
     BOOL verbose           = FALSE;
     long nSamples          = -1;
@@ -135,7 +135,7 @@ int main(int argc, char * argv[])
 			float y = atof(argv[ac]);
 			ac++;
 			float z = atof(argv[ac]);
-            center = MakeFloatPoint3D(x,y,z);
+            center = rsMakeFloatPoint3D(x,y,z);
 		} else if ( ! strcmp(argv[ac], "-cube") ) {
 			if( ac+3 >= argc ) {
 				fprintf(stderr, "** missing argument for -cube, 3 coordinates must be supplied!\n");
@@ -147,7 +147,7 @@ int main(int argc, char * argv[])
 			float y = atof(argv[ac]);
 			ac++;
 			float z = atof(argv[ac]);
-            cubeDim = MakeFloatPoint3D(x,y,z);
+            cubeDim = rsMakeFloatPoint3D(x,y,z);
 		} else if ( ! strcmp(argv[ac], "-sphere") ) {
 			if( ++ac >= argc ) {
 				fprintf(stderr, "** missing argument for -sphere\n");
@@ -195,12 +195,12 @@ int main(int argc, char * argv[])
     
     BOOL inputEqualsOutput = ! strcmp(inputpath, maskpath);
 	
-	if ( center.x < -9999.0 && nSamples < 0 ) {
+	if ( center->x < -9999.0 && nSamples < 0 ) {
 		fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
 		return 1;
 	}
     
-    if ( sphereradius <= 0 && cubeDim.x < 0 && nSamples < 0 ) {
+    if ( sphereradius <= 0 && cubeDim->x < 0 && nSamples < 0 ) {
         fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(-sphere, -cube)!\n");
 		return 1;
     }
@@ -208,15 +208,15 @@ int main(int argc, char * argv[])
     if ( verbose ) {
         fprintf(stdout, "Input file: %s\n", inputpath);
         fprintf(stdout, "Mask file: %s\n", maskpath);
-        if ( sphereradius > 0 || cubeDim.x > -9999.9 )
-        fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center.x, center.y, center.z);
+        if ( sphereradius > 0 || cubeDim->x > -9999.9 )
+        fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center->x, center->y, center->z);
         if ( sphereradius > 0) {
             fprintf(stdout, "Sphere radius: %.4fmm\n", sphereradius);
         }
-        if ( cubeDim.x > -9999.9 ) {
-            fprintf(stdout, "Cube: %.2fmm %.2fmm %.2fmm\n", cubeDim.x, cubeDim.y, cubeDim.z);
+        if ( cubeDim->x > -9999.9 ) {
+            fprintf(stdout, "Cube: %.2fmm %.2fmm %.2fmm\n", cubeDim->x, cubeDim->y, cubeDim->z);
         }
-        fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center.x, center.y, center.z);
+        fprintf(stdout, "Center: %.2fmm %.2fmm %.2fmm\n", center->x, center->y, center->z);
     }
     
     fslio = FslOpen(inputpath, "rb");
@@ -308,11 +308,11 @@ int main(int argc, char * argv[])
 					FslGetMMCoord(stdmat44, x, y, z, &mmx, &mmy, &mmz);
                 }
 				
-				FloatPoint3D point = MakeFloatPoint3D(mmx, mmy, mmz);
+				FloatPoint3D *point = rsMakeFloatPoint3D(mmx, mmy, mmz);
 				
                 if ( sphereradius > 0 && rsVoxelInSphere(point, center, sphereradius) ) {
                     mask[z][y][x] = roiValue;
-                } else if(cubeDim.x > -9999.9 && rsVoxelInCube(point, center, cubeDim)) {
+                } else if(cubeDim->x > -9999.9 && rsVoxelInCube(point, center, cubeDim)) {
                     mask[z][y][x] = roiValue;                    
                 } else if ( resetVolume ) {
                     mask[z][y][x] = 0.0;

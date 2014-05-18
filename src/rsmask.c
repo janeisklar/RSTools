@@ -172,7 +172,7 @@ int main(int argc, char * argv[]) {
     /* load mask */
     unsigned long nPoints = 0L;
     double ***mask = d3matrix(zDim-1, yDim-1, xDim-1);
-    Point3D *maskPoints = ReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
+    Point3D *maskPoints = rsReadMask(maskpath, xDim, yDim, zDim, &nPoints, NULL, fslio, mask);
     if ( maskPoints == NULL) {
         fprintf(stderr, "\nError: Mask invalid.\n");
         FslClose(fslio);
@@ -201,11 +201,11 @@ int main(int argc, char * argv[]) {
         #pragma omp for schedule(guided, 1)
         for (p = 0L; p<nPoints; p=p+1L) {
 
-            const Point3D point = maskPoints[p];
+            const Point3D *point = &maskPoints[p];
             double *pointValues = (double*)malloc(sizeof(double)*vDim);
             
-            rsExtractTimecourseFromBuffer(fslio, pointValues, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
-            rsWriteTimecourseToBuffer(fslioOutput, pointValues, outputBuffer, slope, inter, point, xDim, yDim, zDim, vDim);
+            rsExtractTimecourseFromBuffer(dt, pointValues, buffer, slope, inter, point, xDim, yDim, zDim, vDim);
+            rsWriteTimecourseToBuffer(dt, pointValues, outputBuffer, slope, inter, point, xDim, yDim, zDim, vDim);
             
             free(pointValues);
         }

@@ -1,10 +1,3 @@
-//
-//  rsroi.c
-//  rstools
-//
-//  Created by André Hoffmann on 6/7/13.
-//
-//
 #include <stdio.h>
 #include <nifti1.h>
 #include <fslio.h>
@@ -79,6 +72,7 @@ int main(int argc, char * argv[])
 	int size = ext->esize;
 	char data[size+1];
 	strncpy(data, ext->edata, size);
+	data[size] = '\0';
     FslClose(fslio);
 
 	// print info

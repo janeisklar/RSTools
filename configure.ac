@@ -18,6 +18,11 @@ AC_DEFINE_UNQUOTED(RSTOOLS_VERSION_DATE,
                    [A string containing the date of the last commit]
 )
 
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,
+                   ["rstools"],
+                   [The translation package for libgettext(unused)]
+)
+
 CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99 -fopenmp $CFLAGS"
 
 # prepare for automake
@@ -138,6 +143,13 @@ AC_SUBST([GSL_CFLAGS])
 AC_SUBST([GSL_LIBS])
 LIBS=["$GSL_LIBS $LIBS"]
 CFLAGS=["$GSL_CFLAGS $CFLAGS"]
+
+# Check for GLIB
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.32.0])
+AC_SUBST([GLIB_CFLAGS])
+AC_SUBST([GLIB_LIBS])
+LIBS=["$GLIB_LIBS $LIBS"]
+CFLAGS=["$GLIB_CFLAGS $CFLAGS"]
 
 # Checks for header files.
 AC_CHECK_HEADERS([float.h string.h strings.h])
