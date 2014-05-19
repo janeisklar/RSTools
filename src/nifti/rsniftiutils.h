@@ -79,6 +79,7 @@ typedef struct {
 
 Point3D*      rsMakePoint3D(unsigned int x, unsigned int y, unsigned int z);
 FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z);
+BOOL          rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh);
 Point3D*      rsReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
 rsMask*       rsMaskInit(char *path);
 void          rsMaskLoad(rsMask *mask, rsNiftiFile *resamplingPrototype);
@@ -137,12 +138,13 @@ rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsi
 void        rsCloseNiftiFile(rsNiftiFile* f);
 void        rsWriteNiftiHeader(FSLIO *fslio, char* description);
 
-#define rsWriteTimecourseToRSNiftiFileBuffer(nifti,convdata,point);            rsWriteTimecourseToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
-#define rsExtractTimecourseFromRSNiftiFileBuffer(nifti,convdata,point);        rsExtractTimecourseFromBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
-#define rsExtractVolumeFromRSNiftiFileBuffer(nifti,convdata,t);                rsExtractVolumeFromBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, t, nifti->xDim, nifti->yDim, nifti->zDim);
-#define rsWriteVolumeToRSNiftiFileBuffer(nifti,convdata,t);                    rsWriteVolumeToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, t, nifti->xDim, nifti->yDim, nifti->zDim);
-#define rsResetRSNiftiFileBufferToValue(nifti,value);                          rsResetBufferToValue(nifti->dt, nifti->data, nifti->slope, nifti->inter, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim, value);
-#define rsExtractPointsFromRSNiftiFileBuffer(nifti,convdata,points,nPoints,t); rsExtractPointsFromBuffer(nifti->dt, nifti->data, convdata, nifti->slope, nifti->inter, points, nPoints, t, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
+#define rsWriteTimecourseToRSNiftiFileBuffer(nifti,convdata,point);                 rsWriteTimecourseToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
+#define rsExtractTimecourseFromRSNiftiFileBuffer(nifti,convdata,point);             rsExtractTimecourseFromBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
+#define rsExtractVolumeFromRSNiftiFileBuffer(nifti,convdata,t);                     rsExtractVolumeFromBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, t, nifti->xDim, nifti->yDim, nifti->zDim);
+#define rsWriteVolumeToRSNiftiFileBuffer(nifti,convdata,t);                         rsWriteVolumeToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, t, nifti->xDim, nifti->yDim, nifti->zDim);
+#define rsResetRSNiftiFileBufferToValue(nifti,value);                               rsResetBufferToValue(nifti->dt, nifti->data, nifti->slope, nifti->inter, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim, value);
+#define rsExtractPointsFromRSNiftiFileBuffer(Tnifti,Tconvdata,Tpoints,TnPoints,Tt); rsExtractPointsFromBuffer(Tnifti->dt, Tconvdata, Tnifti->data, Tnifti->slope, Tnifti->inter, Tpoints, TnPoints, Tt, Tnifti->xDim, Tnifti->yDim, Tnifti->zDim, Tnifti->vDim);
+
 
 #ifdef __cplusplus
 }

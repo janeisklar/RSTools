@@ -40,16 +40,16 @@ rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[])
 	
 	g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
 	
-	GOptionArgFunc cbAlgorithm = rsCorrelationParseMonteCarloParams; //rsTimecourseParseAlgorithm;
-	GOptionArgFunc cbPoint     = rsTimecourseParsePoint;
+	GOptionArgFunc cbAlgorithm = (GOptionArgFunc)rsTimecourseParseAlgorithm;
+	GOptionArgFunc cbPoint     = (GOptionArgFunc)rsTimecourseParsePoint;
 	
 	 /* long, short, flags, arg, arg_data, desc, arg_desc */
 	GOptionEntry entries[] = {
 	  { "input",             'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,         "the volume to be regressed", "<volume>" },
-	  { "algorithm",         'a', 0, G_OPTION_ARG_CALLBACK, &cbAlgorithm,          "<algo> the algorithm used to aggregate the data within the specified mask(s), e.g. mean, stddev, spca, tpca or csp\n\n\t'mean'\t\t- for every volume in the 4D input file the\n\t\t\t  intensity values in the mask region are \n\t\t\t  meaned, resulting in a meaned timecourse\n\t\t\t  for that region\n\t'stddev'\t- like 'mean', but instead of meaning the\n\t\t\t  mask region, the standard deviation is\n\t\t\t  computed\n\t'tpca'\t\t- performs a PCA on the temporal dimension\n\t\t\t  of the 4D input in the mask region\n\t'spca'\t\t- performs a PCA on the spatial dimension of\n\t\t\t  the 4D input limited to voxels in the mask\n\t\t\t  region\n\t'csp'\t\t- performs the common spatial pattern\n\t\t\t  procedure on the 4D input in the mask\n\t\t\t  region for both masks. The first half of\n\t\t\t  the returned components will maximize the\n\t\t\t  variance for mask1 while the variance for\n\t\t\t  mask2 is minimal. The second half will be\n\t\t\t  exactly the opposite (var(mask1) minimal,\n\t\t\t  var(mask2) maximal)\n", "<algo>" },
+	  { "algorithm",         'a', 0, G_OPTION_ARG_CALLBACK, cbAlgorithm,           "<algo> the algorithm used to aggregate the data within the specified mask(s), e.g. mean, stddev, spca, tpca or csp\n\n\t'mean'\t\t- for every volume in the 4D input file the\n\t\t\t  intensity values in the mask region are \n\t\t\t  meaned, resulting in a meaned timecourse\n\t\t\t  for that region\n\t'stddev'\t- like 'mean', but instead of meaning the\n\t\t\t  mask region, the standard deviation is\n\t\t\t  computed\n\t'tpca'\t\t- performs a PCA on the temporal dimension\n\t\t\t  of the 4D input in the mask region\n\t'spca'\t\t- performs a PCA on the spatial dimension of\n\t\t\t  the 4D input limited to voxels in the mask\n\t\t\t  region\n\t'csp'\t\t- performs the common spatial pattern\n\t\t\t  procedure on the 4D input in the mask\n\t\t\t  region for both masks. The first half of\n\t\t\t  the returned components will maximize the\n\t\t\t  variance for mask1 while the variance for\n\t\t\t  mask2 is minimal. The second half will be\n\t\t\t  exactly the opposite (var(mask1) minimal,\n\t\t\t  var(mask2) maximal)\n", "<algo>" },
 	  { "mask",              'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,          "a mask specifying the region that the algorithm is perforned on", "<volume>" },
 	  { "mask2",             'n', 0, G_OPTION_ARG_FILENAME, &p->mask2path,         "(use only with csp) a second mask specifying the region for the second condition", "<volume>" },
-	  { "point",             'p', 0, G_OPTION_ARG_CALLBACK, &cbPoint,              "speficies a voxel using nifti coordinates(0-based) from which the timecourse is to be extracted", "<x> <y> <z>" },
+	  { "point",             'p', 0, G_OPTION_ARG_CALLBACK, cbPoint,               "speficies a voxel using nifti coordinates(0-based) from which the timecourse is to be extracted", "<x> <y> <z>" },
 	  { "retainVariance",      0, 0, G_OPTION_ARG_DOUBLE,   &p->minVariance,       "(use only with pca) percentage of explained variance that will be retained, e.g. '0.4'. keep in mind that a higher percentage will result in more components that are to be returned.", "<float>" },
 	  { "retainComponents",  'c', 0, G_OPTION_ARG_INT,      &p->nComponents,       "(use only with pca or csp) number of PCA/CSP components that will be outputted. This should be a multiple of two when running CSP as the components will be distributed equally over both masks.", "<int>" },
 	  { "useStandardScores", 's', 0, G_OPTION_ARG_NONE,     &p->useStandardScores, "(use only with pca) remove mean and set std. dev to 1 prior to running pca", NULL },
@@ -116,18 +116,21 @@ gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gp
 	char *strX;
 	char *strY;
 	char *strZ;
-	strX = strtok(   v, " ");
-	strY = strtok(NULL, " ");
-	strZ = strtok(NULL, " ");
+	strX = strtok(   v, ",");
+	strY = strtok(NULL, ",");
+	strZ = strtok(NULL, ",");
 
-	int x,y,z;
+	int x=-1, y=-1, z=-1;
 
-	x = atoi(strX);
-	y = atoi(strY);
-	z = atoi(strZ);
+	// if we were given exactly 3 numbers separated by comma parse them 
+	if ( strtok(NULL,",") == NULL && strX != NULL && strY != NULL && strZ != NULL ) {
+		x = atoi(strX);
+		y = atoi(strY);
+		z = atoi(strZ);
+	}
 	
-	// if we were given exactly 3 numbers separated by a space return success 
-	if ( strtok(NULL," ") == NULL && strlen(strX) > 0 && strlen(strY) > 0 && strlen(strZ) > 0 ) {
+	// return success if we sucessfully received 3 numbers
+	if ( x >= 0 && y >= 0 && z >= 0 ) {
 		p->point = rsMakePoint3D(x,y,z);
 		return TRUE;
 	}
@@ -139,7 +142,7 @@ gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gp
         G_OPTION_ERROR_BAD_VALUE,
         "%s: %s",
         option_name,
-        "format should be 'x y z'"
+        "format should be 'x,y,z'"
 	);
     
  	return FALSE;
@@ -173,11 +176,5 @@ gboolean rsTimecourseParseAlgorithm(const gchar *option_name, const gchar *value
 	 	return FALSE;
 	}
     
- 	return TRUE;
-}
-
-gboolean rsCorrelationParseMonteCarloParams(const gchar *option_name, const gchar *value, gpointer data, GError **error)
-{
-	fprintf(stdout, "%s", value);
  	return TRUE;
 }

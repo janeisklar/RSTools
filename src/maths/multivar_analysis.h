@@ -29,19 +29,19 @@ struct rsPCAResult {
 	gsl_matrix* eigenvectors;
 };
 
-struct rsCTPResult {
+typedef struct {
 	gsl_matrix* transformedA;
 	gsl_matrix* transformedB;
 	gsl_vector* eigenvalues;
 	gsl_vector* eigenvalues_all;
 	gsl_matrix* eigenvectors;
-};
+} rsCSPResult;
 
 struct rsPCAResult rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 struct rsPCAResult rsPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 struct rsPCAResult rsTPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);
 void rsPCAResultFree(struct rsPCAResult result);
-struct rsCTPResult rsCTP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
-void rsCTPResultFree(struct rsCTPResult result);
+rsCSPResult *rsCSP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
+void rsCSPResultFree(rsCSPResult *result);
     
 #endif

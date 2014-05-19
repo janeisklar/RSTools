@@ -6,6 +6,7 @@
 #include <nifti1.h>
 #include <fslio.h>
 #include <glib.h>
+#include <dlfcn.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 
@@ -51,5 +52,4 @@ void rsTimecoursePrintHelp(rsTimecourseParameters* p);
 
 gboolean rsTimecourseParseAlgorithm(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error);
-gboolean rsCorrelationParseMonteCarloParams(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 #endif

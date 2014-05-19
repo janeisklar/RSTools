@@ -2,12 +2,13 @@
 #define rstools_rscorrelation_ui_h
 
 #include <stdio.h>
+#include <strings.h>
 #include <nifti1.h>
 #include <fslio.h>
 #include <glib.h>
 #include <dlfcn.h>
-#include "nifti/rsniftiutils.h"
-#include "maths/rsmathutils.h"
+#include "src/nifti/rsniftiutils.h"
+#include "src/maths/rsmathutils.h"
 
 #define RSTOOLS_CORRELATION_CONVERSION_NONE 1
 #define RSTOOLS_CORRELATION_CONVERSION_Z    2

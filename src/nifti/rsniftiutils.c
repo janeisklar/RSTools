@@ -36,6 +36,23 @@ FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z)
     return a;
 }
 
+BOOL rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh)
+{
+	if ( p->x < 0 || p->x >= xh ) {
+		return FALSE;
+	}
+
+	if ( p->y < 0 || p->y >= yh ) {
+		return FALSE;
+	}
+
+	if ( p->z < 0 || p->z >= zh-1 ) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 rsMask* rsMaskInit(char *path)
 {
 	rsMask* mask;
@@ -458,9 +475,20 @@ BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, con
  */
 BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th) {
     
+	if ( t >= th ) {
+		fprintf(stderr, "Access to volume #%d failed as the nifti contains only %d volumes.\n", t, th);
+    	return FALSE;
+	}
+
     for (unsigned long iPoint=0; iPoint<nPoints; iPoint=iPoint+1) {
         
         const Point3D *p = &points[iPoint];
+		
+        if ( ! rsPointInVolume(p, xh, yh, zh) ) {
+        	fprintf(stderr, "Point(%d,%d,%d) exeeds the boundaries of the volume (0..%d,0..%d,0..%d)\n", p->x, p->y, p->z, xh, yh, zh);
+        	return FALSE;
+        }
+
 		const size_t address = rsOverallVoxelOffset(p->x, p->y, p->z, t, xh, yh, zh);
         
         switch (datatype) {

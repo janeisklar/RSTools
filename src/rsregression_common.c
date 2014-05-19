@@ -280,19 +280,19 @@ void rsRegressionRun(rsRegressionParameters *p)
     
     /* Write out buffers to the corresponding files */
     if ( p->residuals != NULL ) {
-        if (p->verbose) fprintf(stdout, "Write out residuals to: %s\n", p->saveResidualsPath);
+        if (p->verbose) fprintf(stdout, "Saving residuals.. (%s)\n", p->saveResidualsPath);
 		rsWriteNiftiHeader(p->residuals->fslio, p->comment);
         FslWriteVolumes(p->residuals->fslio, p->residuals->data, p->residuals->vDim);
     }
     
     if ( p->betas != NULL ) {
-        if (p->verbose) fprintf(stdout, "Write out betas to: %s\n", p->saveBetasPath);
+        if (p->verbose) fprintf(stdout, "Saving betas.. (%s)\n", p->saveBetasPath);
 		rsWriteNiftiHeader(p->betas->fslio, p->comment);
         FslWriteVolumes(p->betas->fslio, p->betas->data, p->betas->vDim);
     }
     
     if ( p->fitted != NULL ) {
-        if (p->verbose) fprintf(stdout, "Write out fitted values to: %s\n", p->saveFittedPath);
+        if (p->verbose) fprintf(stdout, "Saving fitted values.. (%s)\n", p->saveFittedPath);
 		rsWriteNiftiHeader(p->fitted->fslio, p->comment);
         FslWriteVolumes(p->fitted->fslio, p->fitted->data, p->fitted->vDim);
     }

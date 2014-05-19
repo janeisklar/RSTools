@@ -12,4 +12,6 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p);
 void rsTimecourseRunPCA(rsTimecourseParameters *p);
 void rsTimecourseRunCSP(rsTimecourseParameters *p);
 
+void rsWriteSpatialMap(char *file, const rsNiftiFile *reference, Point3D *points, gsl_matrix *maps);
+
 #endif

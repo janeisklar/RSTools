@@ -35,6 +35,29 @@ AC_CONFIG_FILES([Makefile
  		 src/maths/Makefile
  		 src/nifti/Makefile])
 
+# Enabling/disabling the incubator
+AC_ARG_ENABLE(
+    [incubator],
+    [  --enable-incubator      compile additional software that is not yet considered to be stable],
+    [case "${enableval}" in
+        yes) incubator=true ;;
+        no)  incubator=false ;;
+        *) AC_MSG_ERROR([bad value ${enableval} for --enable-incubator]) ;;
+    esac],
+    [incubator=false])
+AM_CONDITIONAL([INCUBATOR], [test x$incubator = xtrue])
+
+AM_COND_IF([INCUBATOR],
+    [
+        echo 'Incubator enabled'
+        AC_CONFIG_FILES([src/incubator/Makefile])
+    ],
+    [
+        echo 'Incubator disabled'
+        AC_DEFINE(INCUBATOR_ENABLED, 0, [whether or not additional software that is not yet considered to be stable will be compiled])
+    ]
+)
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_RANLIB
@@ -106,7 +129,7 @@ AC_SEARCH_LIBS([FslGetDim], [fslio],
 # Checking for Atlas
 AC_ARG_ENABLE(
     [atlas],
-    [  --disable-atlas    Do not use ATLAS for BLAS-operations],
+    [  --disable-atlas         do not use ATLAS for BLAS-operations],
     [case "${enableval}" in
         yes) atlas=true ;;
         no)  atlas=false ;;

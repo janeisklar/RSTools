@@ -53,10 +53,10 @@ void rsTimecourseInit(rsTimecourseParameters* p)
 		}
     }
 
+	// if we are not working with a single voxel only read the whole file
+	BOOL fileNeedsToBeRead = p->point == NULL;
+
     // open input file
-	BOOL fileNeedsToBeRead = p->algorithm != RSTOOLS_TIMECOURSE_ALGORITHM_MEAN && 
-	                         p->algorithm != RSTOOLS_TIMECOURSE_ALGORITHM_STDDEV;
-	
 	p->input = rsOpenNiftiFile(p->inputpath, fileNeedsToBeRead ? RSNIFTI_OPEN_READ : RSNIFTI_OPEN_NONE);
     if ( ! p->input->readable ) {
 		return;
@@ -95,9 +95,22 @@ void rsTimecourseRun(rsTimecourseParameters *p)
 	}
 	
 	// remove NaN points
-	if ( p->verbose ) fprintf(stdout, "Removing voxels that are either NaN or have a StdDev of 0\n");
+	if ( p->verbose ) {
+		fprintf(stdout, "Removing voxels that are either NaN or have a StdDev of 0\n");
+	}
+	
 	long nRemovedPoints = rsCleanMaskFromNaNs(p->mask, p->input);
-	if ( p->verbose ) fprintf(stdout, "Removed %ld voxels, %ld remaining\n", nRemovedPoints, p->mask->nPoints);
+	
+	if ( p->verbose ) {
+		fprintf(stdout, "Removed %ld voxels, %ld remaining\n", nRemovedPoints, p->mask->nPoints);
+	}
+	
+	if ( p->mask2 != NULL ) {
+		nRemovedPoints = rsCleanMaskFromNaNs(p->mask2, p->input);
+		if ( p->verbose ) {
+			fprintf(stdout, "Removed %ld voxels, %ld remaining\n", nRemovedPoints, p->mask2->nPoints);
+		}
+	}
 	
 	// run appropriate aggregation algorithm
 	switch ( p->algorithm ) {
@@ -173,7 +186,7 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 
 			// Read out datapoints from the buffer
 			double *pointValues = (double*)rsMalloc(p->mask->nPoints*sizeof(double));
-			rsExtractPointsFromRSNiftiFileBuffer(p->input, pointValues, p->mask->maskPoints, p->mask->nPoints, t);
+			rsExtractPointsFromRSNiftiFileBuffer(p->input, pointValues, p->mask->maskPoints, p->mask->nPoints, t);			
 
 			// Iterate over all points in the mask and compute mean
 			for ( unsigned long i=0; i<p->mask->nPoints; i=i+1) {
@@ -198,7 +211,6 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 	}
 	
 	// Write out result
-
 	for ( t = 0; t<p->input->vDim; t=t+1 ) {
 		fprintf(stdout, "%.10f\n", timecourse[t]);
 	}
@@ -206,12 +218,189 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 
 void rsTimecourseRunPCA(rsTimecourseParameters *p)
 {
-	
+	if ( p->verbose ) {
+		fprintf(stdout, "Computing PCA components for timecourses in the mask\n");
+	}
+
+	// Prepare data matrix
+	gsl_matrix* data = gsl_matrix_alloc(p->mask->nPoints, p->input->vDim);
+	for ( long n=0; n < p->mask->nPoints; n=n+1) {
+
+		double *timecourse = rsMalloc(sizeof(double) * p->input->vDim);
+		rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, &p->mask->maskPoints[n]);
+
+		double mean  = 0; 
+		double stdev = 1;
+
+		if ( p->useStandardScores ) {
+			mean  = gsl_stats_mean(timecourse, 1, p->input->vDim);
+			stdev = gsl_stats_sd(timecourse, 1, p->input->vDim);
+		}
+
+		for ( int t = 0; t < p->input->vDim; t=t+1 ) {
+			gsl_matrix_set(data, n, t, (timecourse[t] - mean) / stdev);
+		}
+
+		free(timecourse);
+	}
+
+	// Run PCA
+	gsl_matrix* components;
+	struct rsPCAResult pcaResult;
+	long nEigenvalues = p->mask->nPoints;
+
+	if ( p->algorithm == RSTOOLS_TIMECOURSE_ALGORITHM_SPCA ) {
+		pcaResult = rsPCA(data, p->minVariance, p->nComponents, p->verbose);
+		components = pcaResult.transformed;
+
+		if ( p->spatialmappath != NULL) {
+			rsWriteSpatialMap(p->spatialmappath, p->input, &p->mask->maskPoints[0], pcaResult.eigenvectors);
+		}
+	} else { // TPCA
+		nEigenvalues = p->input->vDim;
+		pcaResult = rsTPCA(data, p->minVariance, p->nComponents, p->verbose);
+		components = pcaResult.eigenvectors;
+
+		if ( p->spatialmappath != NULL) {
+			rsWriteSpatialMap(p->spatialmappath, p->input, &p->mask->maskPoints[0], pcaResult.transformed);
+		}
+	}
+	gsl_matrix_free(data);
+
+	// Write out eigenvalues
+	if ( p->eigenvaluespath != NULL ) {
+		FILE *fp;
+		fp = fopen( p->eigenvaluespath , "w" );
+
+		for ( long i=0; i<nEigenvalues; i=i+1 ) {
+			fprintf(fp, "%.10f\n", gsl_vector_get(pcaResult.eigenvalues_all, i));
+		}
+
+		fclose(fp);
+	}
+
+	if ( p->verbose ) {
+		if ( p->algorithm == RSTOOLS_TIMECOURSE_ALGORITHM_SPCA ) {
+			fprintf(stdout, "Reduced data matrix(%dx%d) after spatial PCA:\n", (int)components->size1, (int)components->size2);
+		} else {
+			fprintf(stdout, "Selected tPCA eigenvectors(%dx%d)\n", (int)components->size1, (int)components->size2);
+		}
+	}
+
+	for ( int t = 0; t < p->input->vDim; t=t+1 ) {
+		for ( int c = 0; c<components->size1; c=c+1) {
+           	fprintf(stdout, "% 5.10f", gsl_matrix_get(components, c, t));
+			if ( c < (components->size1-1) ) {
+				fprintf(stdout, "\t");
+			}
+		}
+		fprintf(stdout, "\n");
+	}
+
+	rsPCAResultFree(pcaResult);
 }
 
 void rsTimecourseRunCSP(rsTimecourseParameters *p)
 {
-	
+	if ( p->verbose ) {
+    	fprintf(stdout, "Computing common spatial patterns for the timecourses in both masks\n");
+    }
+
+	if ( p->nComponents < 2 ) {
+		p->nComponents = (int) (floor(p->input->vDim/2.0) * 2.0);
+	}
+
+    // Prepare data matrices
+	long n;
+    gsl_matrix* dataA = gsl_matrix_alloc(p->input->vDim, p->mask->nPoints);
+    gsl_matrix* dataB = gsl_matrix_alloc(p->input->vDim, p->mask2->nPoints);
+
+    #pragma omp parallel num_threads(rsGetThreadsNum()) shared(p) private(n)
+    {
+		// first mask
+    	#pragma omp for schedule(guided)
+    	for ( n=0; n < p->mask->nPoints; n=n+1) {
+
+    		double *timecourse = rsMalloc(sizeof(double) * p->input->vDim);
+			rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, &p->mask->maskPoints[n]);
+
+    		double mean  = 0; 
+    		double stdev = 1;
+
+    		if ( p->useStandardScores ) {
+    			mean  = gsl_stats_mean(timecourse, 1, p->input->vDim);
+    			stdev = gsl_stats_sd(timecourse, 1, p->input->vDim);
+    		}
+
+    		for ( int t = 0; t < p->input->vDim; t=t+1 ) {
+    			gsl_matrix_set(dataA, t, n, (timecourse[t] - mean) / stdev);
+    		}
+
+    		free(timecourse);
+    	}
+		
+		// second mask
+    	#pragma omp for schedule(guided)
+    	for ( n=0; n < p->mask2->nPoints; n=n+1) {
+
+    		double *timecourse = rsMalloc(sizeof(double) * p->input->vDim);
+			rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, &p->mask2->maskPoints[n]);
+
+    		double mean  = 0; 
+    		double stdev = 1;
+
+    		if ( p->useStandardScores ) {
+    			mean  = gsl_stats_mean(timecourse, 1, p->input->vDim);
+    			stdev = gsl_stats_sd(timecourse, 1, p->input->vDim);
+    		}
+
+    		for ( int t = 0; t < p->input->vDim; t=t+1 ) {
+    			gsl_matrix_set(dataB, t, n, (timecourse[t] - mean) / stdev);
+    		}
+
+    		free(timecourse);
+    	}
+    }
+
+    // Run CSP
+    rsCSPResult *cspResult = rsCSP(dataA, dataB, p->nComponents/2, p->verbose);
+    long nEigenvalues = cspResult->eigenvalues_all->size;
+
+    if ( p->spatialmappath != NULL) {
+    	//rsWriteSpatialMap(spatialmappath, fslio, nonNanPoints, cspResult->eigenvectors);
+    }
+
+    gsl_matrix_free(dataA);
+    gsl_matrix_free(dataB);
+
+    // Write out eigenvalues
+    if ( p->eigenvaluespath != NULL ) {
+    	FILE *fp;
+    	fp = fopen(p->eigenvaluespath , "w");
+
+    	for ( long i=0; i<nEigenvalues; i=i+1 ) {
+    		fprintf(fp, "%.10f\n", gsl_vector_get(cspResult->eigenvalues_all, i));
+    	}
+
+    	fclose(fp);
+    }
+
+    if ( p->verbose ) {
+    	fprintf(stdout, "Selected eigenvectors(%dx%d) of the CSP anaylsis:\n", (int)cspResult->eigenvectors->size1, (int)cspResult->eigenvectors->size2);
+    }
+
+	// Print out eigenvectors
+    for ( int t = 0; t < p->input->vDim; t=t+1 ) {
+    	for ( int c = 0; c < cspResult->eigenvectors->size1; c=c+1) {
+        	fprintf(stdout, "% 5.10f", gsl_matrix_get(cspResult->eigenvectors, c, t));
+    		if ( c < (cspResult->eigenvectors->size1-1) ) {
+    			fprintf(stdout, "\t");
+    		}
+    	}
+    	fprintf(stdout, "\n");
+    }
+
+    rsCSPResultFree(cspResult);
 }
 
 void rsTimecourseDestroy(rsTimecourseParameters* p)
@@ -252,7 +441,6 @@ void rsWriteSpatialMap(char *file, const rsNiftiFile *reference, Point3D *points
 	/* prepare buffer */
     outputFile->data = rsMalloc(rsGetBufferSize(outputFile->xDim, outputFile->yDim, outputFile->zDim, outputFile->vDim, NIFTI_TYPE_FLOAT32));
 	rsResetRSNiftiFileBufferToValue(outputFile, sqrt(-1.0));
-	//rsResetBufferToValue(outputFile->dt, outputFile->data, outputFile->slope, outputFile->inter, outputFile->xDim, outputFile->yDim, outputFile->zDim, nMaps, sqrt(-1.0));
 	
 	/* write spatial maps to buffer */
 	for (unsigned long p = 0L; p<nPoints; p=p+1L) {
@@ -262,7 +450,6 @@ void rsWriteSpatialMap(char *file, const rsNiftiFile *reference, Point3D *points
 			data[i] = gsl_matrix_get(maps, i, p);
 		}
         rsWriteTimecourseToRSNiftiFileBuffer(outputFile, &data[0], &points[p])
-        //rsWriteTimecourseToBuffer(outputFile->dt, &data[0], outputFile->data, outputFile->slope, outputFile->inter, &points[p], outputFile->xDim, outputFile->yDim, outputFile->zDim, nMaps);
     }
     
 	/* write to file */

@@ -1,6 +1,10 @@
+if INCUBATOR
+SUBDIRS = nifti maths . incubator
+else
 SUBDIRS = nifti maths .
+endif
 
-bin_PROGRAMS = rsbandpass rscentrality rscorrelation rsfastcentrality rsfillholes rsinfo rsmask rsmotionscrubbing rsregression rsroi rstimecourse rsttest
+bin_PROGRAMS = rsbandpass rscorrelation rsinfo rsmask rsmotionscrubbing rsregression rsroi rstimecourse rsttest
 
 rslibraries=maths/librsmathutils.a nifti/librsniftiutils.a
 
@@ -9,10 +13,7 @@ LDADD=$(rslibraries)
 rsbandpass_SOURCES = rsbandpass_ui.c rsbandpass_common.c rsbandpass.c
 #rsbandpass_LDADD = $(LIBOBJS)
 #rsbandpass_LDADD = -Lnifti -Lmaths -lrsmathutils -lrsniftiutils
-rscentrality_SOURCES = rscentrality.c
 rscorrelation_SOURCES = rscorrelation_ui.c rscorrelation_common.c rscorrelation.c 
-rsfastcentrality_SOURCES = rsfastcentrality.c
-rsfillholes_SOURCES = rsfillholes.c
 rsinfo_SOURCES = rsinfo.c
 rsmask_SOURCES = rsmask.c
 rsmotionscrubbing_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c rsmotionscrubbing.c
