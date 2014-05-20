@@ -13,13 +13,13 @@ LDADD=$(rslibraries)
 rsbandpass_SOURCES = rsbandpass_ui.c rsbandpass_common.c rsbandpass.c
 #rsbandpass_LDADD = $(LIBOBJS)
 #rsbandpass_LDADD = -Lnifti -Lmaths -lrsmathutils -lrsniftiutils
-rscorrelation_SOURCES = rscorrelation_ui.c rscorrelation_common.c rscorrelation.c 
+rscorrelation_SOURCES = rscorrelation_ui.c rscorrelation_common.c rscorrelation.c
 rsinfo_SOURCES = rsinfo.c
 rsmask_SOURCES = rsmask.c
 rsmotionscrubbing_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c rsmotionscrubbing.c
 #rsmotionscrubbing_LDADD = rsregression_common.o @LIBOBJS@ $(rslibraries)
 rsregression_SOURCES = rsregression_ui.c rsregression_common.c rsregression.c
-rsroi_SOURCES = rsroi.c
+rsroi_SOURCES = rsroi_ui.c rsroi_common.c rsroi.c
 rstimecourse_SOURCES = rstimecourse_ui.c rstimecourse_common.c rstimecourse.c
 rsttest_SOURCES = rsttest.c
 

@@ -17,9 +17,9 @@ typedef struct {
 	char *dvarspath;
 	char *flaggedpath;
 	char *callString;
-    
-	float fdthreshold;
-	float dvarsthreshold;
+
+	double fdthreshold;
+	double dvarsthreshold;
 
 	long rpColumns;
 	long rpEntries;
@@ -29,7 +29,7 @@ typedef struct {
 
     BOOL verbose;
     BOOL parametersValid;
-    
+
     rsNiftiFile *input;
     rsNiftiFile *output;
     double ***mask;
@@ -37,7 +37,7 @@ typedef struct {
 	GOptionContext *context;
 
     int threads;
-    
+
 } rsMotionScrubbingParameters;
 
 rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[]);

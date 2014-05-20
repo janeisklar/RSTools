@@ -75,7 +75,7 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
     }
 	free(mask[0][0]); free(mask[0]); free(mask);
 
-	p->parametersValid = FALSE;
+	p->parametersValid = TRUE;
 }
 
 void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
@@ -147,7 +147,6 @@ void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
 	}
 	
     rsWriteNiftiHeader(p->output->fslio, p->callString);
-	free(p->callString);
 
 	// prepare the output file's content
 	int t;

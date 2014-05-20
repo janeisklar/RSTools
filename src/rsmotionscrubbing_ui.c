@@ -26,24 +26,24 @@ rsMotionScrubbingParameters *rsMotionScrubbingInitParameters() {
 }
 
 void rsMotionScrubbingFreeParams(rsMotionScrubbingParameters *p) {
-	free(p->inputpath);
-	free(p->maskpath);
-	free(p->outputpath);
-	free(p->realignmentpath);
-	free(p->fdpath);
-	free(p->dvarspath);
-	free(p->flaggedpath);
-	free(p->input);
-	free(p->output);
-	free(p->callString);
-	free(p->mask);
+	rsFree(p->inputpath);
+	rsFree(p->maskpath);
+	rsFree(p->outputpath);
+	rsFree(p->realignmentpath);
+	rsFree(p->fdpath);
+	rsFree(p->dvarspath);
+	rsFree(p->flaggedpath);
+	rsFree(p->input);
+	rsFree(p->output);
+	rsFree(p->callString);
+	rsFree(p->mask);
 	if ( p->rp != NULL ) {
-		free(p->rp[0]);
+		rsFree(p->rp[0]);
 	}
-	free(p->rp);
-	free(p->maskPoints);
+	rsFree(p->rp);
+	rsFree(p->maskPoints);
 	g_option_context_free(p->context);
-	free(p);
+	rsFree(p);
 }
 
 void rsMotionScrubbingPrintHelp(rsMotionScrubbingParameters *p) {
@@ -68,7 +68,7 @@ rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[
 	  { "dvars",           'd', 0, G_OPTION_ARG_FILENAME, &p->dvarspath,       "(optional) file where the DVARS values will be saved to", "<*.txt>" },
 	  { "fd",              'f', 0, G_OPTION_ARG_FILENAME, &p->fdpath,          "(optional) file to which the framewise displacement will be saved to", "<*.txt>" },
 	  { "flagged",         'e', 0, G_OPTION_ARG_FILENAME, &p->flaggedpath,     "(optional) file to which the indices of all flagged frames will be saved to", "<*.txt>" },
-	  { "dvarsthreshold",  'a', 0, G_OPTION_ARG_DOUBLE,   &p->dvarspath,       "(optional) DVARs threshold", "<float>" },
+	  { "dvarsthreshold",  'a', 0, G_OPTION_ARG_DOUBLE,   &p->dvarsthreshold,  "(optional) DVARs threshold", "<float>" },
 	  { "fdthreshold",     'k', 0, G_OPTION_ARG_DOUBLE,   &p->fdthreshold,     "(optional) framewise displacement threshold", "<float>" },
 	  { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,        "a mask specifying the region that is used for the computation of DVARs", "<volume>" },
 	  { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,         "number of threads used for processing", "<n>" },

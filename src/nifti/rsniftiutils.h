@@ -135,7 +135,7 @@ rsNiftiFile *rsInitNiftiFile(void);
 void         rsFreeNiftiFile(rsNiftiFile* f);
 void         rsCloseNiftiFileAndFree(rsNiftiFile* f);
 rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsigned int mode, const int vDim);
-void        rsCloseNiftiFile(rsNiftiFile* f);
+void        rsCloseNiftiFile(rsNiftiFile* f, BOOL keepData);
 void        rsWriteNiftiHeader(FSLIO *fslio, char* description);
 
 #define rsWriteTimecourseToRSNiftiFileBuffer(nifti,convdata,point);                 rsWriteTimecourseToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);

@@ -46,7 +46,7 @@ BOOL rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh)
 		return FALSE;
 	}
 
-	if ( p->z < 0 || p->z >= zh-1 ) {
+	if ( p->z < 0 || p->z >= zh ) {
 		return FALSE;
 	}
 
@@ -79,7 +79,7 @@ void rsMaskLoad(rsMask *mask, rsNiftiFile *resamplingPrototype)
 		resamplingPrototype->fslio,
 		mask->resampledMask
 	);
-	
+
 	mask->readable = mask->maskPoints != NULL;
 }
 
@@ -93,7 +93,7 @@ void rsMaskFree(rsMask *mask)
 			rsFree(mask->resampledMask[0]);
 			rsFree(mask->resampledMask);
 		}
-}   	
+}
 
 /*
  * Reads in a binary mask in terms of a nifti file and
@@ -102,7 +102,7 @@ void rsMaskFree(rsMask *mask)
  * that have a value higher than 0.
  * The resulting mask after rescaling can be saved as
  * a nifti by supplying an additional path. The headers
- * for this file will be cloned from the given 
+ * for this file will be cloned from the given
  * prototype. This can be used to ensure that the used
  * mask is appropriate for the orientation of the file
  * that it is later applied to.
@@ -112,36 +112,36 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
     FSLIO *fslio;
 	void *buffer;
 	unsigned long buffsize;
-    
+
     short xDim, yDim, zDim, vDim;
 	size_t pixtype;
 	short dt;
     float inter = 0.0, slope = 1.0;
-    
+
     int pointCount = 0;
-    
+
     /* Open mask */
     fslio = FslOpen(path, "rb");
     if (fslio == NULL) {
         fprintf(stderr, "\nError, could not read header info for %s.\n",path);
         return NULL;
     }
-    
+
     /* Read out dimensions */
     FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
-    
+
     if (fslio->niftiptr->scl_slope != 0) {
         slope = fslio->niftiptr->scl_slope;
         inter = fslio->niftiptr->scl_inter;
     }
-    
+
     /* Determine datatype */
 	pixtype = FslGetDataType(fslio, &dt);
-    
+
     /* Init buffer */
     buffsize = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
     buffer   = rsMalloc(buffsize);
-    
+
     /* Read in first volume */
     if (!FslReadVolumes(fslio, buffer, 1)) {
         free(buffer);
@@ -149,16 +149,16 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
         FslClose(fslio);
         return NULL;
     }
-    
+
     double ***mask = FslGetVolumeAsScaledDouble(fslio, 0);
-    
+
     /* Resample mask to have the same scaling as the input volume */
     double ***resampledMask = rsResampleVolume(mask, xDim, yDim, zDim, newX, newY, newZ);
-    
+
     free(mask[0][0]);
     free(mask[0]);
     free(mask);
-    
+
     /* Count how many points we'll get */
     *nPoints = (unsigned long)0L;
 	unsigned int x=0,y=0,z=0;
@@ -168,17 +168,17 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
                 if ( resampledMask[z][y][x] > 0.01 ) {
                     *nPoints = *nPoints + ((unsigned long)1L);
                 }
-                
+
                 if ( resampledMaskReturn != NULL ) {
                     resampledMaskReturn[z][y][x] = resampledMask[z][y][x];
                 }
             }
         }
     }
-    
+
     /* Initialize result array */
     Point3D* points = rsMalloc(*nPoints*sizeof(Point3D));
-    
+
     /* Create array with all points that are in the mask */
     int i=0;
     for (x=0; x<newX; x=x+1) {
@@ -194,10 +194,10 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
             }
         }
     }
-    
+
     /* Save mask */
     FSLIO *fslioResampled = NULL;
-    
+
     if ( resampledMaskPath != NULL ) {
         fslioResampled = FslOpen(resampledMaskPath, "wb");
     }
@@ -206,17 +206,17 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
             fprintf(stderr, "\nWarning, could not open %s for writing.\n",resampledMaskPath);
         }
     } else {
-        
+
         pixtype = FslGetDataType(maskPrototype, &dt);
-        
+
         FslCloneHeader(fslioResampled, maskPrototype);
         FslSetDim(fslioResampled, newX,newY,newZ,1);
         FslSetDimensionality(fslioResampled, 3);
         FslSetDataType(fslioResampled, dt);
         FslWriteHeader(fslioResampled);
-        
+
 		void *maskBuffer = rsMalloc(rsGetBufferSize(newX, newY, newZ, 1, dt));
-        
+
         convertScaledDoubleToBuffer(
             maskPrototype->niftiptr->datatype,
             maskBuffer,
@@ -227,11 +227,11 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
             newY,
             newZ
         );
-        
+
         FslWriteVolumes(fslioResampled, maskBuffer, 1);
         FslClose(fslioResampled);
     }
-    
+
     FslClose(fslio);
     free(buffer);
     free(resampledMask[0][0]);
@@ -239,33 +239,33 @@ Point3D* rsReadMask(char *path, unsigned short newX, unsigned short newY, unsign
     free(resampledMask);
     free(fslio);
     free(fslioResampled);
-    
+
     return points;
 }
 
 /*
- * Resamples a 3D volume from a given resolution into a new resolution. 
+ * Resamples a 3D volume from a given resolution into a new resolution.
  * The 3D volume thereby needs to be supplied as a 3D matrix of scaled
  * doubles as created by d3matrix.
  */
 double*** rsResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ)
 {
     double ***resampledVolume = d3matrix(newZ-1, newY-1, newX-1);
-    
+
     for (int x=0; x<newX; x=x+1) {
-        
+
         int resampledX = ((float)oldX / (float)newX) * (float)x;
         for (int y=0; y<newY; y=y+1) {
-            
+
             int resampledY = ((float)oldY / (float)newY) * (float)y;
             for (int z=0; z<newZ; z=z+1) {
-                
+
                 int resampledZ = ((float)oldZ / (float)newZ) * (float)z;
                 resampledVolume[z][y][x] = oldVolume[resampledZ][resampledY][resampledX];
             }
         }
     }
-    
+
     return resampledVolume;
 }
 
@@ -281,7 +281,7 @@ long rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input)
 	long nRemainingPoints = 0;
 	int isNanPoint[mask->nPoints];
 	Point3D* newMaskPoints;
-	
+
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(n) shared(mask,input,isNanPoint)
 	{
 		// identify irrelevant voxels
@@ -311,16 +311,16 @@ long rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input)
 	        free(timecourse);
 		}
 	}
-		
+
 	// count number of voxels that are remaining
 	for (n=0; n<mask->nPoints; n=n+1) {
 		if ( isNanPoint[n] == TRUE ) {
 			nNanPoints = nNanPoints + 1;
 		}
 	}
-	
+
 	nRemainingPoints = mask->nPoints - nNanPoints;
-	
+
 	// create new list of points
 	newMaskPoints = rsMalloc(sizeof(Point3D)*nRemainingPoints);
 	long n2=0;
@@ -331,12 +331,12 @@ long rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input)
 			n2 = n2 + 1;
 		}
 	}
-	
+
 	// replace new list of points with the old one
 	rsFree(mask->maskPoints);
 	mask->maskPoints = newMaskPoints;
 	mask->nPoints = nRemainingPoints;
-	
+
 	return nNanPoints;
 }
 
@@ -345,12 +345,12 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
     size_t volbytes, offset, orig_offset;
     size_t n;
     short xdim,ydim,zdim,v,wordsize;
-    
+
     if (fslio==NULL)  fprintf(stderr, "rsWriteTimeSeries: Null pointer passed for FSLIO");
     if (fslio->niftiptr!=NULL) {
-        
+
         FslGetDim(fslio,&xdim,&ydim,&zdim,&v);
-        
+
         if ((xVox<0) || (xVox >=xdim)){
             fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid x-range(%hd..%hd)", xVox, 0, xdim-1);
             return 0;
@@ -363,17 +363,17 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
             fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid z-range(%hd..%hd)", zVox, 0, zdim-1);
             return 0;
         }
-        
+
         wordsize = fslio->niftiptr->nbyper;
         volbytes = xdim * ydim * zdim * wordsize;
-        
+
         orig_offset = znztell(fslio->fileptr);
-        
+
         /* go back to the beginning of the data(after the header) */
         znzseek(fslio->fileptr, fslio->niftiptr->iname_offset, SEEK_SET);
         offset = ((ydim * zVox + yVox) * xdim + xVox) * wordsize;
         znzseek(fslio->fileptr,offset,SEEK_CUR);
-        
+
         for (n=0; n<nvols; n++) {
             if (n>0) znzseek(fslio->fileptr, volbytes - wordsize, SEEK_CUR);
 /*            fprintf(stdout, "Wrote %03zd: %hd.\n", n, (short)*((char*)(buffer)+(n*wordsize))); */
@@ -385,7 +385,7 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
                 nifti_swap_Nbytes(1,fslio->niftiptr->swapsize,
                                   (char *)buffer+(n*wordsize));*/
         }
-        
+
         /* restore file pointer to original position */
         znzseek(fslio->fileptr,orig_offset,SEEK_SET);
         return n;
@@ -411,14 +411,14 @@ void rsScaleValues(double *timecourse, const int th, const double slope, const d
  *
  */
 BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
-    
+
 	const size_t voxelOffset = rsVoxelOffset(p->x, p->y, p->z, xh, yh);
 	const size_t timeOffset  = rsVolumeLength(xh, yh, zh);
-    
+
     for (int t=0; t<th; t=t+1) {
-        
+
         const size_t address = ((size_t)t) * timeOffset + voxelOffset;
-        
+
         switch (datatype) {
             case NIFTI_TYPE_UINT8:
                 timecourse[t] = (double) *((THIS_UINT8 *)(buffer)+address);
@@ -458,9 +458,9 @@ BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, con
                 return FALSE;
         }
     }
-    
+
     rsScaleValues(timecourse, th, slope, inter);
-    
+
     return TRUE;
 }
 
@@ -474,23 +474,23 @@ BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, con
  *
  */
 BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th) {
-    
+
 	if ( t >= th ) {
 		fprintf(stderr, "Access to volume #%d failed as the nifti contains only %d volumes.\n", t, th);
     	return FALSE;
 	}
 
     for (unsigned long iPoint=0; iPoint<nPoints; iPoint=iPoint+1) {
-        
+
         const Point3D *p = &points[iPoint];
-		
+
         if ( ! rsPointInVolume(p, xh, yh, zh) ) {
-        	fprintf(stderr, "Point(%d,%d,%d) exeeds the boundaries of the volume (0..%d,0..%d,0..%d)\n", p->x, p->y, p->z, xh, yh, zh);
+        	fprintf(stderr, "Error(rsExtractPointsFromBuffer): Point(%d,%d,%d) exeeds the boundaries of the volume (0..%d,0..%d,0..%d)\n", p->x, p->y, p->z, xh-1, yh-1, zh-1);
         	return FALSE;
         }
 
 		const size_t address = rsOverallVoxelOffset(p->x, p->y, p->z, t, xh, yh, zh);
-        
+
         switch (datatype) {
             case NIFTI_TYPE_UINT8:
                 data[iPoint] = (double) *((THIS_UINT8 *)(buffer)+address);
@@ -530,9 +530,9 @@ BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *b
                 return FALSE;
         }
     }
-    
+
     rsScaleValues(data, nPoints, slope, inter);
-    
+
     return TRUE;
 }
 
@@ -546,7 +546,7 @@ BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *b
  * the nifti file.
  */
 BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
-    
+
     THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)buffer;
     THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)buffer;
     THIS_UINT16  *THIS_UINT16_BUFFER  = (THIS_UINT16*)buffer;
@@ -557,11 +557,11 @@ BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, v
     THIS_INT64   *THIS_INT64_BUFFER   = (THIS_INT64*)buffer;
     THIS_FLOAT32 *THIS_FLOAT32_BUFFER = (THIS_FLOAT32*)buffer;
     THIS_FLOAT64 *THIS_FLOAT64_BUFFER = (THIS_FLOAT64*)buffer;
-    
+
     for (int t=0; t<th; t=t+1) {
-        
+
 		size_t address = rsOverallVoxelOffset(p->x, p->y, p->z, t, xh, yh, zh);
-        
+
         switch (datatype) {
             case NIFTI_TYPE_UINT8:
                 THIS_UINT8_BUFFER[address]   = (THIS_UINT8)   ((timecourse[t] - inter) / slope);
@@ -601,7 +601,7 @@ BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, v
                 return FALSE;
         }
     }
-    
+
     return TRUE;
 }
 
@@ -657,12 +657,12 @@ void *rsMalloc(size_t size)
 {
 	void *data;
 	data = malloc(size);
-	
+
 	if ( data == NULL ) {
 		fprintf(stderr, "OutOfMemoryException: failed to allocate %ld bytes\n", size);
 		return NULL;
 	}
-	
+
 	return data;
 }
 
@@ -672,13 +672,13 @@ void *rsMalloc(size_t size)
  *
  */
 BOOL rsExtractVolumeFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
-	
+
 	const size_t wordlength   = rsWordLength(datatype);
 	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
 	const size_t volumeLength = rsVolumeLength(xh, yh, zh);
-	
+
 	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
-	
+
 	return convertBufferToScaledDouble(data, volBuffer, volumeLength, slope, inter, datatype);
 }
 
@@ -688,12 +688,12 @@ BOOL rsExtractVolumeFromBuffer(const short datatype, double *data, const void *b
  *
  */
 BOOL rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
-	
+
 	const size_t wordlength   = rsWordLength(datatype);
 	const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
-	
+
 	void *volBuffer = (void*)((char*)buffer + wordlength*volumeOffset);
-	
+
 	return convertScaledDoubleToBuffer(datatype, volBuffer, data, slope, inter, xh, yh, zh);
 }
 
@@ -738,21 +738,21 @@ BOOL convertScaledDoubleToBuffer(const short datatype, void *outbuf, double *inb
         case NIFTI_TYPE_FLOAT64:
             convertScaledDoubleToBuffer_FLOAT64(outbuf, inbuf, slope, inter, xh, yh, zh);
             return TRUE;
-            
+
         case NIFTI_TYPE_FLOAT128:
         case NIFTI_TYPE_COMPLEX128:
         case NIFTI_TYPE_COMPLEX256:
         case NIFTI_TYPE_COMPLEX64:
         default:
             return FALSE;
-            
+
     }
-    
+
     return TRUE;
 }
 
 BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value) {
-    
+
     switch (datatype) {
         case NIFTI_TYPE_UINT8:
         case NIFTI_TYPE_INT8:
@@ -773,7 +773,7 @@ BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope,
             return FALSE;
     }
 
-    
+
     THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)buffer;
     THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)buffer;
     THIS_UINT16  *THIS_UINT16_BUFFER  = (THIS_UINT16*)buffer;
@@ -784,9 +784,9 @@ BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope,
     THIS_INT64   *THIS_INT64_BUFFER   = (THIS_INT64*)buffer;
     THIS_FLOAT32 *THIS_FLOAT32_BUFFER = (THIS_FLOAT32*)buffer;
     THIS_FLOAT64 *THIS_FLOAT64_BUFFER = (THIS_FLOAT64*)buffer;
-    
+
     double scaled_value = (value - inter) / slope;
-    
+
     #pragma omp parallel num_threads(rsGetThreadsNum()) shared(buffer,THIS_UINT8_BUFFER,THIS_INT8_BUFFER,THIS_UINT16_BUFFER,THIS_INT16_BUFFER,THIS_UINT32_BUFFER,THIS_INT32_BUFFER,THIS_UINT64_BUFFER,THIS_INT64_BUFFER,THIS_FLOAT32_BUFFER,THIS_FLOAT64_BUFFER)
     {
         #pragma omp for schedule(guided)
@@ -794,9 +794,9 @@ BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope,
             for (int y=0; y<yh; y=y+1) {
                 for (int z=0; z<zh; z=z+1) {
                     for (int t=0; t<th; t=t+1) {
-	
+
 						size_t address = rsOverallVoxelOffset(x, y, z, t, xh, yh, zh);
-                        
+
                         switch (datatype) {
                             case NIFTI_TYPE_UINT8:
                                 THIS_UINT8_BUFFER[address]   = (THIS_UINT8)   scaled_value;
@@ -834,7 +834,7 @@ BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope,
             }
         }
     }
-    
+
     return TRUE;
 }
 
@@ -930,7 +930,7 @@ void convertScaledDoubleToBuffer_UINT32(THIS_UINT32 *outbuf, double *inbuf, floa
 
 void convertScaledDoubleToBuffer_INT32(THIS_INT32 *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh) {
     int x, y, z;
-    
+
     for (z=0; z<zh; z++) {
         for (y=0; y<yh; y++) {
             size_t address = rsVoxelOffset(0, y, z, xh, yh);
@@ -998,18 +998,18 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 	char* oldComment = "";
 	BOOL commentExistsAlready = FALSE;
 	nifti1_extension *ext;
-		
+
 	// check extensions
 	nifti_image *nim = fslio->niftiptr;
 
 	if( nim->num_ext > 0 && nim->ext_list != NULL ) {
-		
+
 		// find extension
 		ext = nim->ext_list;
 
 		int c;
 		for ( c = 0; c < nim->num_ext; c++ ){
-			if ( ext->ecode == NIFTI_ECODE_COMMENT && ext->edata != NULL ) { 
+			if ( ext->ecode == NIFTI_ECODE_COMMENT && ext->edata != NULL ) {
 				break;
 			}
 		    ext++;
@@ -1017,14 +1017,14 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 
 		if ( c < nim->num_ext ) {
 			commentExistsAlready = TRUE;
-			
+
 			// read extension
 			size_t size = ext->esize;
 			oldComment = malloc(sizeof(char)*(size+2));
 			sprintf(&oldComment[0], "%s\n", ext->edata);
 		}
 	}
-	
+
 	// incorporate current date/time into the comment
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
@@ -1033,13 +1033,13 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 
 	// incorporate rstools version number into the comment
 	char *version = "\n# " RSTOOLS_VERSION_LABEL "\n";
-	
+
 	// merge old/new comment, version and date
 	const size_t ext_length       = 8; // additional bytes for the extension code(ecode) and esize
 	const size_t datalength       = strlen(oldComment)+strlen(version)+strlen(comment)+strlen(date)+1+ext_length;
 	const size_t datalength2      = (size_t)ceil((double)datalength / 16.0) * 16;
 	char data[datalength2];
-	
+
 	sprintf(&data[0], "%s%s%s%s", oldComment, version, date, comment);
 
 	if ( commentExistsAlready ) {
@@ -1048,7 +1048,7 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
 	} else {
 		nifti_add_extension(fslio->niftiptr, &data[0], datalength2, NIFTI_ECODE_COMMENT);
 	}
-	
+
     fslio->written_hdr = 1;
     if (znz_isnull(fslio->fileptr)) RSIOERR("FslWriteHeader: no file opened!");
     /* modify niftiptr for FSL-specific purposes */
@@ -1057,11 +1057,11 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
     /* set qform to equal sform if currently unset (or vice versa) */
     qform_code = FslGetRigidXform(fslio,&qmat);
     sform_code = FslGetStdXform(fslio,&smat);
-    if ( (sform_code != NIFTI_XFORM_UNKNOWN) && 
+    if ( (sform_code != NIFTI_XFORM_UNKNOWN) &&
 	 (qform_code == NIFTI_XFORM_UNKNOWN) ) {
       FslSetRigidXform(fslio,sform_code,smat);
     }
-    if ( (qform_code != NIFTI_XFORM_UNKNOWN) && 
+    if ( (qform_code != NIFTI_XFORM_UNKNOWN) &&
 	 (sform_code == NIFTI_XFORM_UNKNOWN) ) {
       FslSetStdXform(fslio,qform_code,qmat);
     }
@@ -1089,34 +1089,34 @@ char *rsMergeStringArray(int argc, char * argv[])
 	for ( int i=0; i<argc; i=i+1 ) {
 		length = length + strlen(argv[i]) + 1;
 	}
-	
+
 	char *result     = rsMalloc(sizeof(char)*length);
 	char *cur_string = result;
 	char *separator  = " ";
-	
+
 	for ( int i=0; i<argc; i=i+1 ) {
 		size_t cur_length = strlen(argv[i]);
 
 		cur_string      = &result[0]+written;
 		written         = written + cur_length;
-		
+
 		sprintf(&cur_string[0], "%s", argv[i]);
-		
+
 		cur_string      = &result[0]+written;
 		strcpy(cur_string, separator);
 		written         = written + 1;
 		cur_string      = &result[0]+written;
 	}
 	cur_string[0] = '\0';
-	
+
 	return result;
 }
 
 char *rsReadCommentFile(char *path) {
-	
+
 	/* Open file */
 	FILE *f = fopen(path, "r");
-    
+
     if (f == NULL) {
         fprintf(stderr, "Error: Comments could not be read(file couldn't be opened).\n");
         return NULL;
@@ -1126,19 +1126,19 @@ char *rsReadCommentFile(char *path) {
 	fseek(f, 0L, SEEK_END);
 	size_t size = ftell(f);
 	rewind(f);
-    
+
     /* Read out file */
     char *content = malloc(sizeof(char)*(size+1));
-		
+
 	if( content == NULL || size != fread(content, 1, size, f) ) {
 		fprintf(stderr, "Error: Comments could not be read into memory!\n");
 		free(content);
         return NULL;
 	}
 	fclose(f);
-	
+
 	content[size] = '\0';
-	
+
 	return &content[0];
 }
 
@@ -1155,42 +1155,42 @@ rsNiftiFile *rsInitNiftiFile(void)
 
 rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode)
 {
-	
+
     rsNiftiFile *f = rsInitNiftiFile();
-        
+
     f->path = (char*)rsMalloc(((size_t)strlen(path)+(size_t)1)*sizeof(char));
     sprintf(f->path, "%s", path);
     f->path = rsTrimString(f->path);
-    
+
     /* open file */
     f->fslio = FslOpen(f->path, "rb");
-    
+
     if (f->fslio == NULL) {
         fprintf(stderr, "\nError: could not read header info for %s.\n", f->path);
         return f;
     }
-	
+
 	f->readable = TRUE;
-    
+
 	/* determine dimensions */
 	FslGetDim(f->fslio, &f->xDim, &f->yDim, &f->zDim, &f->vDim);
-    
+
     /* determine scaling */
     f->inter = 0.0;
     f->slope = 1.0;
-    
+
     if (f->fslio->niftiptr->scl_slope != 0) {
         f->slope = f->fslio->niftiptr->scl_slope;
         f->inter = f->fslio->niftiptr->scl_inter;
     }
-	
+
 	/* determine datatype */
 	f->pixtype = FslGetDataType(f->fslio, &f->dt);
-    
+
 	/* get intent */
 	f->intent_code = NIFTI_INTENT_NONE;
 	FslGetIntent(f->fslio, &f->intent_code, &f->intent_p1, &f->intent_p2, &f->intent_p3);
-	
+
 	/* allocate the necessary memory */
 	if ( (mode == RSNIFTI_OPEN_ALLOC) || (mode == RSNIFTI_OPEN_READ) ) {
     	f->data = rsMalloc(rsGetBufferSize(f->xDim, f->yDim, f->zDim, f->vDim, f->dt));
@@ -1201,23 +1201,23 @@ rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode)
 			return f;
 		}
 	}
-	
+
 	if ( mode == RSNIFTI_OPEN_READ ) {
 	    FslReadVolumes(f->fslio, f->data, f->vDim);
 	}
-	
+
     return f;
 }
 
 rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsigned int mode, const int vDim)
 {
-	
+
 	rsNiftiFile *fClone = rsInitNiftiFile();
 	fClone->path  = (char*)rsMalloc(sizeof(char)*((size_t)strlen(path)+1));
 	sprintf(fClone->path, "%s", path);
-    fClone->path  = rsTrimString(fClone->path);	
+    fClone->path  = rsTrimString(fClone->path);
 	fClone->fslio = FslOpen(fClone->path, "wb");
-    
+
     if (fClone->fslio == NULL) {
         fprintf(stderr, "\nError, could not read header info for %s.\n", fClone->path);
         return fClone;
@@ -1251,23 +1251,25 @@ rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsi
 	        fprintf(stderr, "\nError: could not allocate the memory that was necessary to load %s.\n", fClone->path);
 			return fClone;
 		}
-		
+
 		if ( mode == RSNIFTI_CLONE_MEMORY ) {
 			memcpy(fClone->data, f->data, size);
 		}
-			
+
 	} else if ( mode == RSNIFTI_CLONE_POINTER ) {
 		fClone->data = f->data;
 	}
-	
+
 	fClone->readable = TRUE;
 
 	return fClone;
 }
 
-void rsCloseNiftiFile(rsNiftiFile* f)
+void rsCloseNiftiFile(rsNiftiFile* f, BOOL keepData)
 {
-    free(f->data);
+    if ( ! keepData ) {
+        free(f->data);
+    }
     FslClose(f->fslio);
     f->readable = FALSE;
 }
@@ -1281,6 +1283,6 @@ void rsFreeNiftiFile(rsNiftiFile* f)
 
 void rsCloseNiftiFileAndFree(rsNiftiFile* f)
 {
-	rsCloseNiftiFile(f);
+	rsCloseNiftiFile(f, FALSE);
 	rsFreeNiftiFile(f);
 }
