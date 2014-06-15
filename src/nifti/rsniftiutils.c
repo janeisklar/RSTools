@@ -1155,7 +1155,6 @@ rsNiftiFile *rsInitNiftiFile(void)
 
 rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode)
 {
-
     rsNiftiFile *f = rsInitNiftiFile();
 
     f->path = (char*)rsMalloc(((size_t)strlen(path)+(size_t)1)*sizeof(char));
@@ -1201,7 +1200,7 @@ rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode)
 			return f;
 		}
 	}
-
+	
 	if ( mode == RSNIFTI_OPEN_READ ) {
 	    FslReadVolumes(f->fslio, f->data, f->vDim);
 	}

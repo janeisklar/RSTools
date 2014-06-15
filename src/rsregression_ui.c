@@ -41,6 +41,7 @@ rsRegressionParameters* rsRegressionInitParameters()
     p->nAllRegressors       = 0;
     p->allRegressors        = 0;
     p->threads              = 1;
+	p->progressCallback     = NULL;
 
     return p;
 }

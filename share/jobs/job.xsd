@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.fmri.at/rstools" targetNamespace="http://www.fmri.at/rstools" elementFormDefault="qualified">
+    <xs:element name="job">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="description" type="xs:string"/>
+                <xs:element ref="parameters"/>
+                <xs:element ref="tasks"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="parameters">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="param">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="tasks">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="rstimecourse"      type="rstask"/>
+                <xs:element name="rsregression"      type="rstask"/>
+                <xs:element name="rsbandpass"        type="rstask"/>
+                <xs:element name="rsmotionscrubbing" type="rstask"/>
+                <xs:element name="rscorrelation"     type="rstask"/>
+                <xs:element name="rsroi"             type="rstask"/>
+                <xs:element name="unix"              type="unix"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="rstask">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="description" type="xs:string"/>
+            <xs:element name="args">
+                <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="arg">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:attribute name="name" type="xs:string" use="required"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="options">
+                <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="save_output" type="xs:string"/>
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+    <xs:complexType name="unix">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="description" type="xs:string"/>
+            <xs:element name="cmd" type="xs:string" />
+            <xs:element name="options">
+                <xs:complexType>
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="show_output" type="xs:string"/>
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+</xs:schema>

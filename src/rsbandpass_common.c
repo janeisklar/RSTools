@@ -101,6 +101,8 @@ void rsBandpassInit(rsBandpassParameters *p)
 
 void rsBandpassRun(rsBandpassParameters *p)
 {
+	p->parametersValid = FALSE;
+	
     // Prepare empty timecourse
     double emptybuffer[p->input->vDim];
     
@@ -112,6 +114,9 @@ void rsBandpassRun(rsBandpassParameters *p)
     short x,y,z, processedSlices = 0;
     double *signal;
     Point3D *point;
+	
+	omp_lock_t updateProgressLock;
+	omp_init_lock(&updateProgressLock);
     
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(z,y,x,signal,point) shared(emptybuffer,processedSlices)
     {
@@ -145,7 +150,18 @@ void rsBandpassRun(rsBandpassParameters *p)
             }
 			
 			/* show progress */
-			if (p->verbose) {
+			if (p->progressCallback != NULL) {
+				omp_set_lock(&updateProgressLock);
+				rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+				event->run = processedSlices;
+				processedSlices += 1;
+				event->percentage = (double)processedSlices*100.0 / (double)p->input->zDim;
+				rsReportProgressCallback_t cb = p->progressCallback->cb;
+				void *data = p->progressCallback->data;
+				cb(event, data);
+				rsFree(event);
+				omp_unset_lock(&updateProgressLock);
+			} else if (p->verbose) {
             	#pragma omp atomic
             	processedSlices += 1;
             
@@ -155,13 +171,17 @@ void rsBandpassRun(rsBandpassParameters *p)
 			}
         }
     }
-    
+
+    omp_destroy_lock(&updateProgressLock);
+	
 	if ( p->verbose ) {
     	fprintf(stdout, "Write out result to: %s\n", p->saveFilteredPath);
 	}
     
 	rsWriteNiftiHeader(p->filteredOutput->fslio, p->callString);
-    FslWriteVolumes(p->filteredOutput->fslio, p->filteredOutput->data, p->filteredOutput->vDim);    
+    FslWriteVolumes(p->filteredOutput->fslio, p->filteredOutput->data, p->filteredOutput->vDim);
+
+	p->parametersValid = TRUE;
 }
 
 void rsBandpassDestroy(rsBandpassParameters *p)

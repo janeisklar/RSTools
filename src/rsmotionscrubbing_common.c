@@ -80,6 +80,8 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
 
 void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
 {
+	p->parametersValid = FALSE;
+	
 	// compute value range
 	double min,max;
 	rsComputeValueRange(p->input, p->maskPoints, p->nMaskPoints, &min, &max);
@@ -169,6 +171,8 @@ void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
 
 	// write scrubbed file
     FslWriteVolumes(p->output->fslio, p->output->data, remainingFrames);
+
+	p->parametersValid = TRUE;
 }
 
 void rsMotionScrubbingDestroy(rsMotionScrubbingParameters *p)

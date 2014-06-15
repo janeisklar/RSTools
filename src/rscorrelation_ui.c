@@ -5,6 +5,7 @@ rsCorrelationParameters* rsCorrelationInitParameters()
 	rsCorrelationParameters *p = (rsCorrelationParameters*)rsMalloc(sizeof(rsCorrelationParameters));
     
     p->inputpath             = NULL;
+    p->regressorpath         = NULL;
     p->maskpath              = NULL;
     p->outputpath            = NULL;
     p->savemaskpath          = NULL;
@@ -25,6 +26,7 @@ rsCorrelationParameters* rsCorrelationInitParameters()
 	p->monteCarloRepetitions = 0;
 	p->monteCarloSampleSize  = 0;
 	p->context               = NULL;
+	p->progressCallback      = NULL;
 
     return p;
 }
@@ -42,17 +44,18 @@ rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[])
 	
 	g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
 	
-	GOptionArgFunc cbConversion = rsCorrelationParseConversionMode;
+	GOptionArgFunc cbConversion = (GOptionArgFunc)rsCorrelationParseConversionMode;
 	
 	 /* long, short, flags, arg, arg_data, desc, arg_desc */
 	GOptionEntry entries[] = {
-	  { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,   "the volume for which the correlation of the timecourse for each voxel is computed", "<volume>" },
-	  { "output",          'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,  "the volume in which the correlation values will be saved in", "<volume>" },
-	  { "conversion",      'c', 0, G_OPTION_ARG_CALLBACK, &cbConversion,   "<mode> specifies what is stored in the output file, it can take the follwing values:\n\n\t'none' - the correlation coefficients will be stored without converting them\n\t'z'    - the correlation coefficients will be converted to z-values before being stored(default)\n\t't'    - the correlation coefficients will be converted to values of the T-statistic\n", "<mode>" },
-	  { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,    "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)", "<volume>" },
-	  { "comment",           0, 0, G_OPTION_ARG_STRING,   &p->commentpath, "adds a comment about the origin of thereference timecourse to the nifti header of the correlation map", "<txt-file>" },
-	  { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,     "number of threads used for processing", "<n>" },
-	  { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,     "show debug information", NULL},
+	  { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,     "the volume for which the correlation of the timecourse for each voxel is computed", "<volume>" },
+	  { "output",          'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,    "the volume in which the correlation values will be saved in", "<volume>" },
+	  { "regressor",       'r', 0, G_OPTION_ARG_FILENAME, &p->regressorpath, "txt-file containg a timecourse for which the correlation to the rest of the brain will be computed. if ommitted, the timecourse is expected to be supplied through the standard input instead", "<txt-file>" },
+	  { "conversion",      'c', 0, G_OPTION_ARG_CALLBACK, cbConversion,      "<mode> specifies what is stored in the output file, it can take the follwing values:\n\n\t'none' - the correlation coefficients will be stored without converting them\n\t'z'    - the correlation coefficients will be converted to z-values before being stored(default)\n\t't'    - the correlation coefficients will be converted to values of the T-statistic\n", "<mode>" },
+	  { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,      "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)", "<volume>" },
+	  { "comment",           0, 0, G_OPTION_ARG_STRING,   &p->commentpath,   "adds a comment about the origin of thereference timecourse to the nifti header of the correlation map", "<txt-file>" },
+	  { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,       "number of threads used for processing", "<n>" },
+	  { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,       "show debug information", NULL},
 	  { NULL }
 	};
 	
@@ -86,19 +89,19 @@ rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[])
 
 void rsCorrelationFreeParams(rsCorrelationParameters* p)
 {
-	free(p->inputpath);
-	free(p->maskpath);
-	free(p->savemaskpath);
-	free(p->outputpath);
-	free(p->commentpath);
-	free(p->comment);
-	free(p->input);
-	free(p->output);
-	free(p->correlation);
-	free(p->mask);
-	free(p->regressor);
+	rsFree(p->inputpath);
+	rsFree(p->maskpath);
+	rsFree(p->savemaskpath);
+	rsFree(p->outputpath);
+	rsFree(p->commentpath);
+	rsFree(p->comment);
+	rsFree(p->input);
+	rsFree(p->output);
+	rsFree(p->correlation);
+	rsFree(p->mask);
+	rsFree(p->regressor);
 	g_option_context_free(p->context);
-	free(p);
+	rsFree(p);
 }
 
 void rsCorrelationPrintHelp(rsCorrelationParameters* p)

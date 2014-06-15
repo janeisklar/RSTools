@@ -20,5 +20,9 @@ double rsZCorrelation(const double* X, const double* Y, const size_t length);
 double rsFastZCorrelation(const double* X, const double* Y, const size_t length);
 double rsTCorrelation(const double* X, const double* Y, const size_t length);
 double rsMonteCarloZCorrelation(const double* X, const double* Y, const size_t length, const unsigned int repetitions, const unsigned int samplingSize);
-   
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

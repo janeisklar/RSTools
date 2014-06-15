@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<job xmlns="http://www.fmri.at/rstools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fmri.at/rstools http://www.fmri.at/rstools/job.xsd">
+    <description>Default Preprocessing Pipeline for Resting-state Data</description>
+    <parameters>
+        <param name="prefix">
+            /Users/andre/tmp/rstools_testbed
+        </param>
+        <param name="measurement">
+            ${prefix}/analysis/rs/healthy_subjects/any/${subject}
+        </param>
+        <param name="masks">
+            ${prefix}/roi
+        </param>
+        <param name="brainMask">
+            ${masks}/roi_global.nii
+        </param>
+        <param name="csfMask">
+            ${masks}/roi_csf_eroded.nii
+        </param>
+        <param name="wmMask">
+            ${masks}/roi_wm_eroded.nii
+        </param>
+        <param name="normalized">
+            ${measurement}/wavols.nii
+        </param>
+        <param name="smoothed">
+            ${measurement}/swavols.nii
+        </param>
+        <param name="regressed">
+            ${measurement}/ResI_swavols.nii
+        </param>
+        <param name="filtered">
+            ${measurement}/Filtered_ResI_swavols.nii
+        </param>
+        <param name="scrubbed">
+            ${measurement}/Scrubbed_Filtered_ResI_swavols.nii
+        </param>
+        <param name="realignmentParameters">
+            ${measurement}/rp_avols.txt
+        </param>
+        <param name="flaggedFrames">
+            ${measurement}/ms_flagged.txt
+        </param>
+        <param name="dvars">
+            ${measurement}/ms_dvars.txt
+        </param>
+        <param name="framewiseDisplacement">
+            ${measurement}/ms_fd.txt
+        </param>
+        <param name="meanCsfRegressor">
+            ${measurement}/mean_tc_csf_wavols.txt
+        </param>
+        <param name="csfRegressors">
+            ${measurement}/tc_csf_wavols.txt
+        </param>
+        <param name="meanWmRegressor">
+            ${measurement}/mean_tc_wm_wavols.txt
+        </param>
+        <param name="wmRegressors">
+            ${measurement}/tc_wm_wavols.txt
+        </param>
+        <param name="globalMeanRegressor">
+            ${measurement}/tc_global_wavols.txt
+        </param>
+        <param name="regressors">
+            ${measurement}/tc_wm_csf_global_rp_wavols.txt
+        </param>
+        <param name="pccMask">
+            ${measurement}/roi_pcc.nii
+        </param>
+        <param name="pccSeed">
+            0,-52,30
+        </param>
+        <param name="pccRegressor">
+            ${measurement}/tc_pcc.txt
+        </param>
+        <param name="pccCorrelation">
+            ${measurement}/fc_z_pcc.nii
+        </param>
+        <param name="TR">
+            1.4
+        </param>
+        <param name="freqLow">
+            0.009
+        </param>
+        <param name="freqHigh">
+            0.08
+        </param>
+    </parameters>
+    <tasks>
+        <rstimecourse>
+            <description>Extracting the global mean signal</description>
+            <args>
+                <arg name="mask">${brainMask}</arg>
+                <arg name="input">${normalized}</arg>
+                <arg name="output">${globalMeanRegressor}</arg>
+            </args>
+        </rstimecourse>
+        <rstimecourse>
+            <description>Extracting the mean CSF signal</description>
+            <args>
+                <arg name="mask">${csfMask}</arg>
+                <arg name="input">${normalized}</arg>
+                <arg name="output">${meanCsfRegressor}</arg>
+            </args>
+        </rstimecourse>
+        <rstimecourse>
+            <description>Extracting the mean WM signal</description>
+            <args>
+                <arg name="mask">${wmMask}</arg>
+                <arg name="input">${normalized}</arg>
+                <arg name="output">${meanWmRegressor}</arg>
+            </args>
+        </rstimecourse>
+        <rstimecourse>
+            <description>Extracting the first 5 PCA-components of the CSF signal</description>
+            <args>
+                <arg name="mask">${csfMask}</arg>
+                <arg name="input">${normalized}</arg>
+                <arg name="output">${csfRegressors}</arg>
+                <arg name="algorithm">tpca</arg>
+                <arg name="retainComponents">5</arg>
+                <arg name="useStandardScores"/>
+            </args>
+        </rstimecourse>
+        <rstimecourse>
+            <description>Extracting the first 5 PCA-components of the WM signal</description>
+            <args>
+                <arg name="mask">${wmMask}</arg>
+                <arg name="input">${normalized}</arg>
+                <arg name="output">${wmRegressors}</arg>
+                <arg name="algorithm">tpca</arg>
+                <arg name="retainComponents">5</arg>
+                <arg name="useStandardScores"/>
+            </args>
+        </rstimecourse>        
+        <unix>
+            <description>Merging all regressors into one file</description>
+            <cmd>paste -d '\t' ${globalMeanRegressor} ${meanCsfRegressor} ${csfRegressors} ${meanWmRegressor} ${wmRegressors} ${realignmentParameters} | sed -e 's/	/ /g' | sed -e 's/  / /g' | sed -e 's/  / /g' > ${regressors}</cmd>
+        </unix>
+        <rsregression>
+            <description>Regressing out WM, CSF and global mean signal + realigment parameters</description>
+            <args>
+                <arg name="input">${smoothed}</arg>
+                <arg name="residuals">${regressed}</arg>
+                <arg name="regressors">${regressors}</arg>
+            </args>
+        </rsregression>
+        <rsbandpass>
+            <description>Applying the bandpass filter</description>
+            <args>
+                <arg name="f1">${freqLow}</arg>
+                <arg name="f2">${freqHigh}</arg>
+                <arg name="input">${regressed}</arg>
+                <arg name="filtered">${filtered}</arg>
+                <arg name="mask">${brainMask}</arg>
+                <arg name="TR">${TR}</arg>
+            </args>
+        </rsbandpass>
+        <rsmotionscrubbing>
+            <description>Scrubbing volumes with severe motion artifacts</description>
+            <args>
+                <arg name="input">${filtered}</arg>
+                <arg name="output">${scrubbed}</arg>
+                <arg name="rp">${realignmentParameters}</arg>
+                <arg name="mask">${brainMask}</arg>
+                <arg name="dvars">${dvars}</arg>
+                <arg name="fd">${framewiseDisplacement}</arg>
+                <arg name="dvarsthreshold">0.05</arg>
+                <arg name="fdthreshold">1.0</arg>
+            </args>
+        </rsmotionscrubbing>
+        <rsroi>
+            <description>Creating seed voxel mask(PCC)</description>
+            <args>
+                <arg name="input">${scrubbed}</arg>
+                <arg name="mask">${pccMask}</arg>
+                <arg name="center">${pccSeed}</arg>
+                <arg name="sphere">3</arg>
+            </args>
+        </rsroi>
+        <rstimecourse>
+            <description>Extracting the mean signal in the PCC seed region</description>
+            <args>
+                <arg name="mask">${pccMask}</arg>
+                <arg name="input">${scrubbed}</arg>
+                <arg name="output">${pccRegressor}</arg>
+            </args>
+        </rstimecourse>
+        <rscorrelation>
+            <description>Seed voxel correlation analysis with the PCC seed mask</description>
+            <args>
+                <arg name="input">${scrubbed}</arg>
+                <arg name="output">${pccCorrelation}</arg>
+                <arg name="regressor">${pccRegressor}</arg>
+                <arg name="mask">${brainMask}</arg>
+                <arg name="conversion">z</arg>
+            </args>
+        </rscorrelation>
+    </tasks>
+</job>

@@ -8,6 +8,10 @@
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     char *inputpath;
 	char *maskpath;
@@ -39,5 +43,9 @@ void rsRoiFreeParams(rsRoiParameters *p);
 void rsRoiPrintHelp(rsRoiParameters *p);
 
 gboolean rsRoiParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

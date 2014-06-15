@@ -45,4 +45,8 @@ void rs_vector_fprintf(FILE *stream, const double *x, const long n, const char* 
 BOOL rsSaveMatrix(const char *filename, const double** A, const long m, const long n);
 BOOL rsLoadMatrix(const char *filename, double** A, const long m, const long n);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif

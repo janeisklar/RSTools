@@ -16,9 +16,14 @@
 #define RSTOOLS_TIMECOURSE_ALGORITHM_CSP    4
 #define RSTOOLS_TIMECOURSE_ALGORITHM_STDDEV 5
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	
 	char *inputpath;
+	char *outputpath;
 	char *maskpath;
 	char *mask2path;
     char *savemaskpath;
@@ -33,6 +38,7 @@ typedef struct {
 	int nComponents;
     
 	rsNiftiFile *input;
+	FILE *output;
 	rsMask *mask;
 	rsMask *mask2;
 	Point3D *point;
@@ -52,4 +58,9 @@ void rsTimecoursePrintHelp(rsTimecourseParameters* p);
 
 gboolean rsTimecourseParseAlgorithm(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

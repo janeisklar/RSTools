@@ -23,6 +23,9 @@ void rsTimecourseInit(rsTimecourseParameters* p)
 
     if ( p->verbose ) {
         fprintf(stdout, "Input file: %s\n", p->inputpath);
+		if ( p->outputpath != NULL ) {
+        	fprintf(stdout, "Output file: %s\n", p->outputpath);
+		}
         fprintf(stdout, "Mask file: %s\n", p->maskpath);
 		if ( p->mask2path != NULL ) {
         	fprintf(stdout, "Mask2 file: %s\n", p->mask2path);
@@ -58,12 +61,17 @@ void rsTimecourseInit(rsTimecourseParameters* p)
 
     // open input file
 	p->input = rsOpenNiftiFile(p->inputpath, fileNeedsToBeRead ? RSNIFTI_OPEN_READ : RSNIFTI_OPEN_NONE);
+	
     if ( ! p->input->readable ) {
 		return;
     }
+	
+	if ( p->outputpath != NULL ) {
+		p->output = fopen(p->outputpath, "w");
+	}
 
 	rsSetThreadsNum(p->threads);
-
+	
     // load mask
     if ( p->maskpath != NULL ) {
         p->mask = rsMaskInit(p->maskpath);
@@ -88,6 +96,12 @@ void rsTimecourseInit(rsTimecourseParameters* p)
 
 void rsTimecourseRun(rsTimecourseParameters *p)
 {
+	p->parametersValid = FALSE;
+	
+	if ( p->output == NULL ) {
+		p->output = stdout;
+	}
+	
 	// extract single voxel timeseries
 	if ( p->point != NULL ) {
 		rsTimecourseRunSingleVoxelExtraction(p);
@@ -125,6 +139,10 @@ void rsTimecourseRun(rsTimecourseParameters *p)
 		case RSTOOLS_TIMECOURSE_ALGORITHM_CSP:
 			rsTimecourseRunCSP(p);
 	}
+	
+	if ( p->outputpath != NULL ) {
+		fclose(p->output);
+	}
 }
 
 void rsTimecourseRunSingleVoxelExtraction(rsTimecourseParameters *p)
@@ -155,12 +173,10 @@ void rsTimecourseRunSingleVoxelExtraction(rsTimecourseParameters *p)
 
 	// print
 	for (int t=0; t<p->input->vDim; t++) {
-		if ( p->verbose ) {
-            fprintf(stdout, "%d: %.10f\n", t, series[t]);
-        } else {
-            fprintf(stdout, "%.10f\n", series[t]);
-        }
+		fprintf(p->output, "%.10f\n", series[t]);
 	}
+	
+	p->parametersValid = TRUE;
 }
 
 void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
@@ -212,8 +228,10 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 
 	// Write out result
 	for ( t = 0; t<p->input->vDim; t=t+1 ) {
-		fprintf(stdout, "%.10f\n", timecourse[t]);
+		fprintf(p->output, "%.10f\n", timecourse[t]);
 	}
+	
+	p->parametersValid = TRUE;
 }
 
 void rsTimecourseRunPCA(rsTimecourseParameters *p)
@@ -289,15 +307,17 @@ void rsTimecourseRunPCA(rsTimecourseParameters *p)
 
 	for ( int t = 0; t < p->input->vDim; t=t+1 ) {
 		for ( int c = 0; c<components->size1; c=c+1) {
-           	fprintf(stdout, "% 5.10f", gsl_matrix_get(components, c, t));
+           	fprintf(p->output, "% 5.10f", gsl_matrix_get(components, c, t));
 			if ( c < (components->size1-1) ) {
-				fprintf(stdout, "\t");
+				fprintf(p->output, "\t");
 			}
 		}
-		fprintf(stdout, "\n");
+		fprintf(p->output, "\n");
 	}
 
 	rsPCAResultFree(pcaResult);
+	
+	p->parametersValid = TRUE;
 }
 
 void rsTimecourseRunCSP(rsTimecourseParameters *p)
@@ -392,15 +412,17 @@ void rsTimecourseRunCSP(rsTimecourseParameters *p)
 	// Print out eigenvectors
     for ( int t = 0; t < p->input->vDim; t=t+1 ) {
     	for ( int c = 0; c < cspResult->eigenvectors->size1; c=c+1) {
-        	fprintf(stdout, "% 5.10f", gsl_matrix_get(cspResult->eigenvectors, c, t));
+        	fprintf(p->output, "% 5.10f", gsl_matrix_get(cspResult->eigenvectors, c, t));
     		if ( c < (cspResult->eigenvectors->size1-1) ) {
-    			fprintf(stdout, "\t");
+    			fprintf(p->output, "\t");
     		}
     	}
-    	fprintf(stdout, "\n");
+    	fprintf(p->output, "\n");
     }
 
     rsCSPResultFree(cspResult);
+
+	p->parametersValid = TRUE;
 }
 
 void rsTimecourseDestroy(rsTimecourseParameters* p)

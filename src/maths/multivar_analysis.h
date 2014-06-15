@@ -44,4 +44,8 @@ void rsPCAResultFree(rsPCAResult *result);
 rsCSPResult *rsCSP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BOOL verbose);
 void rsCSPResultFree(rsCSPResult *result);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif

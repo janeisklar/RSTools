@@ -2,7 +2,10 @@
 !*.c
 !*.cpp
 !*.h
+!*.hpp
 !Makefile.am
 !.gitignore
 !maths/
 !nifti/
+!incubator
+!batch

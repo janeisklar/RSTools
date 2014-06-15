@@ -3,8 +3,16 @@
 
 #include "rsregression_ui.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void rsRegressionInit(rsRegressionParameters* p);
 void rsRegressionRun(rsRegressionParameters *p);
 void rsRegressionDestroy(rsRegressionParameters* p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

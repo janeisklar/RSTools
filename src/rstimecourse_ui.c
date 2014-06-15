@@ -5,6 +5,7 @@ rsTimecourseParameters* rsTimecourseInitParameters()
 	rsTimecourseParameters *p = (rsTimecourseParameters*)rsMalloc(sizeof(rsTimecourseParameters));
     
     p->inputpath            = NULL;
+    p->outputpath           = NULL;
     p->maskpath             = NULL;
     p->mask2path            = NULL;
     p->savemaskpath         = NULL;
@@ -15,6 +16,7 @@ rsTimecourseParameters* rsTimecourseInitParameters()
 	p->minVariance          = 1.0;
 	p->nComponents          = -1;
 	p->input                = NULL;
+	p->output               = NULL;
 	p->mask                 = NULL;
 	p->mask2                = NULL;
 	p->point                = NULL;
@@ -46,6 +48,7 @@ rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[])
 	 /* long, short, flags, arg, arg_data, desc, arg_desc */
 	GOptionEntry entries[] = {
 	  { "input",             'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,         "the volume to be regressed", "<volume>" },
+	  { "output",            'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,        "file to which the resulting timecourse will be writting to. if omitted the result will be printed directly to stdout", "<*.txt>" },
 	  { "algorithm",         'a', 0, G_OPTION_ARG_CALLBACK, cbAlgorithm,           "<algo> the algorithm used to aggregate the data within the specified mask(s), e.g. mean, stddev, spca, tpca or csp\n\n\t'mean'\t\t- for every volume in the 4D input file the\n\t\t\t  intensity values in the mask region are \n\t\t\t  meaned, resulting in a meaned timecourse\n\t\t\t  for that region\n\t'stddev'\t- like 'mean', but instead of meaning the\n\t\t\t  mask region, the standard deviation is\n\t\t\t  computed\n\t'tpca'\t\t- performs a PCA on the temporal dimension\n\t\t\t  of the 4D input in the mask region\n\t'spca'\t\t- performs a PCA on the spatial dimension of\n\t\t\t  the 4D input limited to voxels in the mask\n\t\t\t  region\n\t'csp'\t\t- performs the common spatial pattern\n\t\t\t  procedure on the 4D input in the mask\n\t\t\t  region for both masks. The first half of\n\t\t\t  the returned components will maximize the\n\t\t\t  variance for mask1 while the variance for\n\t\t\t  mask2 is minimal. The second half will be\n\t\t\t  exactly the opposite (var(mask1) minimal,\n\t\t\t  var(mask2) maximal)\n", "<algo>" },
 	  { "mask",              'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,          "a mask specifying the region that the algorithm is perforned on", "<volume>" },
 	  { "mask2",             'n', 0, G_OPTION_ARG_FILENAME, &p->mask2path,         "(use only with csp) a second mask specifying the region for the second condition", "<volume>" },
@@ -87,6 +90,7 @@ rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[])
 void rsTimecourseFreeParams(rsTimecourseParameters* p)
 {
 	rsFree(p->inputpath);
+	rsFree(p->outputpath);
 	rsFree(p->maskpath);
 	rsFree(p->mask2path);
 	rsFree(p->savemaskpath);

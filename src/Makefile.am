@@ -1,8 +1,11 @@
 if INCUBATOR
-SUBDIRS = nifti maths . incubator
+SUBDIRS = nifti maths . incubator batch
 else
-SUBDIRS = nifti maths .
+SUBDIRS = nifti maths . batch
 endif
+
+AM_CFLAGS = -DDATA_PATH=\"$(datadir)\"
+AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\"
 
 bin_PROGRAMS = rsbandpass rscorrelation rsinfo rsmask rsmotionscrubbing rsregression rsroi rstimecourse rsttest
 
@@ -22,6 +25,10 @@ rsregression_SOURCES = rsregression_ui.c rsregression_common.c rsregression.c
 rsroi_SOURCES = rsroi_ui.c rsroi_common.c rsroi.c
 rstimecourse_SOURCES = rstimecourse_ui.c rstimecourse_common.c rstimecourse.c
 rsttest_SOURCES = rsttest.c
+
+lib_LIBRARIES = librstools.a
+librstools_a_SOURCES = rsbandpass_ui.c rsbandpass_common.c rscorrelation_ui.c rscorrelation_common.c rsmotionscrubbing_ui.c rsmotionscrubbing_common.c rsregression_ui.c rsregression_common.c rsroi_ui.c rsroi_common.c rstimecourse_ui.c rstimecourse_common.c
+librstools_a_LIBADD = @LIBOBJS@
 
 pkginclude_HEADERS = rscommon.h maths/rsmathutils.h nifti/rsniftiutils.h
 

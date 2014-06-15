@@ -14,4 +14,8 @@ BOOL rsVoxelInSphere(FloatPoint3D *point, FloatPoint3D *center, double radius);
 BOOL rsVoxelInCube(FloatPoint3D *point, FloatPoint3D *center, FloatPoint3D *dim);
 double rsDistance(FloatPoint3D *A, FloatPoint3D *B);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif

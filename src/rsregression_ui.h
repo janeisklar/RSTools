@@ -10,6 +10,10 @@
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     char *inputpath;
 	char *maskpath;
@@ -58,6 +62,7 @@ typedef struct {
     double **allRegressors;
     
     int threads;
+	rsReportProgressCallback *progressCallback;
 
 } rsRegressionParameters;
 
@@ -65,5 +70,9 @@ rsRegressionParameters* rsRegressionParseParams(int argc, char * argv[]);
 rsRegressionParameters* rsRegressionInitParameters();
 void rsRegressionFreeParams(rsRegressionParameters* p);
 void rsRegressionPrintHelp(rsRegressionParameters* p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

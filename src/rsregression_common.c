@@ -193,6 +193,8 @@ void rsRegressionRun(rsRegressionParameters *p)
     double *betas;
     double *fitted;
     Point3D *point;
+	omp_lock_t updateProgressLock;
+	omp_init_lock(&updateProgressLock);
     
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer)
     {
@@ -267,7 +269,18 @@ void rsRegressionRun(rsRegressionParameters *p)
             }
             
 			/* show progress */
-			if (p->verbose) {
+			if ( p->progressCallback != NULL ) {
+				omp_set_lock(&updateProgressLock);
+				rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+				event->run = processedSlices;
+				processedSlices += 1;
+				event->percentage = ((double)processedSlices*100.0) / (double)p->input->zDim;
+				rsReportProgressCallback_t cb = p->progressCallback->cb;
+				void *data = p->progressCallback->data;
+				cb(event, data);
+				rsFree(event);
+				omp_unset_lock(&updateProgressLock);
+			} else if ( p->verbose ) {
             	#pragma omp atomic
             	processedSlices += 1;
             
@@ -277,6 +290,8 @@ void rsRegressionRun(rsRegressionParameters *p)
 			}
         }
     }
+
+	omp_destroy_lock (&updateProgressLock);
     
     /* Write out buffers to the corresponding files */
     if ( p->residuals != NULL ) {

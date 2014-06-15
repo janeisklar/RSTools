@@ -24,6 +24,7 @@ rsBandpassParameters *rsBandpassInitParameters() {
     p->rolloff              = 10.0;
     p->keepMean             = FALSE;
 	p->context              = NULL;
+	p->progressCallback     = NULL;
     
     return p;
 }

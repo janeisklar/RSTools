@@ -3,6 +3,10 @@
 
 #include "rsmotionscrubbing_ui.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void rsMotionScrubbingInit(rsMotionScrubbingParameters *p);
 void rsMotionScrubbingRun(rsMotionScrubbingParameters *p);
 void rsMotionScrubbingDestroy(rsMotionScrubbingParameters *p);
@@ -24,5 +28,9 @@ inline int rsMax(const int a, const int b) {
 inline int rsMin(const int a, const int b) {
   return a < b ? a : b;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -8,6 +8,10 @@
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     char *inputpath;
 	char *maskpath;
@@ -39,11 +43,18 @@ typedef struct {
     double rolloff;
     int rolloff_method;
     long paddedT;
+	
+	rsReportProgressCallback *progressCallback;
+	
 } rsBandpassParameters;
 
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]);
 rsBandpassParameters *rsBandpassInitParameters();
 void rsBandpassFreeParams(rsBandpassParameters *p);
 void rsBandpassPrintHelp(rsBandpassParameters *p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

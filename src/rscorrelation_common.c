@@ -34,8 +34,18 @@ void rsCorrelationInit(rsCorrelationParameters* p)
 	free(p->comment);
 	p->comment = comment;
 	
-    /* read seed timecourse from stdin */
-    p->regressor = rsReadRegressorFromStandardInput(&p->nRegressorValues);
+    /* read seed timecourse either from stdin or a supplied file */
+	FILE *regressorStream = stdin;
+	
+	if ( p->regressorpath ) {
+		regressorStream = fopen(p->regressorpath, "r");
+	}
+	
+    p->regressor = rsReadRegressorFromStream(regressorStream, &p->nRegressorValues);
+
+	if ( p->regressorpath ) {
+		fclose(regressorStream);
+	}
     
     /* open input file */
 	p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
@@ -47,6 +57,7 @@ void rsCorrelationInit(rsCorrelationParameters* p)
     
     if ( p->verbose ) {
         fprintf(stdout, "Input file: %s\n", p->inputpath);
+		fprintf(stdout, "Regressor file: %s\n", (p->regressorpath==NULL ? "stdin" : p->regressorpath));
         fprintf(stdout, "Mask file: %s\n", p->maskpath);
         fprintf(stdout, "Seed length: %u\n", p->nRegressorValues);
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
@@ -98,13 +109,17 @@ void rsCorrelationInit(rsCorrelationParameters* p)
 }
 
 void rsCorrelationRun(rsCorrelationParameters *p)
-{
+{	
+	p->parametersValid = FALSE;
 	
 	short x,y,z,processedSlices = 0;
     double *timecourse;
     
+	omp_lock_t updateProgressLock;
+	omp_init_lock(&updateProgressLock);
+
     /* Iterate over all voxels for which the correlation is to be computed */
-    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse) shared(p,processedSlices)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse) shared(processedSlices)
     {
         #pragma omp for schedule(guided)
         for (short z=0; z<p->input->zDim; z=z+1) {
@@ -145,7 +160,18 @@ void rsCorrelationRun(rsCorrelationParameters *p)
             }
 
 			/* show progress */
-			if (p->verbose) {
+			if (p->progressCallback != NULL) {
+				omp_set_lock(&updateProgressLock);
+				rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+				event->run = processedSlices;
+				processedSlices += 1;
+				event->percentage = (double)processedSlices*100.0 / (double)p->input->zDim;
+				rsReportProgressCallback_t cb = p->progressCallback->cb;
+				void *data = p->progressCallback->data;
+				cb(event, data);
+				rsFree(event);
+				omp_unset_lock(&updateProgressLock);
+			} else if (p->verbose) {
             	#pragma omp atomic
             	processedSlices += 1;
             
@@ -156,8 +182,12 @@ void rsCorrelationRun(rsCorrelationParameters *p)
         }
     }
     
+	omp_destroy_lock(&updateProgressLock);
+	
     /* Write correlation file */
     rsCorrelationWriteCorrelationFile(p);
+
+	p->parametersValid = TRUE;
 }
 
 void rsCorrelationWriteCorrelationFile(rsCorrelationParameters* p)
@@ -208,7 +238,7 @@ void rsCorrelationDestroy(rsCorrelationParameters* p)
 	rsCorrelationFreeParams(p);
 }
 
-double *rsReadRegressorFromStandardInput(unsigned int *nValues)
+double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues)
 {
     char *line = NULL;
     size_t len = 0;
@@ -218,7 +248,7 @@ double *rsReadRegressorFromStandardInput(unsigned int *nValues)
     *nValues = 0;
     double *regressor = (double*)rsMalloc(nBuffer * sizeof(double));
     
-    while ((read = getline(&line, &len, stdin)) != -1) {
+    while ((read = getline(&line, &len, stream)) != -1) {
         value = atof(line);
         regressor[*nValues] = value;
         *nValues = *nValues + 1;
@@ -230,7 +260,7 @@ double *rsReadRegressorFromStandardInput(unsigned int *nValues)
             if (tmpRegressor) {
                 regressor = tmpRegressor;
             } else {
-                fprintf(stderr, "Could not allocate enough memory to save the regressor from stdin.\n");
+                fprintf(stderr, "Could not allocate enough memory to save the regressor.\n");
                 exit(EXIT_FAILURE);
             }
         }

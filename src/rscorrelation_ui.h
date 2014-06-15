@@ -14,8 +14,13 @@
 #define RSTOOLS_CORRELATION_CONVERSION_Z    2
 #define RSTOOLS_CORRELATION_CONVERSION_T    3
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     char *inputpath;
+	char *regressorpath;
 	char *maskpath;
 	char *outputpath;
 	char *commentpath;
@@ -48,6 +53,9 @@ typedef struct {
     
     int threads;
     size_t wordsize;
+
+	rsReportProgressCallback *progressCallback;
+	
 } rsCorrelationParameters;
 
 rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[]);
@@ -57,5 +65,9 @@ void rsCorrelationPrintHelp(rsCorrelationParameters* p);
 
 gboolean rsCorrelationParseConversionMode(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 gboolean rsCorrelationParseMonteCarloParams(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

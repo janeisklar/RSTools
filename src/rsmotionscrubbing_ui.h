@@ -8,6 +8,10 @@
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     char *inputpath;
 	char *maskpath;
@@ -44,5 +48,9 @@ rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[
 rsMotionScrubbingParameters *rsMotionScrubbingInitParameters();
 void rsMotionScrubbingFreeParams(rsMotionScrubbingParameters *p);
 void rsMotionScrubbingPrintHelp(rsMotionScrubbingParameters *p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
