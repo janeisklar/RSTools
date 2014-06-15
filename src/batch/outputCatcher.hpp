@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string>
+#include <stdlib.h>
+#include <cstring>
 
 namespace rstools {
 namespace batch {

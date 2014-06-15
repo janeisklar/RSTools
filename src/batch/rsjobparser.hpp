@@ -10,6 +10,7 @@
 #include <vector>
 #include "rsjob.hpp"
 #include "src/rscommon.h"
+#include "parseErrorHandler.hpp"
 
 using namespace std;
 using namespace xercesc;

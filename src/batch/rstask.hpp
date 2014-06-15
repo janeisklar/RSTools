@@ -1,6 +1,9 @@
 #ifndef rstools_rstask_hpp
 #define rstools_rstask_hpp
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <cstring>
 #include <locale>
 #include <vector>
 
