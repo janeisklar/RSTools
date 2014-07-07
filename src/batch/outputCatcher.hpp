@@ -57,6 +57,8 @@ public:
 		if ( oldStdout != NULL ) {
 			fclose(oldStdout);
 		}
+		
+		m_init = false;
 	}
 
     OutputCatcher()

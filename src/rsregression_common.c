@@ -199,9 +199,9 @@ void rsRegressionRun(rsRegressionParameters *p)
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer)
     {
         #pragma omp for schedule(guided)
-        for (z=0; z<p->input->zDim; z=z+1) {
-            for (y=0; y<p->input->yDim; y=y+1) {
-                for (x=0; x<p->input->xDim; x=x+1) {
+        for (z=0; z<p->input->zDim; z++) {
+            for (y=0; y<p->input->yDim; y++) {
+                for (x=0; x<p->input->xDim; x++) {
                     
                     point = rsMakePoint3D(x, y, z);
                     

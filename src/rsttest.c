@@ -174,7 +174,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(threads) private(x,y,t,point) shared(outputFile,nFiles,files)
     {
         #pragma omp for schedule(guided)
-        for (z=0; z<refFile->zDim; z=z+1) {
+        for (z=0; z<refFile->zDim; z++) {
 			
             for (y=0; y<refFile->yDim; y=y+1) {
                 for (x=0; x<refFile->xDim; x=x+1) {

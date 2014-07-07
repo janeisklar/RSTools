@@ -302,8 +302,8 @@ int main(int argc, char * argv[]) {
         #pragma omp parallel num_threads(threads) private(p1,p2,signal1,signal2) shared(buffer,fslio,similarity)
         {
             #pragma omp for schedule(guided, 1)
-            for (p1 = 0L; p1<nPoints; p1=p1+1L) {
-                for (p2 = p1; p2<nPoints; p2=p2+1L) {
+            for (p1 = 0L; p1<nPoints; p1++) {
+                for (p2 = p1; p2<nPoints; p2++) {
                     
                     const Point3D *point1 = &maskPoints[p1];
                     const Point3D *point2 = &maskPoints[p2];

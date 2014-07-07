@@ -199,7 +199,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(p) shared(buffer,fslio)
     {
         #pragma omp for schedule(guided, 1)
-        for (p = 0L; p<nPoints; p=p+1L) {
+        for (p = 0L; p<nPoints; p++) {
 
             const Point3D *point = &maskPoints[p];
             double *pointValues = (double*)malloc(sizeof(double)*vDim);

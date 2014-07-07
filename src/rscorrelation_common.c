@@ -122,9 +122,9 @@ void rsCorrelationRun(rsCorrelationParameters *p)
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse) shared(processedSlices)
     {
         #pragma omp for schedule(guided)
-        for (short z=0; z<p->input->zDim; z=z+1) {
-            for (short y=0; y<p->input->yDim; y=y+1) {
-                for (short x=0; x<p->input->xDim; x=x+1) {
+        for (short z=0; z<p->input->zDim; z++) {
+            for (short y=0; y<p->input->yDim; y++) {
+                for (short x=0; x<p->input->xDim; x++) {
                     
                     /* If it's not in the mask skip it to improve the performance */
                     if (p->mask != NULL && p->mask[z][y][x] < 0.1) {

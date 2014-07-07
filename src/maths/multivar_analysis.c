@@ -204,7 +204,7 @@ rsCSPResult *rsCSP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BO
 	{
 		// compute means
         #pragma omp for schedule(guided)
-       	for(i = 0; i < rows; i=i+1) {
+       	for(i = 0; i < rows; i++) {
 			double mean = 0.0;
 			for(j=0; j<colsA; j=j+1) {
 				mean = mean + gsl_matrix_get(A,i,j) / colsA;
@@ -293,7 +293,7 @@ rsCSPResult *rsCSP(const gsl_matrix* A, const gsl_matrix* B, int nComponents, BO
 
 		// Extract the first and last nComponents eigenvectors
         #pragma omp for schedule(guided)
-		for ( i = 0; i<nComponents; i=i+1 ) {
+		for ( i = 0; i<nComponents; i++ ) {
 			const unsigned i2 = L-i-1;
 			gsl_vector_view viewCol  = gsl_matrix_column(eigenvectors, i);
 			gsl_vector_view viewCol2 = gsl_matrix_column(eigenvectors, rows-i-1);

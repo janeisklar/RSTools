@@ -155,7 +155,7 @@ void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(t) shared(flaggedFrames)
     {
         #pragma omp for schedule(guided, 1)
-		for ( t=0; t<remainingFrames; t=t+1 ) {
+		for ( t=0; t<remainingFrames; t++ ) {
 					
 			// extract a single volume for timepoint t from the buffer
 			double ***data = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
@@ -262,7 +262,7 @@ void rsComputeDVARs(double *dvars, const double min, const double max, const rsN
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(t) shared(dvars)
     {
         #pragma omp for schedule(guided, 1)
-		for (t=1; t<file->vDim; t=t+1) {
+		for (t=1; t<file->vDim; t++) {
 
 			/* Extract a single volume for timepoint t from the buffer */
 			double ***dataNow    = d3matrix(file->zDim-1,  file->yDim-1, file->xDim-1);

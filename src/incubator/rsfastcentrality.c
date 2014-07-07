@@ -279,7 +279,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
-        for (n=0; n<nPoints; n=n+1) {
+        for (n=0; n<nPoints; n++) {
             const Point3D *point = &maskPoints[n];
             
             // load signal
@@ -364,7 +364,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
-        for (n=0; n<nPoints; n=n+1) {
+        for (n=0; n<nPoints; n++) {
             vScaled[n] = scale*vScaled[n] - 1; // uniform [1,N] to ]0,2[ and then to ]-1,1[
         }
     }
@@ -372,7 +372,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
-        for (n=0; n<nPoints; n=n+1) {
+        for (n=0; n<nPoints; n++) {
             vScaled[n] = rsErfInv(vScaled[n]) * sigma * sqrt(2.0) + mu; // uniform ]-1,1[ to N(mu,sigma)
         }
     }
@@ -389,7 +389,7 @@ int main(int argc, char * argv[]) {
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(n)
     {
         #pragma omp for schedule(guided)
-        for (n = 0L; n<nPoints; n=n+1L) {
+        for (n = 0L; n<nPoints; n++) {
             const Point3D *point      = &maskPoints[n];
             const double  centrality = vScaled[n];
             rsWriteTimecourseToBuffer(dt, &centrality, buffer, slope, inter, point, xDim, yDim, zDim, 1);

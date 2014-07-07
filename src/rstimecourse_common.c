@@ -148,15 +148,15 @@ void rsTimecourseRun(rsTimecourseParameters *p)
 void rsTimecourseRunSingleVoxelExtraction(rsTimecourseParameters *p)
 {
     // check inputs
-    if ( (p->point->x<0) || (p->point->x>=p->input->xDim) ) {
+    if ( p->point->x>=p->input->xDim ) {
         fprintf(stderr, "\nError: x index (%d) out of range [0..%d]\n", p->point->x, p->input->xDim-1);
 		return;
     }
-    if ( (p->point->y<0) || (p->point->y>=p->input->yDim) ) {
+    if ( p->point->y>=p->input->yDim ) {
         fprintf(stderr, "\nError: y index (%d) out of range [0..%d]\n", p->point->y, p->input->yDim-1);
 		return;
     }
-    if ( (p->point->z<0) || (p->point->z>=p->input->zDim) ) {
+    if ( p->point->z>=p->input->zDim ) {
         fprintf(stderr, "\nError: z index (%d) out of range [0..%d]\n", p->point->z, p->input->zDim-1);
 		return;
     }
@@ -196,7 +196,7 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 	#pragma omp parallel num_threads(rsGetThreadsNum()) private(t) shared(timecourse)
 	{
 		#pragma omp for schedule(guided)
-		for ( t = 0; t<p->input->vDim; t=t+1 ) {
+		for ( t = 0; t<p->input->vDim; t++ ) {
 
 			double sum = 0;
 
@@ -339,7 +339,7 @@ void rsTimecourseRunCSP(rsTimecourseParameters *p)
     {
 		// first mask
     	#pragma omp for schedule(guided)
-    	for ( n=0; n < p->mask->nPoints; n=n+1) {
+    	for ( n=0; n < p->mask->nPoints; n++) {
 
     		double *timecourse = rsMalloc(sizeof(double) * p->input->vDim);
 			rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, &p->mask->maskPoints[n]);
@@ -361,7 +361,7 @@ void rsTimecourseRunCSP(rsTimecourseParameters *p)
 
 		// second mask
     	#pragma omp for schedule(guided)
-    	for ( n=0; n < p->mask2->nPoints; n=n+1) {
+    	for ( n=0; n < p->mask2->nPoints; n++) {
 
     		double *timecourse = rsMalloc(sizeof(double) * p->input->vDim);
 			rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, &p->mask2->maskPoints[n]);

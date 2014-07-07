@@ -38,15 +38,15 @@ FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z)
 
 BOOL rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh)
 {
-	if ( p->x < 0 || p->x >= xh ) {
+	if ( p->x >= xh ) {
 		return FALSE;
 	}
 
-	if ( p->y < 0 || p->y >= yh ) {
+	if ( p->y >= yh ) {
 		return FALSE;
 	}
 
-	if ( p->z < 0 || p->z >= zh ) {
+	if ( p->z >= zh ) {
 		return FALSE;
 	}
 
@@ -286,7 +286,7 @@ long rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input)
 	{
 		// identify irrelevant voxels
 		#pragma omp for schedule(guided)
-		for (n=0; n<mask->nPoints; n=n+1) {
+		for (n=0; n<mask->nPoints; n++) {
 	        const Point3D *point = &mask->maskPoints[n];
 			isNanPoint[n] = FALSE;
 
@@ -352,15 +352,15 @@ size_t rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVo
         FslGetDim(fslio,&xdim,&ydim,&zdim,&v);
 
         if ((xVox<0) || (xVox >=xdim)){
-            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid x-range(%hd..%hd)", xVox, 0, xdim-1);
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid x-range(%hd..%hd)", xVox, (short)0, (short)(xdim-1));
             return 0;
         }
         if ((yVox<0) || (yVox >=ydim)) {
-            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid y-range(%hd..%hd)", yVox, 0, ydim-1);
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid y-range(%hd..%hd)", yVox, (short)0, (short)(ydim-1));
             return 0;
         }
         if ((zVox<0) || (zVox >=zdim)) {
-            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid z-range(%hd..%hd)", zVox, 0, zdim-1);
+            fprintf(stderr, "rsWriteTimeSeries: voxel coordinate(%hd) outside valid z-range(%hd..%hd)", zVox, (short)0, (short)(zdim-1));
             return 0;
         }
 
@@ -790,10 +790,10 @@ BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope,
     #pragma omp parallel num_threads(rsGetThreadsNum()) shared(buffer,THIS_UINT8_BUFFER,THIS_INT8_BUFFER,THIS_UINT16_BUFFER,THIS_INT16_BUFFER,THIS_UINT32_BUFFER,THIS_INT32_BUFFER,THIS_UINT64_BUFFER,THIS_INT64_BUFFER,THIS_FLOAT32_BUFFER,THIS_FLOAT64_BUFFER)
     {
         #pragma omp for schedule(guided)
-        for (int x=0; x<xh; x=x+1) {
-            for (int y=0; y<yh; y=y+1) {
-                for (int z=0; z<zh; z=z+1) {
-                    for (int t=0; t<th; t=t+1) {
+        for (int x=0; x<xh; x++) {
+            for (int y=0; y<yh; y++) {
+                for (int z=0; z<zh; z++) {
+                    for (int t=0; t<th; t++) {
 
 						size_t address = rsOverallVoxelOffset(x, y, z, t, xh, yh, zh);
 

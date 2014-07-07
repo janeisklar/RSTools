@@ -187,7 +187,7 @@ void rsScaleVector(long double *x, const long n, const long double factor)
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(i) shared(x)
     {
         #pragma omp for schedule(guided)
-        for (i=0L; i<n; i=i+1L) {
+        for (i=0L; i<n; i++) {
             x[i] *= factor;
         }
     }
@@ -214,7 +214,7 @@ void rsVectorSwap(long double *x, long double *y, const long n)
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(i,tmp) shared(x,y)
     {
         #pragma omp for schedule(guided)
-        for (i=0L; i<n; i=i+1L) {
+        for (i=0L; i<n; i++) {
             tmp  = x[i];
             x[i] = y[i];
             y[i] = tmp;
