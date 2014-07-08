@@ -11,7 +11,7 @@
 
 void rsMaskPrintHelp() {
     printf(
-	    RSTOOLS_VERSION_LABEL "\n\n"
+        RSTOOLS_VERSION_LABEL "\n\n"
         "basic usage:  rsmask -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -46,83 +46,83 @@ int main(int argc, char * argv[]) {
     
     FSLIO *fslio;
     FSLIO *fslioOutput;
-	void *buffer;
+    void *buffer;
     void *outputBuffer;
-	size_t buffsize;
-	
-	char *inputpath = NULL;
-	char *outputpath = NULL;
-	char *maskpath = NULL;
-	
-	int x=-1, y=-1, z=-1, t=0;
-	short xDim, yDim, zDim, vDim;
-	size_t pixtype;
-	short dt;
+    size_t buffsize;
+    
+    char *inputpath = NULL;
+    char *outputpath = NULL;
+    char *maskpath = NULL;
+    
+    int x=-1, y=-1, z=-1, t=0;
+    short xDim, yDim, zDim, vDim;
+    size_t pixtype;
+    short dt;
     float inter = 0.0, slope = 1.0;
         
     BOOL verbose = FALSE;
     int threads = 1;
-	
-	int ac;
     
-	if( argc < 2 ) {
+    int ac;
+    
+    if( argc < 2 ) {
         rsMaskPrintHelp();
         return 1;
     }
     
-	/* parse parameters */
-	for( ac = 1; ac < argc; ac++ ) {
-		if( ! strncmp(argv[ac], "-h", 2) ) {
-			rsMaskPrintHelp();
+    /* parse parameters */
+    for( ac = 1; ac < argc; ac++ ) {
+        if( ! strncmp(argv[ac], "-h", 2) ) {
+            rsMaskPrintHelp();
             return 1;
-		} else if ( ! strcmp(argv[ac], "-input") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -input\n");
-				return 1;
-			}
-			inputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -m[ask]\n");
-				return 1;
-			}
-			maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			verbose = TRUE;
-		} else if ( ! strcmp(argv[ac], "-output") ) {
+        } else if ( ! strcmp(argv[ac], "-input") ) {
             if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -output\n");
-				return 1;
-			}
-			outputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -threads\n");
-           		return 1;
-           	}
-           	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+                fprintf(stderr, "** missing argument for -input\n");
+                return 1;
+            }
+            inputpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strncmp(argv[ac], "-m", 2) ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -m[ask]\n");
+                return 1;
+            }
+            maskpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
+            verbose = TRUE;
+        } else if ( ! strcmp(argv[ac], "-output") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -output\n");
+                return 1;
+            }
+            outputpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-threads") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -threads\n");
+                return 1;
+            }
+            threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
         } else {
-			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
-		}
-	}
-	
-	rsSetThreadsNum(threads);
-	
-	if ( inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified!\n");
-		return 1;
-	}
+            fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
+        }
+    }
     
-	if ( outputpath == NULL ) {
-		fprintf(stderr, "No output volume specified!\n");
-		return 1;
-	}
-	
-	if ( maskpath == NULL ) {
-		fprintf(stderr, "A binary mask must be specified!\n");
-		return 1;
-	}
-	
+    rsSetThreadsNum(threads);
+    
+    if ( inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return 1;
+    }
+    
+    if ( outputpath == NULL ) {
+        fprintf(stderr, "No output volume specified!\n");
+        return 1;
+    }
+    
+    if ( maskpath == NULL ) {
+        fprintf(stderr, "A binary mask must be specified!\n");
+        return 1;
+    }
+    
     if ( verbose ) {
         fprintf(stdout, "Input file:  %s\n", inputpath);
         fprintf(stdout, "Mask file:   %s\n", maskpath);
@@ -138,8 +138,8 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     
-	/* determine dimensions */
-	FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
+    /* determine dimensions */
+    FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
     
     if ( verbose ) {
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", xDim, yDim, zDim, vDim);
@@ -149,9 +149,9 @@ int main(int argc, char * argv[]) {
         slope = fslio->niftiptr->scl_slope;
         inter = fslio->niftiptr->scl_inter;
     }
-	
-	/* determine datatype and initalize buffer */
-	pixtype = FslGetDataType(fslio, &dt);
+    
+    /* determine datatype and initalize buffer */
+    pixtype = FslGetDataType(fslio, &dt);
     
     /* prepare centrality file */    
     fslioOutput = FslOpen(outputpath, "wb");
@@ -165,9 +165,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioOutput, xDim, yDim, zDim, vDim);
     FslSetDimensionality(fslioOutput, 4);
     FslSetDataType(fslioOutput, dt);
-	char *callString = rsMergeStringArray(argc, argv);
+    char *callString = rsMergeStringArray(argc, argv);
     rsWriteNiftiHeader(fslioOutput, callString);
-	free(callString);
+    free(callString);
     
     /* load mask */
     unsigned long nPoints = 0L;
@@ -181,7 +181,7 @@ int main(int argc, char * argv[]) {
     }
     
     // Prepare buffer
-	buffsize       = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
+    buffsize       = rsGetBufferSize(xDim, yDim, zDim, vDim, dt);
     buffer         = malloc(buffsize);
     outputBuffer   = malloc(buffsize);
         

@@ -8,16 +8,16 @@
 #include "rsjobparser.hpp"
 
 typedef struct {
-	char *jobpath;
-	RSJob *job;
-	rsArgument **arguments;
-	short nArguments;
+    char *jobpath;
+    RSJob *job;
+    rsArgument **arguments;
+    short nArguments;
     BOOL verbose;
     BOOL quiet;
     BOOL parametersValid;
-	GOptionContext *context;
-	char *viewArgument;
-	int threads;
+    GOptionContext *context;
+    char *viewArgument;
+    int threads;
 } rsBatchParameters;
 
 rsBatchParameters* rsBatchParseParams(int argc, char * argv[]);

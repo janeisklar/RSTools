@@ -14,22 +14,22 @@ extern "C" {
 
 typedef struct {
     char *inputpath;
-	char *maskpath;
+    char *maskpath;
     char *outputpath;
-	char *realignmentpath;
-	char *fdpath;
-	char *dvarspath;
-	char *flaggedpath;
-	char *callString;
+    char *realignmentpath;
+    char *fdpath;
+    char *dvarspath;
+    char *flaggedpath;
+    char *callString;
 
-	double fdthreshold;
-	double dvarsthreshold;
+    double fdthreshold;
+    double dvarsthreshold;
 
-	long rpColumns;
-	long rpEntries;
-	double **rp;
-	Point3D *maskPoints;
-	unsigned long nMaskPoints;
+    long rpColumns;
+    long rpEntries;
+    double **rp;
+    Point3D *maskPoints;
+    unsigned long nMaskPoints;
 
     BOOL verbose;
     BOOL parametersValid;
@@ -38,7 +38,7 @@ typedef struct {
     rsNiftiFile *output;
     double ***mask;
 
-	GOptionContext *context;
+    GOptionContext *context;
 
     int threads;
 

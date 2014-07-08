@@ -8,18 +8,18 @@
 namespace rstools {
 namespace batch {
 namespace execution {
-	
+    
 class MotionScrubbing : public Tool {
 
 public:
-	void destroy();
-	bool isEverythingFine();
-	
+    void destroy();
+    bool isEverythingFine();
+    
 protected:
-	void _parseParams(int argc, char * argv[]);
-	void _init();
-	void _run();
-	rsMotionScrubbingParameters *params;
+    void _parseParams(int argc, char * argv[]);
+    void _init();
+    void _run();
+    rsMotionScrubbingParameters *params;
 };
 
 }}} // namespace rstools::batch::execution

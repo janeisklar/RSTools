@@ -21,32 +21,32 @@ extern "C" {
 #endif
 
 typedef struct {
-	
-	char *inputpath;
-	char *outputpath;
-	char *maskpath;
-	char *mask2path;
+    
+    char *inputpath;
+    char *outputpath;
+    char *maskpath;
+    char *mask2path;
     char *savemaskpath;
-	char *eigenvaluespath;
-	char *spatialmappath;
-	
-	short algorithm;
-	
-	BOOL useStandardScores;
-	
-	float minVariance;
-	int nComponents;
+    char *eigenvaluespath;
+    char *spatialmappath;
     
-	rsNiftiFile *input;
-	FILE *output;
-	rsMask *mask;
-	rsMask *mask2;
-	Point3D *point;
+    short algorithm;
     
-	BOOL parametersValid;
-	BOOL verbose;
-	GOptionContext *context;
-	char *callString;
+    BOOL useStandardScores;
+    
+    float minVariance;
+    int nComponents;
+    
+    rsNiftiFile *input;
+    FILE *output;
+    rsMask *mask;
+    rsMask *mask2;
+    Point3D *point;
+    
+    BOOL parametersValid;
+    BOOL verbose;
+    GOptionContext *context;
+    char *callString;
     int threads;
 
 } rsTimecourseParameters;

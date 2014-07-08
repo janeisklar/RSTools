@@ -59,64 +59,64 @@ long double *rsFirstEigenvector(const double** A, const long n, const long maxIt
 long rsMakePositiveDefiniteSymmetric(gsl_matrix* A)
 {
     assert(A->size1 == A->size2);
-	
-	long nEVAltered   = 0;
+    
+    long nEVAltered   = 0;
     const long   n    = A->size1;
-	const double zero = 1e-10;
-	
-	gsl_vector* eigenvalues  = gsl_vector_alloc(n);
+    const double zero = 1e-10;
+    
+    gsl_vector* eigenvalues  = gsl_vector_alloc(n);
     gsl_matrix* eigenvectors = gsl_matrix_alloc(n, n);
     gsl_eigen_symmv_workspace* workspace = gsl_eigen_symmv_alloc(n);
 
-	// perform eigenvalue decomposition
+    // perform eigenvalue decomposition
     gsl_eigen_symmv(A, eigenvalues, eigenvectors, workspace);
-	gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_VAL_ASC);
-	
-	// compute mean eigenvalue(of those that are retained)
-	double norm       = 0.0;
-	long   normValues = 0;
-	for ( long i=0; i<n; i=i+1 ) {
-		const double v = gsl_vector_get(eigenvalues, i);
-		if ( v > zero ) {
-			norm       = norm + v;
-			normValues = normValues + 1;
-		}
-	}
-	double meanValue = norm / normValues;
-	
-	// check for negative eigenvalues
-	for ( long i=0; i<n; i=i+1 ) {
-		
-		if ( gsl_vector_get(eigenvalues, i) > zero ) {
-			continue;
-		}
-		
-		gsl_vector_set(eigenvalues, i, meanValue);
-		nEVAltered = nEVAltered + 1;
-	}
-	
-	// if eigenvalues were changed reconstruct matrix
-	if ( nEVAltered > 0 ) {
-		// create diagional eigenvalue matrix
-		gsl_matrix* eigenvaluesMatrix   = gsl_matrix_alloc(n, n);
-	    gsl_vector_view eigenvaluesDiag = gsl_matrix_diagonal(eigenvaluesMatrix);
-	    gsl_matrix_set_all(eigenvaluesMatrix, 0.0);
-	    gsl_vector_memcpy(&eigenvaluesDiag.vector, eigenvalues);
-	
-		// reconstruct matrix
-		gsl_matrix* tmp = gsl_matrix_alloc(n, n); 
-		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, eigenvectors, eigenvaluesMatrix, 0.0, tmp);
-		gsl_blas_dgemm(CblasNoTrans,   CblasTrans, 1.0,          tmp,      eigenvectors, 0.0,   A);
-		
-	    gsl_matrix_free(tmp);
-	    gsl_matrix_free(eigenvaluesMatrix);
-	}
+    gsl_eigen_gensymmv_sort(eigenvalues, eigenvectors, GSL_EIGEN_SORT_VAL_ASC);
+    
+    // compute mean eigenvalue(of those that are retained)
+    double norm       = 0.0;
+    long   normValues = 0;
+    for ( long i=0; i<n; i=i+1 ) {
+        const double v = gsl_vector_get(eigenvalues, i);
+        if ( v > zero ) {
+            norm       = norm + v;
+            normValues = normValues + 1;
+        }
+    }
+    double meanValue = norm / normValues;
+    
+    // check for negative eigenvalues
+    for ( long i=0; i<n; i=i+1 ) {
+        
+        if ( gsl_vector_get(eigenvalues, i) > zero ) {
+            continue;
+        }
+        
+        gsl_vector_set(eigenvalues, i, meanValue);
+        nEVAltered = nEVAltered + 1;
+    }
+    
+    // if eigenvalues were changed reconstruct matrix
+    if ( nEVAltered > 0 ) {
+        // create diagional eigenvalue matrix
+        gsl_matrix* eigenvaluesMatrix   = gsl_matrix_alloc(n, n);
+        gsl_vector_view eigenvaluesDiag = gsl_matrix_diagonal(eigenvaluesMatrix);
+        gsl_matrix_set_all(eigenvaluesMatrix, 0.0);
+        gsl_vector_memcpy(&eigenvaluesDiag.vector, eigenvalues);
+    
+        // reconstruct matrix
+        gsl_matrix* tmp = gsl_matrix_alloc(n, n); 
+        gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, eigenvectors, eigenvaluesMatrix, 0.0, tmp);
+        gsl_blas_dgemm(CblasNoTrans,   CblasTrans, 1.0,          tmp,      eigenvectors, 0.0,   A);
+        
+        gsl_matrix_free(tmp);
+        gsl_matrix_free(eigenvaluesMatrix);
+    }
 
     gsl_eigen_symmv_free(workspace);
     gsl_matrix_free(eigenvectors);
     gsl_vector_free(eigenvalues);
 
-	return nEVAltered;
+    return nEVAltered;
 }
 
 double **d2matrix(int yh, int xh)
@@ -223,14 +223,14 @@ void rsVectorSwap(long double *x, long double *y, const long n)
 }
 
 BOOL rsVectorContains(const long *x, const long n, const long element) {
-	int i;
-	for ( i=0; i<n; i=i+1 ) {
-		if ( x[i] == element ) {
-			return TRUE;
-		}
-	}
-	
-	return FALSE;
+    int i;
+    for ( i=0; i<n; i=i+1 ) {
+        if ( x[i] == element ) {
+            return TRUE;
+        }
+    }
+    
+    return FALSE;
 }
 
 void rsMatrixConversion(double **A, const long m, const long n, const int mode)

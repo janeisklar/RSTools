@@ -8,18 +8,18 @@
 namespace rstools {
 namespace batch {
 namespace execution {
-	
+    
 class Roi : public Tool {
 
 public:
-	void destroy();
-	bool isEverythingFine();
-	
+    void destroy();
+    bool isEverythingFine();
+    
 protected:
-	void _parseParams(int argc, char * argv[]);
-	void _init();
-	void _run();
-	rsRoiParameters *params;
+    void _parseParams(int argc, char * argv[]);
+    void _init();
+    void _run();
+    rsRoiParameters *params;
 };
 
 }}} // namespace rstools::batch::execution

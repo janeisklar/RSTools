@@ -3,30 +3,30 @@
 namespace rstools {
 namespace batch {
 namespace execution {
-	
+    
 void Roi::_parseParams(int argc, char * argv[])
 {
-	params = rsRoiParseParams(argc, argv);
+    params = rsRoiParseParams(argc, argv);
 }
-	
+    
 void Roi::_init()
 {
-	rsRoiInit(params);
+    rsRoiInit(params);
 }
 
 void Roi::_run()
 {
-	rsRoiRun(params);
+    rsRoiRun(params);
 }
 
 void Roi::destroy()
 {
-	rsRoiDestroy(params);
+    rsRoiDestroy(params);
 }
 
 bool Roi::isEverythingFine()
 {
-	return params != NULL && params->parametersValid;
+    return params != NULL && params->parametersValid;
 }
 
 }}} // namespace rstools::batch::execution

@@ -14,11 +14,11 @@ extern "C" {
 
 typedef struct {
     char *inputpath;
-	char *maskpath;
+    char *maskpath;
     char *savemaskpath;
     char *saveFilteredPath;
     char *saveAttenuationPath;
-	char *callString;
+    char *callString;
     
     double freqLow;
     double freqHigh;
@@ -28,13 +28,13 @@ typedef struct {
     BOOL parametersValid;
     
     BOOL keepMean;
-	BOOL fftw;
+    BOOL fftw;
     
     rsNiftiFile *input;
     rsNiftiFile *filteredOutput;
     double ***mask;
 
-	GOptionContext *context;
+    GOptionContext *context;
 
     int threads;
     size_t wordsize;
@@ -43,9 +43,9 @@ typedef struct {
     double rolloff;
     int rolloff_method;
     long paddedT;
-	
-	rsReportProgressCallback *progressCallback;
-	
+    
+    rsReportProgressCallback *progressCallback;
+    
 } rsBandpassParameters;
 
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]);

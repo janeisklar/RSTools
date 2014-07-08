@@ -34,7 +34,7 @@ void rsLinearRegression(const int nSamples, const double *signal, const int nReg
         gsl_vector_scale(y, 1 / sY); // divide by st.dev
     }
 
-	// remove the regressors' mean
+    // remove the regressors' mean
     for (int i=0; i<nRegressors; i=i+1) {
             
         gsl_vector_view regressor = gsl_matrix_column(X, i);
@@ -43,11 +43,11 @@ void rsLinearRegression(const int nSamples, const double *signal, const int nReg
         
         gsl_vector_add_constant(&regressor.vector, -1.0 * meanX); // remove mean
 
-		if ( zScoreRegression ) {
-	    	const double sX = gsl_stats_sd_m(regressor.vector.data, 1, nSamples, meanX);
-        	gsl_vector_scale(&regressor.vector, 1 / sX); // divide by st.dev
-		}
-	}
+        if ( zScoreRegression ) {
+            const double sX = gsl_stats_sd_m(regressor.vector.data, 1, nSamples, meanX);
+            gsl_vector_scale(&regressor.vector, 1 / sX); // divide by st.dev
+        }
+    }
     
     // execute linear regression
     double chisq;

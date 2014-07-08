@@ -8,18 +8,18 @@
 namespace rstools {
 namespace batch {
 namespace execution {
-	
+    
 class Regression : public Tool {
 
 public:
-	void destroy();
-	bool isEverythingFine();
-	
+    void destroy();
+    bool isEverythingFine();
+    
 protected:
-	void _parseParams(int argc, char * argv[]);
-	void _init();
-	void _run();
-	rsRegressionParameters *params;
+    void _parseParams(int argc, char * argv[]);
+    void _init();
+    void _run();
+    rsRegressionParameters *params;
 };
 
 }}} // namespace rstools::batch::execution

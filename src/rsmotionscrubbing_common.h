@@ -18,7 +18,7 @@ void rsSaveIndexVector(char *path, BOOL *vector, const int length);
 void rsSaveDoubleVector(char *path, double *vector, const int length);
 
 inline double deg2mm(const double dist, const double deg) {
-	return M_PI * dist * (deg/180.0);
+    return M_PI * dist * (deg/180.0);
 }
 
 inline int rsMax(const int a, const int b) {

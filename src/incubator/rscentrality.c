@@ -12,7 +12,7 @@
 void rsTestPowerIteration();
 void rsCentralityPrintHelp() {
     printf(
-  	    RSTOOLS_VERSION_LABEL "\n"
+        RSTOOLS_VERSION_LABEL "\n"
         "basic usage:  rscentrality -input <volume> -output <volume> -mask <volume>\n"
         "\n"
     );
@@ -74,90 +74,90 @@ int main(int argc, char * argv[]) {
     
     FSLIO *fslio;
     FSLIO *fslioCentrality;
-	void *buffer;
-	size_t buffsize;
-	
-	char *inputpath = NULL;
-	char *outputpath = NULL;
-	char *maskpath = NULL;
+    void *buffer;
+    size_t buffsize;
+    
+    char *inputpath = NULL;
+    char *outputpath = NULL;
+    char *maskpath = NULL;
     char *savemaskpath = NULL;
     char *savesimilaritypath = NULL;
     char *similaritypath = NULL;
-	
-	int x=-1, y=-1, z=-1, t=0;
-	short xDim, yDim, zDim, vDim;
-	size_t pixtype;
-	short dt;
+    
+    int x=-1, y=-1, z=-1, t=0;
+    short xDim, yDim, zDim, vDim;
+    size_t pixtype;
+    short dt;
     float inter = 0.0, slope = 1.0;
     int threads = 1;
     int correlationMode = RSMATRIXCONVERSION_ABSOLUTE;
     
     BOOL verbose = FALSE;
     BOOL precise = FALSE;
-	
-	int ac;
     
-	if( argc < 2 ) {
+    int ac;
+    
+    if( argc < 2 ) {
         rsCentralityPrintHelp();
         return 1;
     }
     
-	/* parse parameters */
-	for( ac = 1; ac < argc; ac++ ) {
-		if( ! strncmp(argv[ac], "-h", 2) ) {
-			rsCentralityPrintHelp();
+    /* parse parameters */
+    for( ac = 1; ac < argc; ac++ ) {
+        if( ! strncmp(argv[ac], "-h", 2) ) {
+            rsCentralityPrintHelp();
             return 1;
-		} else if ( ! strcmp(argv[ac], "-input") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -input\n");
-				return 1;
-			}
-			inputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-m", 2) ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -m\n");
-				return 1;
-			}
-			maskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-savemask") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -savemask\n");
-				return 1;
-			}
-			savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			verbose = TRUE;
-		} else if ( ! strcmp(argv[ac], "-precise") ) {
-			precise = TRUE;
-		} else if ( ! strcmp(argv[ac], "-output") ) {
+        } else if ( ! strcmp(argv[ac], "-input") ) {
             if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -output\n");
-				return 1;
-			}
-			outputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-savesimilarity") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -savesimilarity\n");
-				return 1;
-			}
-			savesimilaritypath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-similarity") ) {
-			if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -similarity\n");
-				return 1;
-			}
-			similaritypath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -threads\n");
-           		return 1;
-           	}
-           	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+                fprintf(stderr, "** missing argument for -input\n");
+                return 1;
+            }
+            inputpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strncmp(argv[ac], "-m", 2) ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -m\n");
+                return 1;
+            }
+            maskpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-savemask") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -savemask\n");
+                return 1;
+            }
+            savemaskpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
+            verbose = TRUE;
+        } else if ( ! strcmp(argv[ac], "-precise") ) {
+            precise = TRUE;
+        } else if ( ! strcmp(argv[ac], "-output") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -output\n");
+                return 1;
+            }
+            outputpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-savesimilarity") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -savesimilarity\n");
+                return 1;
+            }
+            savesimilaritypath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-similarity") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -similarity\n");
+                return 1;
+            }
+            similaritypath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-threads") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -threads\n");
+                return 1;
+            }
+            threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
         } else if ( ! strcmp(argv[ac], "-correlation") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -correlation\n");
-           		return 1;
-           	} else if ( ! strcmp(argv[ac], "abs") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -correlation\n");
+                return 1;
+            } else if ( ! strcmp(argv[ac], "abs") ) {
                 correlationMode = RSMATRIXCONVERSION_ABSOLUTE;
             } else if ( ! strcmp(argv[ac], "pos") ) {
                 correlationMode = RSMATRIXCONVERSION_POSITIVE;
@@ -167,33 +167,33 @@ int main(int argc, char * argv[]) {
                 correlationMode = RSMATRIXCONVERSION_SCALED;
             } else {
                 fprintf(stderr, "** invalid argument for -correlation(must be abs, pos or neg)\n");
-           		return 1;
+                return 1;
             }
         } else if ( ! strcmp(argv[ac], "-test") ) {
             rsTestPowerIteration();
             return 0;
         } else {
-			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
-		}
-	}
-	
-	rsSetThreadsNum(threads);
-	
-	if ( inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified!\n");
-		return 1;
-	}
+            fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
+        }
+    }
     
-	if ( outputpath == NULL ) {
-		fprintf(stderr, "No output volume specified!\n");
-		return 1;
-	}
-	
-	if ( maskpath == NULL ) {
-		fprintf(stderr, "A binary mask must be specified!\n");
-		return 1;
-	}
-	
+    rsSetThreadsNum(threads);
+    
+    if ( inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return 1;
+    }
+    
+    if ( outputpath == NULL ) {
+        fprintf(stderr, "No output volume specified!\n");
+        return 1;
+    }
+    
+    if ( maskpath == NULL ) {
+        fprintf(stderr, "A binary mask must be specified!\n");
+        return 1;
+    }
+    
     if ( verbose ) {
         fprintf(stdout, "Input file:  %s\n", inputpath);
         fprintf(stdout, "Mask file:   %s\n", maskpath);
@@ -213,8 +213,8 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     
-	/* determine dimensions */
-	FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
+    /* determine dimensions */
+    FslGetDim(fslio, &xDim, &yDim, &zDim, &vDim);
     
     if ( verbose ) {
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", xDim, yDim, zDim, vDim);
@@ -224,12 +224,12 @@ int main(int argc, char * argv[]) {
         slope = fslio->niftiptr->scl_slope;
         inter = fslio->niftiptr->scl_inter;
     }
-	
-	/* determine datatype and initalize buffer */
-	pixtype = FslGetDataType(fslio, &dt);
+    
+    /* determine datatype and initalize buffer */
+    pixtype = FslGetDataType(fslio, &dt);
     
     /* prepare centrality file */
-   	void *centralityBuffer;
+    void *centralityBuffer;
     
     fslioCentrality = FslOpen(outputpath, "wb");
     
@@ -242,9 +242,9 @@ int main(int argc, char * argv[]) {
     FslSetDim(fslioCentrality, xDim, yDim, zDim, 1);
     FslSetDimensionality(fslioCentrality, 4);
     FslSetDataType(fslioCentrality, dt);
-	char *callString = rsMergeStringArray(argc, argv);
+    char *callString = rsMergeStringArray(argc, argv);
     rsWriteNiftiHeader(fslioCentrality, callString);
-	free(callString);
+    free(callString);
     
     /* load mask */
     unsigned long nPoints = 0L;

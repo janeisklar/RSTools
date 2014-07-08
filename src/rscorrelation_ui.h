@@ -20,23 +20,23 @@ extern "C" {
 
 typedef struct {
     char *inputpath;
-	char *regressorpath;
-	char *maskpath;
-	char *outputpath;
-	char *commentpath;
-	char *comment;
-	char *callString;
+    char *regressorpath;
+    char *maskpath;
+    char *outputpath;
+    char *commentpath;
+    char *comment;
+    char *callString;
     char *savemaskpath;
     char *saveBetasPath;
     char *saveResidualsPath;
     char *saveFittedPath;
-	
+    
     short delay;
     
     int conversionMode;
 
-	unsigned int monteCarloRepetitions;
-	unsigned int monteCarloSampleSize;
+    unsigned int monteCarloRepetitions;
+    unsigned int monteCarloSampleSize;
     
     BOOL verbose;
     BOOL parametersValid;
@@ -49,13 +49,13 @@ typedef struct {
     double ***mask;
     double ***correlation;
 
-	GOptionContext *context;
+    GOptionContext *context;
     
     int threads;
     size_t wordsize;
 
-	rsReportProgressCallback *progressCallback;
-	
+    rsReportProgressCallback *progressCallback;
+    
 } rsCorrelationParameters;
 
 rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[]);

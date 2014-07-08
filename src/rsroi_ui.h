@@ -14,21 +14,21 @@ extern "C" {
 
 typedef struct {
     char *inputpath;
-	char *maskpath;
-	char *callString;
+    char *maskpath;
+    char *callString;
 
     double sphereradius;
     FloatPoint3D *center;
     FloatPoint3D *cubeDim;
     BOOL keepVolume;
     long nSamples;
-	double roiValue;
-	BOOL useImageSpaceCoordinates;
+    double roiValue;
+    BOOL useImageSpaceCoordinates;
 
     BOOL verbose;
     BOOL parametersValid;
 
-	GOptionContext *context;
+    GOptionContext *context;
 
     rsNiftiFile *input;
     rsNiftiFile *mask;

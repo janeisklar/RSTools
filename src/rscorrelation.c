@@ -3,26 +3,26 @@
 
 int main(int argc, char * argv[]) {
 
-	// Parse run arguments
+    // Parse run arguments
     rsCorrelationParameters *p = rsCorrelationParseParams(argc, argv);
-	
-	if( argc < 2 ) {
-		rsCorrelationPrintHelp(p);
-		return 0;
-	}
-	
-	// If arguments are valid, initialize niftis, etc.
-    if ( p->parametersValid ) {
-		rsCorrelationInit(p);
+    
+    if( argc < 2 ) {
+        rsCorrelationPrintHelp(p);
+        return 0;
     }
-	
-	// If everything went well start the main processing
-	if ( p->parametersValid ) {
-		rsCorrelationRun(p);
+    
+    // If arguments are valid, initialize niftis, etc.
+    if ( p->parametersValid ) {
+        rsCorrelationInit(p);
+    }
+    
+    // If everything went well start the main processing
+    if ( p->parametersValid ) {
+        rsCorrelationRun(p);
     }
 
-	// Free memory
+    // Free memory
     rsCorrelationDestroy(p);
 
-	return 0;
+    return 0;
 }

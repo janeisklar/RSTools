@@ -3,24 +3,24 @@
 
 void rsBandpassInit(rsBandpassParameters *p)
 {
-	p->parametersValid = FALSE;
-	
-	if ( p->inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified(--input)!\n");
-		return;
-	}
-	
-	if ( p->saveFilteredPath == NULL ) {
-		fprintf(stderr, "An output path for the filtered data must be specified(--filtered)!\n");
-		return;
-	}
-	
-	if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
-		fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
-		return;
-	}
+    p->parametersValid = FALSE;
     
-	rsSetThreadsNum(p->threads);
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified(--input)!\n");
+        return;
+    }
+    
+    if ( p->saveFilteredPath == NULL ) {
+        fprintf(stderr, "An output path for the filtered data must be specified(--filtered)!\n");
+        return;
+    }
+    
+    if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
+        fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
+        return;
+    }
+    
+    rsSetThreadsNum(p->threads);
 
     if ( p->verbose ) {
         fprintf(stdout, "Input file: %s\n", p->inputpath);
@@ -31,18 +31,18 @@ void rsBandpassInit(rsBandpassParameters *p)
         fprintf(stdout, "TR: %.4f\n", p->TR);
     }
 
-	rsFFTSetEngine(RSFFTFILTER_ENGINE_GSL);
+    rsFFTSetEngine(RSFFTFILTER_ENGINE_GSL);
 #if RS_FFTW_ENABLED == 1
-	if ( p->fftw ) rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
+    if ( p->fftw ) rsFFTSetEngine(RSFFTFILTER_ENGINE_FFTW);
 #endif
     
     p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
 
-	if ( ! p->input->readable ) {
-		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+    if ( ! p->input->readable ) {
+        fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
         return;
-	}
-	   
+    }
+       
     if ( p->verbose ) {
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
@@ -58,7 +58,7 @@ void rsBandpassInit(rsBandpassParameters *p)
         return;
     }
     
-	// Load mask
+    // Load mask
     if ( p->maskpath != NULL ) {
         unsigned long nPoints = 0L;
         p->mask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
@@ -87,13 +87,13 @@ void rsBandpassInit(rsBandpassParameters *p)
         fclose(file);
     }
 
-	// Create output volume
-	p->filteredOutput = rsCloneNiftiFile(p->saveFilteredPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
-	
-	if ( ! p->filteredOutput->readable ) {
-		fprintf(stderr, "\nError: The nifti file containing the filtered output (%s) could not be created.\n", p->saveFilteredPath);
+    // Create output volume
+    p->filteredOutput = rsCloneNiftiFile(p->saveFilteredPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
+    
+    if ( ! p->filteredOutput->readable ) {
+        fprintf(stderr, "\nError: The nifti file containing the filtered output (%s) could not be created.\n", p->saveFilteredPath);
         return;
-	}
+    }
     
     p->parametersValid = TRUE;
     return;
@@ -101,8 +101,8 @@ void rsBandpassInit(rsBandpassParameters *p)
 
 void rsBandpassRun(rsBandpassParameters *p)
 {
-	p->parametersValid = FALSE;
-	
+    p->parametersValid = FALSE;
+    
     // Prepare empty timecourse
     double emptybuffer[p->input->vDim];
     
@@ -114,9 +114,9 @@ void rsBandpassRun(rsBandpassParameters *p)
     short x,y,z, processedSlices = 0;
     double *signal;
     Point3D *point;
-	
-	omp_lock_t updateProgressLock;
-	omp_init_lock(&updateProgressLock);
+    
+    omp_lock_t updateProgressLock;
+    omp_init_lock(&updateProgressLock);
     
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(z,y,x,signal,point) shared(emptybuffer,processedSlices)
     {
@@ -131,7 +131,7 @@ void rsBandpassRun(rsBandpassParameters *p)
                     if (p->mask != NULL && p->mask[z][y][x] < 0.1) {
                     
                         /* set the value in the filtered data to NaN so that the nifti isn't empty */
-						rsWriteTimecourseToRSNiftiFileBuffer(p->input, emptybuffer, point);
+                        rsWriteTimecourseToRSNiftiFileBuffer(p->input, emptybuffer, point);
                         continue;
                     }
                     
@@ -143,67 +143,67 @@ void rsBandpassRun(rsBandpassParameters *p)
                     rsFFTFilter(p->fftParams, signal);
                     
                     /* write out filtered data to buffer */
-					rsWriteTimecourseToRSNiftiFileBuffer(p->filteredOutput, signal, point);
+                    rsWriteTimecourseToRSNiftiFileBuffer(p->filteredOutput, signal, point);
 
                     free(signal);
                 }
             }
-			
-			/* show progress */
-			if (p->progressCallback != NULL) {
-				omp_set_lock(&updateProgressLock);
-				rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
-				event->run = processedSlices;
-				processedSlices += 1;
-				event->percentage = (double)processedSlices*100.0 / (double)p->input->zDim;
-				rsReportProgressCallback_t cb = p->progressCallback->cb;
-				void *data = p->progressCallback->data;
-				cb(event, data);
-				rsFree(event);
-				omp_unset_lock(&updateProgressLock);
-			} else if (p->verbose) {
-            	#pragma omp atomic
-            	processedSlices += 1;
             
-            	if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
-                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
-            	}
-			}
+            /* show progress */
+            if (p->progressCallback != NULL) {
+                omp_set_lock(&updateProgressLock);
+                rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+                event->run = processedSlices;
+                processedSlices += 1;
+                event->percentage = (double)processedSlices*100.0 / (double)p->input->zDim;
+                rsReportProgressCallback_t cb = p->progressCallback->cb;
+                void *data = p->progressCallback->data;
+                cb(event, data);
+                rsFree(event);
+                omp_unset_lock(&updateProgressLock);
+            } else if (p->verbose) {
+                #pragma omp atomic
+                processedSlices += 1;
+            
+                if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                    fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
+                }
+            }
         }
     }
 
     omp_destroy_lock(&updateProgressLock);
-	
-	if ( p->verbose ) {
-    	fprintf(stdout, "Write out result to: %s\n", p->saveFilteredPath);
-	}
     
-	rsWriteNiftiHeader(p->filteredOutput->fslio, p->callString);
+    if ( p->verbose ) {
+        fprintf(stdout, "Write out result to: %s\n", p->saveFilteredPath);
+    }
+    
+    rsWriteNiftiHeader(p->filteredOutput->fslio, p->callString);
     FslWriteVolumes(p->filteredOutput->fslio, p->filteredOutput->data, p->filteredOutput->vDim);
 
-	p->parametersValid = TRUE;
+    p->parametersValid = TRUE;
 }
 
 void rsBandpassDestroy(rsBandpassParameters *p)
 {
-	if ( p->input != NULL ) {
-		rsCloseNiftiFileAndFree(p->input);
-		p->input = NULL;
-	}
-	
-	if ( p->filteredOutput != NULL ) {
-		p->filteredOutput->data = NULL;
-		rsCloseNiftiFileAndFree(p->filteredOutput);
-		p->filteredOutput = NULL;
-	}
-	
-	if ( p->maskpath != NULL ) {
+    if ( p->input != NULL ) {
+        rsCloseNiftiFileAndFree(p->input);
+        p->input = NULL;
+    }
+    
+    if ( p->filteredOutput != NULL ) {
+        p->filteredOutput->data = NULL;
+        rsCloseNiftiFileAndFree(p->filteredOutput);
+        p->filteredOutput = NULL;
+    }
+    
+    if ( p->maskpath != NULL ) {
         free(p->mask);
-		p->mask = NULL;
+        p->mask = NULL;
     }
 
-	rsFFTFilterFree(p->fftParams);
-	p->fftParams = NULL;
-	
-	rsBandpassFreeParams(p);
+    rsFFTFilterFree(p->fftParams);
+    p->fftParams = NULL;
+    
+    rsBandpassFreeParams(p);
 }

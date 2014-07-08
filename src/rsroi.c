@@ -3,26 +3,26 @@
 
 int main(int argc, char * argv[]) {
 
-	// Parse run arguments
+    // Parse run arguments
     rsRoiParameters *p = rsRoiParseParams(argc, argv);
 
-	if( argc < 2 ) {
-		rsRoiPrintHelp(p);
-		return 0;
-	}
+    if( argc < 2 ) {
+        rsRoiPrintHelp(p);
+        return 0;
+    }
 
-	// If arguments are valid, initialize niftis, etc.
+    // If arguments are valid, initialize niftis, etc.
     if ( p->parametersValid ) {
-		rsRoiInit(p);
+        rsRoiInit(p);
     }
 
-	// If everything went well start the main processing
-	if ( p->parametersValid ) {
-		rsRoiRun(p);
+    // If everything went well start the main processing
+    if ( p->parametersValid ) {
+        rsRoiRun(p);
     }
 
-	// Free memory
+    // Free memory
     rsRoiDestroy(p);
 
-	return 0;
+    return 0;
 }

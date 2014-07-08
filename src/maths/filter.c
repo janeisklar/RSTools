@@ -300,10 +300,10 @@ void rsFFTFilter(rsFFTFilterParams *p, double *data) {
 }
 
 void rsFFTFilterFree(rsFFTFilterParams *p) {
-	if ( p == NULL ) {
-		return;
-	}
-	
+    if ( p == NULL ) {
+        return;
+    }
+    
     free(p->frequencyBins);
     free(p->binAttenuation);
     
@@ -313,7 +313,7 @@ void rsFFTFilterFree(rsFFTFilterParams *p) {
         fftw_destroy_plan(p->plan_hc2r);
     }
 #endif
-	free(p);
+    free(p);
 }
 
 void rsFFTSetEngine(int engine) {

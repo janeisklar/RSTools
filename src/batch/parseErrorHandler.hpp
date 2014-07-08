@@ -18,10 +18,10 @@ class ParserErrorHandler : public ErrorHandler
         void reportParseException(const SAXParseException& ex)
         {
             char* msg = XMLString::transcode(ex.getMessage());
-			
+            
             fprintf(stderr, "Parsing problem at column %lu, line %lu, %s\n", (long unsigned int)ex.getColumnNumber(), (long unsigned int)ex.getLineNumber(), msg);
             XMLString::release(&msg);
-			throw ex;
+            throw ex;
         }
  
     public:

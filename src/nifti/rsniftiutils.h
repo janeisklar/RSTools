@@ -50,7 +50,7 @@ typedef struct {
 
 typedef struct {
     char*   path;
-	BOOL    readable;
+    BOOL    readable;
     FSLIO*  fslio;
     short   xDim;
     short   yDim;
@@ -62,19 +62,19 @@ typedef struct {
     float   slope;
     void*   data;
 
-	short   intent_code;
-	float   intent_p1;
-	float   intent_p2;
-	float   intent_p3;
+    short   intent_code;
+    float   intent_p1;
+    float   intent_p2;
+    float   intent_p3;
 } rsNiftiFile;
 
 typedef struct {
-	char*         originalPath;
-	char*         resampledPath;
-	unsigned long nPoints;
-	Point3D*      maskPoints;
-	double***     resampledMask;
-	BOOL          readable;
+    char*         originalPath;
+    char*         resampledPath;
+    unsigned long nPoints;
+    Point3D*      maskPoints;
+    double***     resampledMask;
+    BOOL          readable;
 } rsMask;
 
 Point3D*      rsMakePoint3D(unsigned int x, unsigned int y, unsigned int z);
@@ -101,12 +101,12 @@ void *        rsMalloc(size_t size);
 
 // the offset of a voxel within a volume(in words)
 inline size_t rsVoxelOffset(const size_t x, const size_t y, const size_t z, const size_t xh, const size_t yh) {
-	return z * (xh * yh) + (y * xh) + x;
+    return z * (xh * yh) + (y * xh) + x;
 }
 
 // the overall offset of a voxel at a certain time frame within a 4D-dataset
 inline size_t rsOverallVoxelOffset(const size_t x, const size_t y, const size_t z, const size_t t, const size_t xh, const size_t yh, const size_t zh) {
-	return t * (xh * yh * zh) + z * (xh * yh) + (y * xh) + x;
+    return t * (xh * yh * zh) + z * (xh * yh) + (y * xh) + x;
 }
     
 BOOL convertScaledDoubleToBuffer(const short datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh);

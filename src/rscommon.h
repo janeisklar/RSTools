@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 typedef struct {
-	double percentage;
-	int run;
+    double percentage;
+    int run;
 } rsReportProgressEvent;
 
 typedef void (*rsReportProgressCallback_t)(rsReportProgressEvent *event, void *userdata);

@@ -5,7 +5,7 @@
 
 void rsTTestPrintHelp() {
     printf(
-		RSTOOLS_VERSION_LABEL "\n\n"
+        RSTOOLS_VERSION_LABEL "\n\n"
         "Takes in a list of niftis with one ore more volumes\n"
         "or a single nifti with more than one volume via stdin\n"
         "and performs a one-sample t-test on it.\n"
@@ -67,48 +67,48 @@ rsNiftiFile **rsReadFileListFromStandardInput(unsigned int *nFiles) {
 }
 
 int main(int argc, char * argv[]) {
-	
-	char *outputpath = NULL;
-	
-	BOOL verbose = FALSE;
-    int threads = 1;
-	
-	int ac;
     
-	if( argc < 2 ) {
+    char *outputpath = NULL;
+    
+    BOOL verbose = FALSE;
+    int threads = 1;
+    
+    int ac;
+    
+    if( argc < 2 ) {
         rsTTestPrintHelp();
         return 1;
     }
     
-	/* parse parameters */
-	for( ac = 1; ac < argc; ac++ ) {
-		if( ! strncmp(argv[ac], "-h", 2) ) {
-			rsTTestPrintHelp();
+    /* parse parameters */
+    for( ac = 1; ac < argc; ac++ ) {
+        if( ! strncmp(argv[ac], "-h", 2) ) {
+            rsTTestPrintHelp();
             return 1;
-		} else if ( ! strncmp(argv[ac], "-v", 2) ) {
-			verbose = TRUE;
-		} else if ( ! strcmp(argv[ac], "-output") ) {
+        } else if ( ! strncmp(argv[ac], "-v", 2) ) {
+            verbose = TRUE;
+        } else if ( ! strcmp(argv[ac], "-output") ) {
             if( ++ac >= argc ) {
-				fprintf(stderr, "** missing argument for -output\n");
-				return 1;
-			}
-			outputpath = argv[ac];  /* no string copy, just pointer assignment */
-		} else if ( ! strcmp(argv[ac], "-threads") ) {
-  			if( ++ac >= argc ) {
-           		fprintf(stderr, "** missing argument for -threads\n");
-           		return 1;
-           	}
-           	threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
+                fprintf(stderr, "** missing argument for -output\n");
+                return 1;
+            }
+            outputpath = argv[ac];  /* no string copy, just pointer assignment */
+        } else if ( ! strcmp(argv[ac], "-threads") ) {
+            if( ++ac >= argc ) {
+                fprintf(stderr, "** missing argument for -threads\n");
+                return 1;
+            }
+            threads = atoi(argv[ac]);  /* no string copy, just pointer assignment */
         } else {
-			fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
-		}
-	}
+            fprintf(stderr, "\nError, unrecognized command %s\n", argv[ac]);
+        }
+    }
     
-	if ( outputpath == NULL ) {
-		fprintf(stderr, "No output volume specified!\n");
-		return 1;
-	}
-	
+    if ( outputpath == NULL ) {
+        fprintf(stderr, "No output volume specified!\n");
+        return 1;
+    }
+    
     if ( verbose ) {
         fprintf(stdout, "Output file: %s\n", outputpath);
     }
@@ -116,7 +116,7 @@ int main(int argc, char * argv[]) {
     // Load list of files
     unsigned int nFiles = 0;
     rsNiftiFile **files = rsReadFileListFromStandardInput(&nFiles);
-	size_t fileListLength = 1;
+    size_t fileListLength = 1;
     
     for (int n=0; n<nFiles; n=n+1) {
         const rsNiftiFile *file = files[n];
@@ -130,7 +130,7 @@ int main(int argc, char * argv[]) {
             fprintf(stdout, "File: %s, Volumes: %d\n", file->path, file->vDim);
         }
 
-		fileListLength = fileListLength + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
+        fileListLength = fileListLength + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
     }
     
     if ( nFiles < 1 ) {
@@ -138,51 +138,51 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-	// Prepare comment containing the file list
-	char fileList[fileListLength];
-	size_t bytesWritten = 0;
+    // Prepare comment containing the file list
+    char fileList[fileListLength];
+    size_t bytesWritten = 0;
     for (int n=0; n<nFiles; n=n+1) {
         const rsNiftiFile *file = files[n];
-		sprintf(&fileList[bytesWritten], "%s,%04d\n", file->path, file->vDim);
-		bytesWritten = bytesWritten + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
-	}
-	fileList[fileListLength-1] = '\0';
-	
-	char *comment1 = rsMergeStringArray(argc, argv);
-	char *comment2 = "\nFilelist:\n";
-	size_t commentLength = strlen(comment1)+strlen(comment2)+fileListLength+1;
-	char comment[commentLength];
-	sprintf(&comment[0], "%s%s%s\n", comment1, comment2, fileList);
-	comment[commentLength-1] = '\0';
+        sprintf(&fileList[bytesWritten], "%s,%04d\n", file->path, file->vDim);
+        bytesWritten = bytesWritten + strlen(file->path) + 2 + (size_t)fmaxf(rsCountDigits(file->vDim), 4);
+    }
+    fileList[fileListLength-1] = '\0';
+    
+    char *comment1 = rsMergeStringArray(argc, argv);
+    char *comment2 = "\nFilelist:\n";
+    size_t commentLength = strlen(comment1)+strlen(comment2)+fileListLength+1;
+    char comment[commentLength];
+    sprintf(&comment[0], "%s%s%s\n", comment1, comment2, fileList);
+    comment[commentLength-1] = '\0';
     
     // Prepare output file
     const rsNiftiFile *refFile = files[0];
     const size_t nOutputVolumes = (nFiles > 1) ? refFile->vDim : 1;
-	rsNiftiFile *outputFile = rsCloneNiftiFile(outputpath, refFile, RSNIFTI_OPEN_ALLOC, nOutputVolumes);
+    rsNiftiFile *outputFile = rsCloneNiftiFile(outputpath, refFile, RSNIFTI_OPEN_ALLOC, nOutputVolumes);
     
     if ( ! outputFile->readable ) {
-		exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     
-	FslSetIntent(outputFile->fslio, NIFTI_INTENT_TTEST, (nFiles > 1) ? (nFiles-1) : (refFile->vDim-1), 0, 0);
+    FslSetIntent(outputFile->fslio, NIFTI_INTENT_TTEST, (nFiles > 1) ? (nFiles-1) : (refFile->vDim-1), 0, 0);
     rsWriteNiftiHeader(outputFile->fslio, &comment[0]);
         
     short t,x,y,z;
-	Point3D *point;
+    Point3D *point;
     
-	// Iterate over all voxels in the nifti
+    // Iterate over all voxels in the nifti
     #pragma omp parallel num_threads(threads) private(x,y,t,point) shared(outputFile,nFiles,files)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<refFile->zDim; z++) {
-			
+            
             for (y=0; y<refFile->yDim; y=y+1) {
                 for (x=0; x<refFile->xDim; x=x+1) {
                     point = rsMakePoint3D(x, y, z);
-					
+                    
                     double *tValues = (double*)malloc(sizeof(double)*nOutputVolumes);
                     
-					// if more than one file is supplied compare the same volume indices with each other
+                    // if more than one file is supplied compare the same volume indices with each other
                     if ( nFiles > 1 ) {
                         for (t=0; t<refFile->vDim; t=t+1) {
                             double *series = (double*)rsMalloc(sizeof(double)*nFiles);
@@ -235,14 +235,14 @@ int main(int argc, char * argv[]) {
                     
                     rsWriteTimecourseToBuffer(outputFile->dt, tValues, outputFile->data, refFile->slope, refFile->inter, point, refFile->xDim, refFile->yDim, refFile->zDim, nOutputVolumes);
                     free(tValues);
-					free(point);
+                    free(point);
                 }
             }
         }
     }
     
-	// Write result
-	
+    // Write result
+    
     FslWriteVolumes(outputFile->fslio, outputFile->data, nOutputVolumes);
     
     // Close files

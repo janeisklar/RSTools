@@ -16,32 +16,32 @@ using namespace std;
 using namespace xercesc;
 
 class RSJobParser {
-	protected:
-		RSJob*           job;
-		XercesDOMParser* parser;
-		ErrorHandler*    errHandler;
-		DOMDocument*     doc;
-		DOMElement*      docRootNode;
-		DOMNodeIterator* walker;
-		DOMNode*         current_node;
-		
-	public:
-		RSJobParser(char* jobfile);
-		~RSJobParser();
-		bool parse();
-		RSJob* getJob();
-		void fillInUserArguments(rsArgument **arguments, const short nArguments);
-		vector<char*> getMissingArguments();
-		
-	protected:
-		void parseParameters();
-		void parseTasks();
-		void parseTask();
-		
-		char *leftTrimString(char *s);
-		char *rightTrimString(char *s);
-		char *trimString(char *s);
-		char *replaceString(char *orig, char *rep, char *with);
+    protected:
+        RSJob*           job;
+        XercesDOMParser* parser;
+        ErrorHandler*    errHandler;
+        DOMDocument*     doc;
+        DOMElement*      docRootNode;
+        DOMNodeIterator* walker;
+        DOMNode*         current_node;
+        
+    public:
+        RSJobParser(char* jobfile);
+        ~RSJobParser();
+        bool parse();
+        RSJob* getJob();
+        void fillInUserArguments(rsArgument **arguments, const short nArguments);
+        vector<char*> getMissingArguments();
+        
+    protected:
+        void parseParameters();
+        void parseTasks();
+        void parseTask();
+        
+        char *leftTrimString(char *s);
+        char *rightTrimString(char *s);
+        char *trimString(char *s);
+        char *replaceString(char *orig, char *rep, char *with);
 };
 
 #endif

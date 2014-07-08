@@ -2,18 +2,18 @@
 
 void rsRegressionInit(rsRegressionParameters* p)
 {
-	p->parametersValid = FALSE;
+    p->parametersValid = FALSE;
 
-	// check if the required arguments have been provided
-	if ( p->inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified(--input)!\n");
-	}
-	
-	if ( p->regressorspath == NULL ) {
-		fprintf(stderr, "A file containing the regressors must be specified(--regressors)!\n");
-	}
-	
-	rsSetThreadsNum(p->threads);
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified(--input)!\n");
+    }
+    
+    if ( p->regressorspath == NULL ) {
+        fprintf(stderr, "A file containing the regressors must be specified(--regressors)!\n");
+    }
+    
+    rsSetThreadsNum(p->threads);
     
     p->filterActive = p->TR >= 0.0 || p->freqLow >= 0.0 || p->freqHigh >= 0.0;
     
@@ -34,59 +34,59 @@ void rsRegressionInit(rsRegressionParameters* p)
     
     if ( p->filterActive && (p->TR < 0.0 || p->freqLow < 0.0 || p->freqHigh < 0.0) ) {
         fprintf(stderr, "Bandpass filter parameters are not complete. (--TR, --f1, --f2)!\n");
-		return;
+        return;
     }
-	
-	// load regressors
-	p->regressors = rsLoadRegressors(p->regressorspath, &p->nRegressors, &p->nRegressorValues, 1.0);
+    
+    // load regressors
+    p->regressors = rsLoadRegressors(p->regressorspath, &p->nRegressors, &p->nRegressorValues, 1.0);
 
-	if ( p->verbose ) {
-	    fprintf(stdout, "Regressors: %ld, Samples: %ld\n", p->nRegressors, p->nRegressorValues);
-	}
+    if ( p->verbose ) {
+        fprintf(stdout, "Regressors: %ld, Samples: %ld\n", p->nRegressors, p->nRegressorValues);
+    }
     
     // open input file
-	p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
+    p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_READ);
 
-	if ( ! p->input->readable ) {
-		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+    if ( ! p->input->readable ) {
+        fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
         return;
-	}
+    }
 
     // create residuals file (output)
-	if ( p->saveResidualsPath != NULL ) {
-     	
-		p->residuals = rsCloneNiftiFile(p->saveResidualsPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
+    if ( p->saveResidualsPath != NULL ) {
+        
+        p->residuals = rsCloneNiftiFile(p->saveResidualsPath, p->input, RSNIFTI_CLONE_POINTER, RSNIFTI_CLONE_AS_INPUT);
 
-		if ( ! p->residuals->readable ) {
-			fprintf(stderr, "\nError: The nifti file containing the residuals output (%s) could not be created.\n", p->saveResidualsPath);
-	        return;
-		}		
+        if ( ! p->residuals->readable ) {
+            fprintf(stderr, "\nError: The nifti file containing the residuals output (%s) could not be created.\n", p->saveResidualsPath);
+            return;
+        }       
     }
 
     // create betas file (output)
-	if ( p->saveBetasPath != NULL ) {
-     	
-		p->betas = rsCloneNiftiFile(p->saveBetasPath, p->input, RSNIFTI_OPEN_ALLOC, p->nRegressors+1);
+    if ( p->saveBetasPath != NULL ) {
+        
+        p->betas = rsCloneNiftiFile(p->saveBetasPath, p->input, RSNIFTI_OPEN_ALLOC, p->nRegressors+1);
 
-		if ( ! p->betas->readable ) {
-			fprintf(stderr, "\nError: The nifti file containing the betas output (%s) could not be created.\n", p->saveBetasPath);
-	        return;
-		}		
+        if ( ! p->betas->readable ) {
+            fprintf(stderr, "\nError: The nifti file containing the betas output (%s) could not be created.\n", p->saveBetasPath);
+            return;
+        }       
     }
     
     // create fitted values file (output)
-	if ( p->saveFittedPath != NULL ) {
-     	
-		p->fitted = rsCloneNiftiFile(p->saveFittedPath, p->input, RSNIFTI_OPEN_ALLOC, RSNIFTI_CLONE_AS_INPUT);
+    if ( p->saveFittedPath != NULL ) {
+        
+        p->fitted = rsCloneNiftiFile(p->saveFittedPath, p->input, RSNIFTI_OPEN_ALLOC, RSNIFTI_CLONE_AS_INPUT);
 
-		if ( ! p->fitted->readable ) {
-			fprintf(stderr, "\nError: The nifti file containing the fitted values (%s) could not be created.\n", p->saveFittedPath);
-	        return;
-		}		
+        if ( ! p->fitted->readable ) {
+            fprintf(stderr, "\nError: The nifti file containing the fitted values (%s) could not be created.\n", p->saveFittedPath);
+            return;
+        }       
     }
-	
-	// prepare bandpass filter
-	if ( p->filterActive ) {
+    
+    // prepare bandpass filter
+    if ( p->filterActive ) {
     
         p->nyquist_frequency = 1.0 / (2.0 * p->TR);
         p->bin_width         = p->nyquist_frequency / (p->input->vDim/2);
@@ -98,12 +98,12 @@ void rsRegressionInit(rsRegressionParameters* p)
         p->nFrequencyRegressors = p->nFrequencyBins * 2;                                           // number of frequency regressors (both sine and cosine)
         
         // Compute the frequencies for the bins
-		
+        
         if (p->verbose) 
-			fprintf(stdout, "Bin width: %.4f\n", p->bin_width);
-			
+            fprintf(stdout, "Bin width: %.4f\n", p->bin_width);
+            
         p->frequencyBins = rsMalloc(p->nFrequencyBins * sizeof(double));
-		
+        
         for ( int i=0; i<p->nFrequencyBins; i=i+1 ) {
             if ( (i < p->nFrequencyBinsLow) ) {
                 p->frequencyBins[i] = (i + 1) * p->bin_width;
@@ -112,7 +112,7 @@ void rsRegressionInit(rsRegressionParameters* p)
             }
             
             if (p->verbose)
-				fprintf(stdout, "Frequency bin %d(%s): %.4f\n", i, (i < p->nFrequencyBinsLow ? "low" : "high"), p->frequencyBins[i]);
+                fprintf(stdout, "Frequency bin %d(%s): %.4f\n", i, (i < p->nFrequencyBinsLow ? "low" : "high"), p->frequencyBins[i]);
         }
     }
     
@@ -144,21 +144,21 @@ void rsRegressionInit(rsRegressionParameters* p)
         p->allRegressors = p->regressors;
     }
 
-	// if an additional regressor comment file was specified load it
-	if ( p->regressorCommentPath != NULL ) {
-		p->regressorComment = rsReadCommentFile(p->regressorCommentPath);
-	}
+    // if an additional regressor comment file was specified load it
+    if ( p->regressorCommentPath != NULL ) {
+        p->regressorComment = rsReadCommentFile(p->regressorCommentPath);
+    }
 
-	// assemble the comment that will be stored in the output niftis
-	char *comment;
-	if ( p->regressorComment == NULL ) {
-		comment = p->callString;
-	} else {
-		char *separator = "\nnRegressor Info:\n";
-		comment = malloc(sizeof(char)*(strlen(p->callString)+strlen(separator)+strlen(p->regressorComment)+1));
-		sprintf(&comment[0], "%s%s%s", p->callString, separator, p->regressorComment);
-	}
-	p->comment = comment;
+    // assemble the comment that will be stored in the output niftis
+    char *comment;
+    if ( p->regressorComment == NULL ) {
+        comment = p->callString;
+    } else {
+        char *separator = "\nnRegressor Info:\n";
+        comment = malloc(sizeof(char)*(strlen(p->callString)+strlen(separator)+strlen(p->regressorComment)+1));
+        sprintf(&comment[0], "%s%s%s", p->callString, separator, p->regressorComment);
+    }
+    p->comment = comment;
     
     // load mask
     p->mask = NULL;
@@ -168,7 +168,7 @@ void rsRegressionInit(rsRegressionParameters* p)
         Point3D *maskPoints = rsReadMask(p->maskpath, p->input->xDim, p->input->yDim, p->input->zDim, &nPoints, p->savemaskpath, p->input->fslio, p->mask);
         if ( maskPoints == NULL) {
             fprintf(stderr, "\nError: Mask invalid.\n");
-			return;
+            return;
         }
         free(maskPoints);
     }
@@ -178,7 +178,7 @@ void rsRegressionInit(rsRegressionParameters* p)
 
 void rsRegressionRun(rsRegressionParameters *p)
 {
-	
+    
     // Prepare empty timecourse (containing NaNs)
     int emptyValuesLength = p->input->vDim > p->nRegressors ? p->input->vDim : p->nRegressors+1;
     double emptybuffer[emptyValuesLength];
@@ -193,8 +193,8 @@ void rsRegressionRun(rsRegressionParameters *p)
     double *betas;
     double *fitted;
     Point3D *point;
-	omp_lock_t updateProgressLock;
-	omp_init_lock(&updateProgressLock);
+    omp_lock_t updateProgressLock;
+    omp_init_lock(&updateProgressLock);
     
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer)
     {
@@ -210,20 +210,20 @@ void rsRegressionRun(rsRegressionParameters *p)
                     
                         // set the value in the residuals to NaN so that the nifti isn't empty
                         if ( p->residuals != NULL ) {
-							rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, emptybuffer, point);
+                            rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, emptybuffer, point);
                         }
                     
                         // set the value in the betas to NaN so that the nifti isn't empty
                         if ( p->betas != NULL ) {
-							rsWriteTimecourseToRSNiftiFileBuffer(p->betas, emptybuffer, point);
+                            rsWriteTimecourseToRSNiftiFileBuffer(p->betas, emptybuffer, point);
                         }
                     
                         // set the fitted value to NaN so that the nifti isn't empty
                         if ( p->fitted != NULL ) {
-							rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, emptybuffer, point);
+                            rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, emptybuffer, point);
                         }
                         
-						free(point);
+                        free(point);
                         continue;
                     }
                     
@@ -232,7 +232,7 @@ void rsRegressionRun(rsRegressionParameters *p)
                     betas      = rsMalloc(p->nAllRegressors*sizeof(double));
                     fitted     = rsMalloc(p->input->vDim*sizeof(double));
                     
-					rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, point);
+                    rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, point);
                     
                     // run the regression
                     rsLinearRegression(
@@ -248,98 +248,98 @@ void rsRegressionRun(rsRegressionParameters *p)
                     );
 
                     // write the results to the buffers
-					if ( p->residuals != NULL ) {
-						rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, residuals, point);
+                    if ( p->residuals != NULL ) {
+                        rsWriteTimecourseToRSNiftiFileBuffer(p->residuals, residuals, point);
                     }
 
-					if ( p->betas != NULL ) {
-						rsWriteTimecourseToRSNiftiFileBuffer(p->betas, betas, point);
-					}
+                    if ( p->betas != NULL ) {
+                        rsWriteTimecourseToRSNiftiFileBuffer(p->betas, betas, point);
+                    }
 
-					if ( p->fitted != NULL ) {
-						rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, fitted, point);
-					}
+                    if ( p->fitted != NULL ) {
+                        rsWriteTimecourseToRSNiftiFileBuffer(p->fitted, fitted, point);
+                    }
                     
                     free(timecourse);
                     free(residuals);
                     free(betas);
                     free(fitted);
-					free(point);
+                    free(point);
                 }
             }
             
-			/* show progress */
-			if ( p->progressCallback != NULL ) {
-				omp_set_lock(&updateProgressLock);
-				rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
-				event->run = processedSlices;
-				processedSlices += 1;
-				event->percentage = ((double)processedSlices*100.0) / (double)p->input->zDim;
-				rsReportProgressCallback_t cb = p->progressCallback->cb;
-				void *data = p->progressCallback->data;
-				cb(event, data);
-				rsFree(event);
-				omp_unset_lock(&updateProgressLock);
-			} else if ( p->verbose ) {
-            	#pragma omp atomic
-            	processedSlices += 1;
+            /* show progress */
+            if ( p->progressCallback != NULL ) {
+                omp_set_lock(&updateProgressLock);
+                rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+                event->run = processedSlices;
+                processedSlices += 1;
+                event->percentage = ((double)processedSlices*100.0) / (double)p->input->zDim;
+                rsReportProgressCallback_t cb = p->progressCallback->cb;
+                void *data = p->progressCallback->data;
+                cb(event, data);
+                rsFree(event);
+                omp_unset_lock(&updateProgressLock);
+            } else if ( p->verbose ) {
+                #pragma omp atomic
+                processedSlices += 1;
             
-            	if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
-                	fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
-            	}
-			}
+                if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                    fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
+                }
+            }
         }
     }
 
-	omp_destroy_lock (&updateProgressLock);
+    omp_destroy_lock (&updateProgressLock);
     
     /* Write out buffers to the corresponding files */
     if ( p->residuals != NULL ) {
         if (p->verbose) fprintf(stdout, "Saving residuals.. (%s)\n", p->saveResidualsPath);
-		rsWriteNiftiHeader(p->residuals->fslio, p->comment);
+        rsWriteNiftiHeader(p->residuals->fslio, p->comment);
         FslWriteVolumes(p->residuals->fslio, p->residuals->data, p->residuals->vDim);
     }
     
     if ( p->betas != NULL ) {
         if (p->verbose) fprintf(stdout, "Saving betas.. (%s)\n", p->saveBetasPath);
-		rsWriteNiftiHeader(p->betas->fslio, p->comment);
+        rsWriteNiftiHeader(p->betas->fslio, p->comment);
         FslWriteVolumes(p->betas->fslio, p->betas->data, p->betas->vDim);
     }
     
     if ( p->fitted != NULL ) {
         if (p->verbose) fprintf(stdout, "Saving fitted values.. (%s)\n", p->saveFittedPath);
-		rsWriteNiftiHeader(p->fitted->fslio, p->comment);
+        rsWriteNiftiHeader(p->fitted->fslio, p->comment);
         FslWriteVolumes(p->fitted->fslio, p->fitted->data, p->fitted->vDim);
     }
 }
 
 void rsRegressionDestroy(rsRegressionParameters* p)
 {
-  	if ( p->input != NULL ) {
-		rsCloseNiftiFileAndFree(p->input);
-		p->input = NULL;
-	}
-	
-	if ( p->residuals != NULL ) {
-		p->residuals->data = NULL;
-		rsCloseNiftiFileAndFree(p->residuals);
-		p->residuals = NULL;
-	}
-	
-	if ( p->fitted != NULL ) {
-		rsCloseNiftiFileAndFree(p->fitted);
-		p->fitted = NULL;
-	}
-
-	if ( p->betas != NULL ) {
-		rsCloseNiftiFileAndFree(p->betas);
-		p->betas = NULL;
-	}
-	
-	if ( p->maskpath != NULL ) {
-        free(p->mask);
-		p->mask = NULL;
+    if ( p->input != NULL ) {
+        rsCloseNiftiFileAndFree(p->input);
+        p->input = NULL;
+    }
+    
+    if ( p->residuals != NULL ) {
+        p->residuals->data = NULL;
+        rsCloseNiftiFileAndFree(p->residuals);
+        p->residuals = NULL;
+    }
+    
+    if ( p->fitted != NULL ) {
+        rsCloseNiftiFileAndFree(p->fitted);
+        p->fitted = NULL;
     }
 
-	rsRegressionFreeParams(p);
+    if ( p->betas != NULL ) {
+        rsCloseNiftiFileAndFree(p->betas);
+        p->betas = NULL;
+    }
+    
+    if ( p->maskpath != NULL ) {
+        free(p->mask);
+        p->mask = NULL;
+    }
+
+    rsRegressionFreeParams(p);
 }

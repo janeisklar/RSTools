@@ -2,50 +2,50 @@
 
 void rsRoiInit(rsRoiParameters *p)
 {
-	p->parametersValid = FALSE;
+    p->parametersValid = FALSE;
 
-	// check if the required arguments have been provided
-	if ( p->inputpath == NULL ) {
-		fprintf(stderr, "No input volume specified!\n");
-		return;
-	}
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return;
+    }
 
-	if ( p->maskpath == NULL ) {
-		fprintf(stderr, "A  path for the resulting mask must be specified!\n");
-		return;
-	}
+    if ( p->maskpath == NULL ) {
+        fprintf(stderr, "A  path for the resulting mask must be specified!\n");
+        return;
+    }
 
     if ( p->center->x < -9999.0 && p->nSamples < 0 ) {
-		fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
-		return;
-	}
+        fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
+        return;
+    }
 
     if ( p->sphereradius <= 0 && p->cubeDim->x < 0 && p->nSamples < 0 ) {
         fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(--sphere, --cube)!\n");
-		return;
+        return;
     }
 
-	p->inputEqualsOutput = ! strcmp(p->inputpath, p->maskpath);
+    p->inputEqualsOutput = ! strcmp(p->inputpath, p->maskpath);
 
-	rsSetThreadsNum(1);
+    rsSetThreadsNum(1);
 
     // open input file
-	p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_NONE);
+    p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_NONE);
 
-	if ( ! p->input->readable ) {
-		fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
+    if ( ! p->input->readable ) {
+        fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
         return;
-	}
+    }
 
     p->input->data = rsMalloc(rsGetBufferSize(p->input->xDim, p->input->yDim, p->input->zDim, 1, p->input->dt));
-	p->input->vDim = 1;
-	FslReadVolumes(p->input->fslio, p->input->data, p->input->vDim);
-	rsCloseNiftiFile(p->input, TRUE);
+    p->input->vDim = 1;
+    FslReadVolumes(p->input->fslio, p->input->data, p->input->vDim);
+    rsCloseNiftiFile(p->input, TRUE);
 
-	// prepare mask file
-	p->mask = rsCloneNiftiFile(p->maskpath, p->input, RSNIFTI_CLONE_MEMORY, 1);
+    // prepare mask file
+    p->mask = rsCloneNiftiFile(p->maskpath, p->input, RSNIFTI_CLONE_MEMORY, 1);
 
-	// output the most important parameters to the user
+    // output the most important parameters to the user
     if ( p->verbose ) {
         char *unit = "mm";
         if ( p->useImageSpaceCoordinates ) {
@@ -63,7 +63,7 @@ void rsRoiInit(rsRoiParameters *p)
         }
     }
 
-	p->parametersValid = TRUE;
+    p->parametersValid = TRUE;
 }
 
 void rsRoiRun(rsRoiParameters *p)
@@ -86,16 +86,16 @@ void rsRoiRun(rsRoiParameters *p)
         for (short y=0; y<p->input->yDim; y=y+1) {
             for (short x=0; x<p->input->xDim; x=x+1) {
 
-				float mmx = x, mmy = y, mmz = z;
+                float mmx = x, mmy = y, mmz = z;
 
-				if ( ! p->useImageSpaceCoordinates ) {
-                	// Convert current coordinate to MM space
-					FslGetMMCoord(stdmat44, x, y, z, &mmx, &mmy, &mmz);
+                if ( ! p->useImageSpaceCoordinates ) {
+                    // Convert current coordinate to MM space
+                    FslGetMMCoord(stdmat44, x, y, z, &mmx, &mmy, &mmz);
                 }
 
-				FloatPoint3D *point = rsMakeFloatPoint3D(mmx, mmy, mmz);
+                FloatPoint3D *point = rsMakeFloatPoint3D(mmx, mmy, mmz);
 
-				double value;
+                double value;
 
                 if ( p->sphereradius > 0 && rsVoxelInSphere(point, p->center, p->sphereradius) ) {
                     value = p->roiValue;
@@ -178,19 +178,19 @@ void rsRoiRun(rsRoiParameters *p)
 
 void rsRoiDestroy(rsRoiParameters *p)
 {
-	if ( p->input != NULL ) {
+    if ( p->input != NULL ) {
         if ( p->input->data != NULL ) {
             rsFree(p->input->data);
         }
-		rsFreeNiftiFile(p->input);
-		p->input = NULL;
-	}
+        rsFreeNiftiFile(p->input);
+        p->input = NULL;
+    }
 
-	if ( p->mask != NULL ) {
-		p->mask->data = NULL;
-		rsCloseNiftiFileAndFree(p->mask);
-		p->mask = NULL;
-	}
+    if ( p->mask != NULL ) {
+        p->mask->data = NULL;
+        rsCloseNiftiFileAndFree(p->mask);
+        p->mask = NULL;
+    }
 
-	rsRoiFreeParams(p);
+    rsRoiFreeParams(p);
 }

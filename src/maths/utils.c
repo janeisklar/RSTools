@@ -30,18 +30,18 @@ int rsCountDigits(int n)
 
 gsl_rng *rsGetRandomNumberGenerator()
 {
-	if ( ! rsRandomNumberGenerator ) {
-		gsl_rng_env_setup();
-		rsRandomNumberGenerator = gsl_rng_alloc(gsl_rng_default);
-	}
-	
-	return rsRandomNumberGenerator;
+    if ( ! rsRandomNumberGenerator ) {
+        gsl_rng_env_setup();
+        rsRandomNumberGenerator = gsl_rng_alloc(gsl_rng_default);
+    }
+    
+    return rsRandomNumberGenerator;
 }
 
 void rsDestroyRandomNumberGenerator()
 {
-	gsl_rng_free(rsRandomNumberGenerator);
-	rsRandomNumberGenerator = NULL;
+    gsl_rng_free(rsRandomNumberGenerator);
+    rsRandomNumberGenerator = NULL;
 }
 
 /*
@@ -167,7 +167,7 @@ double *rsParseRegressorLine(char *line, long *nRegressors) {
     
     if ( !endsWithSeparator ) {
         lineCpy[lineLength-1] = '\t';
-		lineCpy[lineLength]   = '\0';
+        lineCpy[lineLength]   = '\0';
     }
     
     ptr = strtok(lineCpy, delimiter);

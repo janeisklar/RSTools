@@ -23,18 +23,18 @@ extern "C" {
 #endif
 
 typedef struct {
-	gsl_matrix* transformed;
-	gsl_vector* eigenvalues;
-	gsl_vector* eigenvalues_all;
-	gsl_matrix* eigenvectors;
+    gsl_matrix* transformed;
+    gsl_vector* eigenvalues;
+    gsl_vector* eigenvalues_all;
+    gsl_matrix* eigenvectors;
 } rsPCAResult;
 
 typedef struct {
-	gsl_matrix* transformedA;
-	gsl_matrix* transformedB;
-	gsl_vector* eigenvalues;
-	gsl_vector* eigenvalues_all;
-	gsl_matrix* eigenvectors;
+    gsl_matrix* transformedA;
+    gsl_matrix* transformedB;
+    gsl_vector* eigenvalues;
+    gsl_vector* eigenvalues_all;
+    gsl_matrix* eigenvectors;
 } rsCSPResult;
 
 rsPCAResult *rsGenericPCA(const gsl_matrix* data, double minVariance, int nComponents, BOOL verbose);

@@ -16,16 +16,16 @@ extern "C" {
 
 typedef struct {
     char *inputpath;
-	char *maskpath;
-	char *regressorspath;
-	char *regressorCommentPath;
-	char *regressorComment;
+    char *maskpath;
+    char *regressorspath;
+    char *regressorCommentPath;
+    char *regressorComment;
     char *savemaskpath;
     char *saveBetasPath;
     char *saveResidualsPath;
     char *saveFittedPath;
-	char *callString;
-	char *comment;
+    char *callString;
+    char *comment;
     
     double freqLow;
     double freqHigh;
@@ -41,7 +41,7 @@ typedef struct {
     rsNiftiFile *residuals;
     rsNiftiFile *fitted;
 
-	GOptionContext *context;
+    GOptionContext *context;
 
     long nRegressors;
     long nRegressorValues;
@@ -62,7 +62,7 @@ typedef struct {
     double **allRegressors;
     
     int threads;
-	rsReportProgressCallback *progressCallback;
+    rsReportProgressCallback *progressCallback;
 
 } rsRegressionParameters;
 
