@@ -6,10 +6,12 @@ rsBatchParameters* rsBatchInitParameters()
     
     p->jobpath               = NULL;
     p->arguments             = NULL;
+    p->nArguments            = 0;
     p->context               = NULL;
     p->verbose               = FALSE;
     p->parametersValid       = FALSE;
     p->viewArgument          = NULL;
+    p->showOverview          = FALSE;
     p->threads               = 1;
 
     return p;
@@ -33,6 +35,7 @@ rsBatchParameters* rsBatchParseParams(int argc, char * argv[])
       { "job",           'j', 0, G_OPTION_ARG_FILENAME,     &p->jobpath,      "the jobfile that is to be executed", "<*.rsjob>" },
       { "argument",      'A', 0, G_OPTION_ARG_STRING_ARRAY, &arguments,       "additional arguments that will be passed onto the job-file, i.e. -A prefix=/usr/data/study2014/subjects", NULL },
       { "view",          'V', 0, G_OPTION_ARG_STRING,       &p->viewArgument, "prints the value for a the specified parameter in the job-file and quits the program. the job will not be executed", "argName"},
+      { "overview",      'o', 0, G_OPTION_ARG_NONE,         &p->showOverview, "list tasks in the job and the corresponding parameters, but does not execute any task", NULL},
       { "threads",       't', 0, G_OPTION_ARG_INT,          &p->threads,      "number of threads used for processing", "<n>" },
       { "quiet",         'q', 0, G_OPTION_ARG_NONE,         &p->quiet,        "don't output the progress", NULL},
       { NULL }

@@ -9,6 +9,7 @@
 #include "execution/correlation.hpp"
 #include "execution/roi.hpp"
 #include "execution/unix.hpp"
+#include <sstream>
 
 using namespace rstools::batch;
 
@@ -17,5 +18,7 @@ void rsBatchRun(rsBatchParameters *p);
 void rsBatchDestroy(rsBatchParameters* p);
 void rsBatchPrintParameter(rsBatchParameters *p);
 void rsBatchPrintExecutionError(execution::Tool *tool, int taskNum, char const * state);
+void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools);
+void rsBatchWordWrap(const string& inputString, vector<string>& outputString, unsigned int lineLength);
 
 #endif

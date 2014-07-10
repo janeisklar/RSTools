@@ -106,6 +106,11 @@ void rsBatchRun(rsBatchParameters *p)
         tools[t] = tool;        
     }
     
+    // Check if instead of executing only an overview over all tasks should be given
+    if ( p->showOverview ) {
+        return rsBatchShowJobOverview(p, tools);
+    }
+    
     if ( p->verbose ) {
         execution::Tool::printProgressBar(stdout, 100, tasks.size(), (char*)" ");
         fprintf(stdout, "\n\n# Executing tasks\n");
@@ -190,4 +195,68 @@ void rsBatchDestroy(rsBatchParameters* p)
 {
     // Destruct the XML Parser
     XMLPlatformUtils::Terminate();
+}
+
+void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools) {
+    
+    vector<RSTask*>::size_type nTasks = p->job->getTasks().size();
+    
+    for ( vector<RSTask*>::size_type t=0; t<nTasks; t++ ) {
+        
+        execution::Tool *tool = tools[t];
+        RSTask *task = tool->getTask();
+        
+        vector<string> chunkedDescription;
+        const string description(task->getDescription());
+        
+        rsBatchWordWrap(description, chunkedDescription, 57);
+        
+        fprintf(stdout, "################################################################\n");
+        fprintf(stdout, "## Task #%-3d                                                  ##\n", (int)(t+1));
+        for ( vector<string>::size_type i=0; i<chunkedDescription.size(); i++ ) {
+            fprintf(stdout, "## %-58s ##\n", chunkedDescription[i].c_str());
+        }
+        fprintf(stdout, "################################################################\n");
+        fprintf(stdout, "\n");
+    
+        if ( task->getTask() == RSTask::TASK_UNIX ) {
+            fprintf(stdout, "Unix command: \n%s\n", task->getCmd());
+        } else {
+            int argc;
+            char **argv = tool->getCallString(&argc);
+
+            fprintf(stdout, "Tool:\n %s\n\nParams:\n", argv[0]);
+            for ( int i=1; i<argc; i++ ) {
+                fprintf(stdout, "  %s\n", argv[i]);
+            }
+        }
+        
+        fprintf(stdout, "\n");
+    }
+}
+
+void rsBatchWordWrap(const string& inputString, vector<string>& outputString, unsigned int lineLength)
+{
+   istringstream iss(inputString);
+
+   string line;
+
+   do
+   {
+      string word;
+      iss >> word;
+
+      if (line.length() + word.length() > lineLength)
+      {
+         outputString.push_back(line);
+         line.clear();
+      }
+      line += word + " ";
+
+   }while (iss);
+
+   if (!line.empty())
+   {
+      outputString.push_back(line);
+   }
 }

@@ -14,6 +14,7 @@ typedef struct {
     short nArguments;
     BOOL verbose;
     BOOL quiet;
+    BOOL showOverview;
     BOOL parametersValid;
     GOptionContext *context;
     char *viewArgument;
