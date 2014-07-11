@@ -48,7 +48,7 @@ void            rsUIAddOption(rsUIInterface* I, rsUIOption* o);
 GOptionContext* rsUICreateCLI(rsUIInterface* I);
 BOOL            rsUIParse(rsUIInterface* I, int argc, char * argv[]);
 
-char*           rsUIPrepareHelpText(const char* text, const size_t lineWidth);
+char*           rsUIPrepareHelpText(const char* text, const size_t lineWidth, char *lineGlue);
 
 #ifdef __cplusplus
 }

@@ -52,7 +52,15 @@ void rsUIAddOption(rsUIInterface* I, rsUIOption* o)
 GOptionContext* rsUICreateCLI(rsUIInterface* I)
 {
     // create a new context using the description
-    GOptionContext *context = g_option_context_new(I->description);
+    char *lineFeed = "\n";
+    char *description = rsUIPrepareHelpText(I->description, 60, lineFeed);
+    char *oldDescription = description;
+    
+    description = rsStringConcat("", description, NULL);
+    rsFree(oldDescription);
+    
+    GOptionContext *context = g_option_context_new(description);
+    rsFree(description);
     
     // add the current version number to the header output of the help
     g_option_context_set_summary(context, RSTOOLS_VERSION_LABEL);
@@ -79,7 +87,13 @@ GOptionContext* rsUICreateCLI(rsUIInterface* I)
         rsUIOption* o = I->options[i];
 
         // limit line width so that the description is not too wide
-        char *description = rsUIPrepareHelpText(o->cli_description, 45);
+        char *lineFeed = "\n                                   ";
+        description = rsUIPrepareHelpText(o->cli_description, 45, lineFeed);
+        
+        // append a new line for better readability
+        oldDescription = description;
+        description = rsStringConcat(description, "\n", NULL);
+        rsFree(oldDescription);
 
         GOptionEntry entry = {
             o->name,
@@ -132,7 +146,6 @@ BOOL rsUIParse(rsUIInterface* I, int argc, char * argv[])
     GError*         error   = NULL;
     
     if ( argc < 2 ) {
-        fprintf(stdout, "argc: %d\n", argc);
         fprintf(stdout, "%s\n", g_option_context_get_help(context, TRUE, NULL));
         return FALSE;
     }
@@ -145,7 +158,7 @@ BOOL rsUIParse(rsUIInterface* I, int argc, char * argv[])
     return TRUE;
 }
 
-char* rsUIPrepareHelpText(const char* text, const size_t lineWidth)
+char* rsUIPrepareHelpText(const char* text, const size_t lineWidth, char *lineGlue)
 {
     char **textArray;
     size_t textArraySize;
@@ -154,14 +167,10 @@ char* rsUIPrepareHelpText(const char* text, const size_t lineWidth)
     
     for ( size_t j=0; j< textArraySize; j++) {
         char *oldText = helpText;
-        char *glue = (j==0) ? "" : "\n                                   ";
+        char *glue = (j==0) ? "" : lineGlue;
         helpText = rsStringConcat(helpText, glue, textArray[j], NULL);
         rsFree(oldText);
     }
-    
-    char *oldText = helpText;
-    helpText = rsStringConcat(helpText, "\n", NULL);
-    rsFree(oldText);
     
     return helpText;
 }
