@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CFLAGS = -DDATA_PATH=\"$(datadir)\"
 AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\"
 
-rslibraries=../librstools.a ../maths/librsmathutils.a ../nifti/librsniftiutils.a
+rslibraries=../utils/librsutils.a ../librstools.a ../maths/librsmathutils.a ../nifti/librsniftiutils.a
 
 lib_LIBRARIES = librsjob.a
 librsjob_a_SOURCES = rsjob.cpp rsjobparser.cpp rstask.cpp execution/timecourse.cpp execution/regression.cpp execution/bandpass.cpp execution/motionscrubbing.cpp execution/correlation.cpp execution/roi.cpp execution/unix.cpp

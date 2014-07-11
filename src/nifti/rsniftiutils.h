@@ -9,6 +9,7 @@
 #include <fslio.h>
 #include <gsl/gsl_statistics_double.h>
 #include "src/rscommon.h"
+#include "src/utils/rsmemory.h"
 
 #if !defined(__NIFTIUTILS_H)
 #define __NIFTIUTILS_H
@@ -30,7 +31,6 @@ extern "C" {
 #endif
     
 #define RSIOERR(x) { fprintf(stderr,"Error:: %s\n",(x)); fflush(stderr); exit(EXIT_FAILURE); }
-#define rsFree(x) { free(x); x=NULL; }
 
 #define RSNIFTI_OPEN_NONE     1   // file will be opened only and the header info read
 #define RSNIFTI_OPEN_ALLOC    2   // additionally the space required to load/save the file is allocated
@@ -97,7 +97,6 @@ size_t        rsWordLength(const short datatype);
 size_t        rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
 size_t        rsVolumeLength(const int xh, const int yh, const int zh);
 size_t        rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype);
-void *        rsMalloc(size_t size);
 
 // the offset of a voxel within a volume(in words)
 inline size_t rsVoxelOffset(const size_t x, const size_t y, const size_t z, const size_t xh, const size_t yh) {

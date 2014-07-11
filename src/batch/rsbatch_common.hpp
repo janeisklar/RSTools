@@ -10,6 +10,7 @@
 #include "execution/roi.hpp"
 #include "execution/unix.hpp"
 #include <sstream>
+#include "src/utils/rsstring.h"
 
 using namespace rstools::batch;
 
@@ -19,6 +20,5 @@ void rsBatchDestroy(rsBatchParameters* p);
 void rsBatchPrintParameter(rsBatchParameters *p);
 void rsBatchPrintExecutionError(execution::Tool *tool, int taskNum, char const * state);
 void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools);
-void rsBatchWordWrap(const string& inputString, vector<string>& outputString, unsigned int lineLength);
 
 #endif

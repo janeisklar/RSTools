@@ -206,15 +206,15 @@ void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools) {
         execution::Tool *tool = tools[t];
         RSTask *task = tool->getTask();
         
-        vector<string> chunkedDescription;
-        const string description(task->getDescription());
+        char **chunkedDescription;
+        size_t nLines;
         
-        rsBatchWordWrap(description, chunkedDescription, 57);
+        rsStringWordWrap(task->getDescription(), &chunkedDescription, &nLines, 57);
         
         fprintf(stdout, "################################################################\n");
         fprintf(stdout, "## Task #%-3d                                                  ##\n", (int)(t+1));
-        for ( vector<string>::size_type i=0; i<chunkedDescription.size(); i++ ) {
-            fprintf(stdout, "## %-58s ##\n", chunkedDescription[i].c_str());
+        for ( size_t i=0; i<nLines; i++ ) {
+            fprintf(stdout, "## %-58s ##\n", chunkedDescription[i]);
         }
         fprintf(stdout, "################################################################\n");
         fprintf(stdout, "\n");
@@ -233,30 +233,4 @@ void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools) {
         
         fprintf(stdout, "\n");
     }
-}
-
-void rsBatchWordWrap(const string& inputString, vector<string>& outputString, unsigned int lineLength)
-{
-   istringstream iss(inputString);
-
-   string line;
-
-   do
-   {
-      string word;
-      iss >> word;
-
-      if (line.length() + word.length() > lineLength)
-      {
-         outputString.push_back(line);
-         line.clear();
-      }
-      line += word + " ";
-
-   }while (iss);
-
-   if (!line.empty())
-   {
-      outputString.push_back(line);
-   }
 }

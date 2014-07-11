@@ -7,6 +7,7 @@
 #include <glib.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +35,7 @@ typedef struct {
     rsNiftiFile *filteredOutput;
     double ***mask;
 
-    GOptionContext *context;
+    rsUIInterface *interface;
 
     int threads;
     size_t wordsize;
@@ -51,7 +52,6 @@ typedef struct {
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]);
 rsBandpassParameters *rsBandpassInitParameters();
 void rsBandpassFreeParams(rsBandpassParameters *p);
-void rsBandpassPrintHelp(rsBandpassParameters *p);
 
 #ifdef __cplusplus
 }

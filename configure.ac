@@ -35,7 +35,8 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
  		 src/maths/Makefile
  		 src/nifti/Makefile
- 		 src/batch/Makefile])
+ 		 src/batch/Makefile
+                 src/utils/Makefile])
 
 # Enabling/disabling the incubator
 AC_ARG_ENABLE(

@@ -23,7 +23,7 @@ rsBandpassParameters *rsBandpassInitParameters() {
     p->rolloff_method       = RSFFTFILTER_CUTOFF;
     p->rolloff              = 10.0;
     p->keepMean             = FALSE;
-    p->context              = NULL;
+    p->interface            = NULL;
     p->progressCallback     = NULL;
     
     return p;
@@ -39,12 +39,8 @@ void rsBandpassFreeParams(rsBandpassParameters *p) {
     free(p->filteredOutput);
     free(p->callString);
     free(p->fftParams);
-    g_option_context_free(p->context);
+    rsUIDestroyInterface(p->interface);
     free(p);
-}
-
-void rsBandpassPrintHelp(rsBandpassParameters *p) {
-    fprintf(stdout, "%s\n", g_option_context_get_help(p->context, TRUE, NULL));
 }
 
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
@@ -53,48 +49,125 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
     p->callString = rsMergeStringArray(argc, argv);
     
     // initialize the most common options
-    GError *error = NULL;
-    p->context = g_option_context_new("\n\nGiven a 4D-Nifti and a frequency band this tool will apply FFT-based temporal filtering in the specified frequency range onto the dataset.");
-    g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
-
-    /* long, short, flags, arg, arg_data, desc, arg_desc */
-    GOptionEntry entries[] = {
-      { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,           "the input volume that is going to be filtered", "<volume>" },
-      { "filtered",        'f', 0, G_OPTION_ARG_FILENAME, &p->saveFilteredPath,    "the output volume in which the filtered data will be saved", "<volume>" },
-      { "f1",              'l', 0, G_OPTION_ARG_DOUBLE,   &p->freqLow,             "the lower frequency of the bandpass filter", "<frequency in Hz>" },
-      { "f2",              'u', 0, G_OPTION_ARG_DOUBLE,   &p->freqHigh,            "the upper frequency of the bandpass filter", "<frequency in Hz>" },
-      { "TR",              'r', 0, G_OPTION_ARG_DOUBLE,   &p->TR,                  "the time to repeat (1/sampling frequency) that is used for the FFT", "<rate in s>" },
-      { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,            "a mask specifying the region that the filter is applied on (may be specified for improved performance)", "<volume>" },
-      { "keepMean",        'k', 0, G_OPTION_ARG_NONE,     &p->keepMean,            "retains the first bin of the FFT (the mean) independent of it being included in the selected frequency range", NULL },
-      { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,             "number of threads used for processing", "<n>" },
-      { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,             "show debug information", NULL},
-      { NULL }
-    };
+    rsUIOption *o;
+    p->interface = rsUINewInterface();
+    p->interface->description   = "Given a 4D-Nifti and a frequency band this tool will apply FFT-based temporal filtering in the specified frequency range onto the dataset.";
     
-    g_option_context_add_main_entries(p->context, entries, GETTEXT_PACKAGE);
+    o = rsUINewOption();
+    o->name                = "input";
+    o->shorthand           = 'i';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->inputpath;
+    o->cli_description     = "the input volume that is going to be filtered";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
     
+    o = rsUINewOption();
+    o->name                = "filtered";
+    o->shorthand           = 'f';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->saveFilteredPath;
+    o->cli_description     = "the output volume in which the filtered data will be saved";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "f1";
+    o->shorthand           = 'l';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->freqLow;
+    o->cli_description     = "the lower frequency of the bandpass filter";
+    o->cli_arg_description = "<frequency in Hz>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "f2";
+    o->shorthand           = 'u';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->freqHigh;
+    o->cli_description     = "the upper frequency of the bandpass filter";
+    o->cli_arg_description = "<frequency in Hz>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "TR";
+    o->shorthand           = 'r';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->TR;
+    o->cli_description     = "the time to repeat (1/sampling frequency) that is used for the FFT";
+    o->cli_arg_description = "<rate in s>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->maskpath;
+    o->cli_description     = "a mask specifying the region that the filter is applied on (may be specified for improved performance)";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "keepMean";
+    o->shorthand           = 'k';
+    o->storage             = &p->keepMean;
+    o->cli_description     = "retains the first bin of the FFT (the mean) independent of it being included in the selected frequency range";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "threads";
+    o->shorthand           = 't';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->threads;
+    o->cli_description     = "number of threads used for processing";
+    o->cli_arg_description = "<n>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "verbose";
+    o->shorthand           = 'v';
+    o->storage             = &p->verbose;
+    o->cli_description     = "show debug information";
+    rsUIAddOption(p->interface, o);
+        
     // initialize the more advanced and rather unusual options
-    GOptionGroup *g = g_option_group_new("extended", "Extended options", "Additional options that are rarely going to be used", NULL, NULL);
-    g_option_context_add_group(p->context, g);
-    
-    GOptionEntry extended_entries[] = {
-      { "savemask",          0, 0, G_OPTION_ARG_FILENAME, &p->savemaskpath,        "optional path where the rescaled mask specified with -mask will be saved. The saved file with have the same dimensions as the input volume.", "volume" },
+    o = rsUINewOption();
+    o->name                = "savemask";
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->savemaskpath;
+    o->cli_description     = "optional path where the rescaled mask that was specified with the mask option will be saved. The saved file with have the same dimensions as the input volume.";
+    o->cli_arg_description = "<volume>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+
 #if RS_FFTW_ENABLED == 1
-      { "fftw",              0, 0, G_OPTION_ARG_NONE,     &p->fftw,                "use FFTW3 instead of GSL for FFT", NULL },
+    o = rsUINewOption();
+    o->name                = "fftw";
+    o->storage             = &p->fftw;
+    o->cli_description     = "show debug information";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
 #endif  
-      { "saveattenuation",   0, 0, G_OPTION_ARG_FILENAME, &p->saveAttenuationPath, "save txt file that contains the bin's frequencies and the corresponding attenuation weight that was used.", "txt-file" },
-      { "sigmoidrolloff",    0, 0, G_OPTION_ARG_DOUBLE,   &p->rolloff,             "uses a sigmoid function for rolling off the passband. The specified number controls how fast it is rolled off with higher numbers corresponding to a quicker rolloff. A good starting point would be 10, then double-check by saving the attenuation file. (does not work with FFTW3)", "double" },
-      { NULL }
-    };
     
-    g_option_group_add_entries(g, extended_entries);
+    o = rsUINewOption();
+    o->name                = "saveattenuation";
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->saveAttenuationPath;
+    o->cli_description     = "save txt file that contains the bin's frequencies and the corresponding attenuation weight that was used.";
+    o->cli_arg_description = "<txt-file>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
     
-    // check if parameters are valid
-    if ( ! g_option_context_parse(p->context, &argc, &argv, &error) ) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        return p;
-    }
+    o = rsUINewOption();
+    o->name                = "sigmoidrolloff";
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->rolloff;
+    o->cli_description     = "uses a sigmoid function for rolling off the passband. The specified number controls how fast it is rolled off with higher numbers corresponding to a quicker rolloff. A good starting point would be 10, then double-check by saving the attenuation file. (does not work in combination with FFTW3)";
+    o->cli_arg_description = "<double>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
     
-    p->parametersValid = TRUE;
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv);
     return p;
 }

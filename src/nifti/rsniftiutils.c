@@ -653,19 +653,6 @@ size_t rsGetBufferSize(const int xh, const int yh, const int zh, const int th, c
     return rsVolumeOffset(xh, yh, zh, th) * rsWordLength(nifti_datatype);
 }
 
-void *rsMalloc(size_t size)
-{
-    void *data;
-    data = malloc(size);
-
-    if ( data == NULL ) {
-        fprintf(stderr, "OutOfMemoryException: failed to allocate %ld bytes\n", size);
-        return NULL;
-    }
-
-    return data;
-}
-
 /*
  * Takes in a buffer obtained from fsl and reads
  * out the values for one volume.
