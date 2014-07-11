@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 void  rsStringWordWrap(const char* inputString, char*** lineArray, size_t* nLines, const unsigned int lineLength);
-char* rsStringConcat(const size_t nStrings, char *first, ...);
+char* rsStringConcat(char *first, ...);
 
 #ifdef __cplusplus
 }

@@ -87,8 +87,12 @@ void rsStringWordWrap(const char* inputString, char*** lineArray, size_t* nLines
 /*
  * Concatenates an arbitrary number of strings(char*)
  * and returns the resulting string
+ * 
+ * Please note that the last element should always be
+ * NULL. This is necessary for the method to know when
+ * to stop looking for arguments.
  */
-char* rsStringConcat(const size_t nStrings, char *first, ...)
+char* rsStringConcat(char *first, ...)
 {
     // initialize variable arguments
     va_list ap;
@@ -106,7 +110,7 @@ char* rsStringConcat(const size_t nStrings, char *first, ...)
         length += strlen(string);
         strings[count-1] = string;
         string = va_arg(ap, char*);
-    } while ( count < nStrings );
+    } while ( string != NULL );
     
     va_end(ap);
     

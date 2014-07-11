@@ -155,9 +155,13 @@ char* rsUIPrepareHelpText(const char* text, const size_t lineWidth)
     for ( size_t j=0; j< textArraySize; j++) {
         char *oldText = helpText;
         char *glue = (j==0) ? "" : "\n                                   ";
-        helpText = rsStringConcat(3, helpText, glue, textArray[j]);
+        helpText = rsStringConcat(helpText, glue, textArray[j], NULL);
         rsFree(oldText);
     }
+    
+    char *oldText = helpText;
+    helpText = rsStringConcat(helpText, "\n", NULL);
+    rsFree(oldText);
     
     return helpText;
 }
