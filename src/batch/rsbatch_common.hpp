@@ -2,13 +2,7 @@
 #define rstools_rsbatch_common_h
 
 #include "rsbatch_ui.hpp"
-#include "execution/timecourse.hpp"
-#include "execution/regression.hpp"
-#include "execution/bandpass.hpp"
-#include "execution/motionscrubbing.hpp"
-#include "execution/correlation.hpp"
-#include "execution/roi.hpp"
-#include "execution/unix.hpp"
+#include "execution/tool.hpp"
 #include <sstream>
 #include "src/utils/rsstring.h"
 

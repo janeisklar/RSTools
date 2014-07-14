@@ -62,32 +62,7 @@ void rsBatchRun(rsBatchParameters *p)
         }
         
         // create the tool that's needed to execute the current task
-        execution::Tool *tool;
-        
-        switch ( task->getTask() ) {
-            case RSTask::TASK_RSTIMECOURSE:
-                tool = new execution::Timecourse();
-                break;
-            case RSTask::TASK_RSREGRESSION:
-                tool = new execution::Regression();
-                break;
-            case RSTask::TASK_RSBANDPASS:
-                tool = new execution::Bandpass();
-                break;
-            case RSTask::TASK_RSMOTIONSCRUBBING:
-                tool = new execution::MotionScrubbing();
-                break;
-            case RSTask::TASK_RSCORRELATION:
-                tool = new execution::Correlation();
-                break;
-            case RSTask::TASK_RSROI:
-                tool = new execution::Roi();
-                break;
-            case RSTask::TASK_UNIX:
-                tool = new execution::Unix();
-                break;
-        }
-        
+        execution::Tool *tool = execution::Tool::factory(task->getTask());
         tool->setTask(task);
         tool->setThreads(p->threads);
         

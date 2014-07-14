@@ -4,6 +4,25 @@
 AC_PREREQ([2.65])
 AC_INIT([RSTools], [0.9.0], [andre.hoffmann@meduniwien.ac.at])
 
+AC_CONFIG_AUX_DIR([m4])
+
+CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=c99 -fopenmp $CFLAGS"
+CXXFLAGS="-ansi -pedantic -Woverlength-strings -g -std=c++11 -fopenmp $CXXFLAGS"
+
+# prepare for automake
+AM_INIT_AUTOMAKE([foreign -Wall])
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_CXX
+AM_PROG_AR
+AC_PROG_RANLIB
+AC_PROG_LIBTOOL
+AC_PROG_INSTALL
+
+# Qt with AutoTroll.
+AT_WITH_QT([+widgets +designer])
+
 # determine git version information
 RSTOOLS_VERSION_HASH=esyscmd([git --git-dir=./.git --work-tree=. rev-parse --short HEAD])
 RSTOOLS_VERSION_DATE="esyscmd([git --git-dir=./.git --work-tree=. log -1 --pretty=format:'%ci'])"
@@ -22,21 +41,6 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,
                    ["rstools"],
                    [The translation package for libgettext(unused)]
 )
-
-CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=gnu99 -fopenmp $CFLAGS"
-CXXFLAGS="-ansi -pedantic -Woverlength-strings -g -fopenmp $CXXFLAGS"
-
-# prepare for automake
-AM_INIT_AUTOMAKE
-
-AC_CONFIG_SRCDIR([src/rsbandpass.c])
-AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile
-		 src/Makefile
- 		 src/maths/Makefile
- 		 src/nifti/Makefile
- 		 src/batch/Makefile
-                 src/utils/Makefile])
 
 # Enabling/disabling the incubator
 AC_ARG_ENABLE(
@@ -60,13 +64,6 @@ AM_COND_IF([INCUBATOR],
         AC_DEFINE(INCUBATOR_ENABLED, 0, [whether or not additional software that is not yet considered to be stable will be compiled])
     ]
 )
-
-# Checks for programs.
-AC_PROG_CC
-AC_PROG_CXX
-AC_PROG_RANLIB
-AC_PROG_LIBTOOL
-AC_PROG_INSTALL
 
 # Check for FFTW3 library
 AC_SEARCH_LIBS([fftw_execute], [fftw3],
@@ -180,6 +177,14 @@ LIBS=["$GLIB_LIBS $LIBS"]
 CFLAGS=["$GLIB_CFLAGS $CFLAGS"]
 CXXFLAGS=["$GLIB_CFLAGS $CXXFLAGS"]
 
+# Check for GMODULE
+PKG_CHECK_MODULES([GMODULE], [gmodule-2.0 >= 2.32.0])
+AC_SUBST([GMODULE_CFLAGS])
+AC_SUBST([GMODULE_LIBS])
+LIBS=["$GMODULE_LIBS $LIBS"]
+CFLAGS=["$GMODULE_CFLAGS $CFLAGS"]
+CXXFLAGS=["$GMODULE_CFLAGS $CXXFLAGS"]
+
 # Check for XERCES
 PKG_CHECK_MODULES([XERCES], [xerces-c >= 3.0.0])
 AC_SUBST([XERCES_CFLAGS])
@@ -199,5 +204,15 @@ AC_TYPE_SSIZE_T
 #AC_FUNC_MALLOC
 #AC_FUNC_REALLOC
 AC_CHECK_FUNCS([floor pow sqrt])
+
+# Define included makefiles
+AC_CONFIG_SRCDIR([src])
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile
+		 src/Makefile
+ 		 src/maths/Makefile
+ 		 src/nifti/Makefile
+ 		 src/batch/Makefile
+ 		 src/utils/Makefile])
 
 AC_OUTPUT

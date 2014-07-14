@@ -3,7 +3,8 @@
 !*.cpp
 !*.h
 !*.hpp
+*.moc.*
+!*.ui
+*.ui.h
 !Makefile.am
-!execution
-!jobeditor
-!.gitignore
+!ui
