@@ -6,7 +6,8 @@
 #include <QMenuBar>
 #include <QSignalMapper>
 #include "ui/jobeditor.ui.h"
-#include "src/batch/execution/tool.hpp"
+#include "src/batch/util/rstool.hpp"
+#include "src/batch/util/pluginmanager.hpp"
 
 class JobEditorWindow : public QMainWindow
 {
@@ -19,7 +20,7 @@ protected slots:
     void newFile();
     void open();
     void save();
-    void insertTask(int code);
+    void insertTask(int taskIndex);
     
 protected:
     void createActions();

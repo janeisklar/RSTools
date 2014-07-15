@@ -13,6 +13,7 @@ extern "C" {
 
 void  rsStringWordWrap(const char* inputString, char*** lineArray, size_t* nLines, const unsigned int lineLength);
 char* rsStringConcat(char *first, ...);
+int   rsStringCompareCaseInsensitive(char const *a, char const *b);
 
 #ifdef __cplusplus
 }

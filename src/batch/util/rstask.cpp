@@ -1,16 +1,14 @@
 #include "rstask.hpp"
+#include "rstool.hpp"
 
-const short RSTask::TASK_UNIX;
-const short RSTask::TASK_RSTIMECOURSE;
-const short RSTask::TASK_RSREGRESSION;
-const short RSTask::TASK_RSBANDPASS;
-const short RSTask::TASK_RSMOTIONSCRUBBING;
-const short RSTask::TASK_RSCORRELATION;
-const short RSTask::TASK_RSROI;
+namespace rstools {
+namespace batch {
+namespace util {
 
-RSTask::RSTask(const short taskCode)
+RSTask::RSTask(const char* code, const char* name)
 {
-    task = taskCode;
+    this->code = code;
+    this->name = name;
     setOutputPath(NULL);
     setDescription((char*)"");
     setCmd((char*)"");
@@ -28,11 +26,6 @@ void RSTask::setDescription(char* description)
 char* RSTask::getDescription()
 {
     return this->description;
-}
-
-short RSTask::getTask()
-{
-    return this->task;
 }
 
 void RSTask::setShowOutput(bool showOutput)
@@ -74,59 +67,15 @@ void RSTask::setOutputPath(char* outputPath)
     this->outputPath = outputPath;
 }
 
-short RSTask::getTaskFromName(char *name)
+RSTask* RSTask::taskFactory(const char *name)
 {
-    if ( !strcicmp(name, "rstimecourse") ) {
-        return RSTask::TASK_RSTIMECOURSE;
+    rsToolRegistration* registration = RSTool::findRegistration(name);
+    
+    if ( registration == NULL ) {
+        throw std::invalid_argument(string("Task '") + string(name) + string("' unknown"));
     }
     
-    if ( !strcicmp(name, "rsregression") ) {
-        return RSTask::TASK_RSREGRESSION;
-    }
-    
-    if ( !strcicmp(name, "rsbandpass") ) {
-        return RSTask::TASK_RSBANDPASS;
-    }
-    
-    if ( !strcicmp(name, "rsmotionscrubbing") ) {
-        return RSTask::TASK_RSMOTIONSCRUBBING;
-    }
-    
-    if ( !strcicmp(name, "rscorrelation") ) {
-        return RSTask::TASK_RSCORRELATION;
-    }
-    
-    if ( !strcicmp(name, "rsroi") ) {
-        return RSTask::TASK_RSROI;
-    }
-    
-    if ( !strcicmp(name, "unix") ) {
-        return RSTask::TASK_UNIX;
-    }
-    
-    return RSTask::TASK_UNKNOWN;
-}
-
-char const* RSTask::getNameForTask(short code)
-{
-    switch ( code ) {
-        case RSTask::TASK_RSTIMECOURSE:
-            return "rstimecourse";
-        case RSTask::TASK_RSREGRESSION:
-            return "rsregression";
-        case RSTask::TASK_RSBANDPASS:
-            return "rsbandpass";
-        case RSTask::TASK_RSMOTIONSCRUBBING:
-            return "rsmotionscrubbing";
-        case RSTask::TASK_RSCORRELATION:
-            return "rscorrelation";
-        case RSTask::TASK_RSROI:
-            return "rsroi";
-        case RSTask::TASK_UNIX:
-            return "unix";
-        default:
-            return "unknown";
-    }
+    return registration->createTask();
 }
 
 /*
@@ -160,16 +109,14 @@ char** RSTask::getCallString(int *argc)
     return argv;
 }
 
-char const * RSTask::getName()
+const char* RSTask::getName()
 {
-    return RSTask::getNameForTask(this->getTask());
+    return name;
 }
 
-int RSTask::strcicmp(char const *a, char const *b)
+const char* RSTask::getCode()
 {
-    for (;; a++, b++) {
-        int d = tolower(*a) - tolower(*b);
-        if (d != 0 || !*a)
-            return d;
-    }
+    return code;
 }
+
+}}} // namespace rstools::batch::util

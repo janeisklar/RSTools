@@ -1,5 +1,5 @@
-#ifndef rstools_rstask_hpp
-#define rstools_rstask_hpp
+#ifndef rstools_rsbatch_util_rstask_hpp
+#define rstools_rsbatch_util_rstask_hpp
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,22 +14,17 @@ typedef struct {
     char *value;
 } rsArgument;
 
+namespace rstools {
+namespace batch {
+namespace util {
+
 class RSTask {
     
     public:
-        static const short TASK_UNKNOWN           = -1;
-        static const short TASK_UNIX              = 0;
-        static const short TASK_RSTIMECOURSE      = 1;
-        static const short TASK_RSREGRESSION      = 2;
-        static const short TASK_RSBANDPASS        = 3;
-        static const short TASK_RSMOTIONSCRUBBING = 4;
-        static const short TASK_RSCORRELATION     = 5;
-        static const short TASK_RSROI             = 6;
         
-        RSTask(short);
+        RSTask(const char*, const char*);
         ~RSTask();
         
-        short getTask();
         void setDescription(char*);
         char* getDescription();
         void addArgument(rsArgument*);
@@ -39,22 +34,23 @@ class RSTask {
         void setShowOutput(bool showOutput);
         bool shouldShowOutput();
         char** getCallString(int *argc);
-        char const * getName();
+        const char* getName();
+        const char* getCode();
         void setCmd(char* cmd);
         char* getCmd();
         
-        static short getTaskFromName(char*);
-        static char const* getNameForTask(short);
+        static RSTask* taskFactory(const char *code);
     
     protected:
-        short task;
+        const char* name;
+        const char* code;
         char *description;
         vector<rsArgument*> arguments;
         char *outputPath;
         char *cmd;
         bool showOutput;
-        
-        static int strcicmp(char const *, char const *);
 };
+
+}}} // namespace rstools::batch::util
 
 #endif

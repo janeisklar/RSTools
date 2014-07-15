@@ -1,5 +1,5 @@
-#ifndef rstools_rsjobparser_hpp
-#define rstools_rsjobparser_hpp
+#ifndef rstools_rsbatch_util_rsjobparser_hpp
+#define rstools_rsbatch_util_rsjobparser_hpp
 
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/util/XMLString.hpp>
@@ -15,6 +15,10 @@
 using namespace std;
 using namespace xercesc;
 
+namespace rstools {
+namespace batch {
+namespace util {
+    
 class RSJobParser {
     protected:
         RSJob*           job;
@@ -43,5 +47,7 @@ class RSJobParser {
         char *trimString(char *s);
         char *replaceString(char *orig, char *rep, char *with);
 };
+
+}}} // namespace rstools::batch::util
 
 #endif

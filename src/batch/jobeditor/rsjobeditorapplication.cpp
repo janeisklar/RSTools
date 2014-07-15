@@ -1,6 +1,6 @@
 #include "rsjobeditorapplication.h"
 
-using namespace rstools::batch::execution;
+using namespace rstools::batch::util;
 
 void JobEditorWindow::createActions()
 {
@@ -51,22 +51,32 @@ void JobEditorWindow::createMenus()
 
 void JobEditorWindow::createInsertTaskMenuItems()
 {
-    QSignalMapper* signalMapper = new QSignalMapper (this) ;
+    // ensure that plugins are loaded
+    PluginManager::getInstance().loadPlugins();
     
-    for ( size_t i=0; Tool::tools[i] >= 0; i++ ) {
-        const short code = Tool::tools[i];
-        const char* name = RSTask::getNameForTask(code);
+    QSignalMapper* signalMapper = new QSignalMapper(this);
+    
+    vector<const char*> tools = RSTool::getTools();
+    size_t i=0;
+    
+    for(vector<const char*>::iterator it = tools.begin(); it != tools.end(); ++it) {
+
+        const char* code   = (char*)*it;
+        RSTask* task = RSTask::taskFactory(code);
+        const char* name   = task->getName();
         
         fprintf(stdout, "Tool: %s\n", name);
 
         QAction *action = new QAction(tr(name), this);
-        connect (action, SIGNAL(triggered()), signalMapper, SLOT(map()));
-        signalMapper->setMapping(action, code);
+        connect(action, SIGNAL(triggered()), signalMapper, SLOT(map()));
+        signalMapper->setMapping(action, i);
         
         insertMenu->addAction(action);
+        
+        i++;
     }
     
-    connect (signalMapper, SIGNAL(mapped(int)), this, SLOT(insertTask(int))) ;
+    connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(insertTask(int))) ;
 }
 
 void JobEditorWindow::newFile()
@@ -81,9 +91,11 @@ void JobEditorWindow::save()
 {
 }
 
-void JobEditorWindow::insertTask(int code)
+void JobEditorWindow::insertTask(int taskIndex)
 {
-    const char* name = RSTask::getNameForTask(code);    
+    const char* code = RSTool::getTools().at(taskIndex);
+    RSTask* task = RSTask::taskFactory(code);
+    const char* name = task->getName();
     fprintf(stdout, "Insert tool: %s\n", name);
 }
 

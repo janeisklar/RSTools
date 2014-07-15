@@ -1,22 +1,36 @@
-#ifndef rstools_rsbatch_execution_tool_h
-#define rstools_rsbatch_execution_tool_h
+#ifndef rstools_rsbatch_util_tool_h
+#define rstools_rsbatch_util_tool_h
 
 #include <iostream>
-#include "src/batch/outputCatcher.hpp"
-#include "src/batch/rstask.hpp"
 #include <sys/ioctl.h>
 #include <math.h>
 #include <stdexcept>
+#include <vector>
 #include "src/rscommon.h"
+#include "outputCatcher.hpp"
+#include "rstask.hpp"
 
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace util {
 
-class Tool {
+class RSTool;
+
+typedef RSTool* (*rsToolToolCreator) (void);
+typedef RSTask* (*rsToolTaskCreator) (void);
+
+typedef struct {
+    const char* name;
+    rsToolToolCreator createTool;
+    rsToolTaskCreator createTask;
+} rsToolRegistration;
+
+class RSTool {
 
     public:
-        static Tool* factory(const short taskCode);
+        static rsToolRegistration* findRegistration(const char* name);
+        static RSTool* toolFactory(const char* name);
+        static void registerTool(rsToolRegistration* registration);
         
         void parseParams(int argc, char** argv);
         void init();
@@ -33,7 +47,7 @@ class Tool {
         static void showProgressCallback(rsReportProgressEvent *event, void *userdata);
         static void printProgressBar(FILE* stream, double percentage, int run, char* description);
         
-        static const short tools[];
+        static vector<const char*> getTools();
         
     protected:
         virtual void _parseParams(int, char**) = 0;
@@ -44,9 +58,10 @@ class Tool {
         char** argv;
         RSTask *task;
         int threads;
-        rstools::batch::OutputCatcher *oc;
+        OutputCatcher *oc;
+        static vector<rsToolRegistration*> tools;
 };
 
-}}} // namespace rstools::batch::execution
+}}} // namespace rstools::batch::util
 
 #endif

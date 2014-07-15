@@ -1,5 +1,7 @@
 #include "rsbatch_ui.hpp"
 
+using namespace rstools::batch::util;
+
 rsBatchParameters* rsBatchInitParameters()
 {
     rsBatchParameters *p = (rsBatchParameters*)rsMalloc(sizeof(rsBatchParameters));
@@ -18,7 +20,7 @@ rsBatchParameters* rsBatchInitParameters()
 }
 
 rsBatchParameters* rsBatchParseParams(int argc, char * argv[])
-{
+{    
     rsBatchParameters *p = rsBatchInitParameters();
 
     // initialize the most common options

@@ -5,7 +5,9 @@
 #include <strings.h>
 #include <glib.h>
 #include "src/nifti/rsniftiutils.h"
-#include "rsjobparser.hpp"
+#include "src/batch/util/rsjobparser.hpp"
+
+using namespace rstools::batch::util;
 
 typedef struct {
     char *jobpath;

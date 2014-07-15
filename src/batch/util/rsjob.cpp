@@ -1,5 +1,9 @@
 #include "rsjob.hpp"
 
+namespace rstools {
+namespace batch {
+namespace util {
+
 RSJob::RSJob(char* jobfile)
 {
     setJobfile(jobfile);
@@ -45,3 +49,5 @@ vector<rsArgument*> RSJob::getArguments()
 {
     return this->arguments;
 }
+
+}}} // namespace rstools::batch::util

@@ -1,3 +1,5 @@
-lib_LIBRARIES = librsniftiutils.a
-librsniftiutils_a_SOURCES = rsniftiutils.c
-librsniftiutils_a_LIBADD = @LIBOBJS@
+lib_LTLIBRARIES = librsniftiutils.la
+librsniftiutils_la_SOURCES = rsniftiutils.c
+librsniftiutils_la_LIBADD = ../utils/librsutils.la @LIBOBJS@
+
+pkginclude_HEADERS = rsniftiutils.h

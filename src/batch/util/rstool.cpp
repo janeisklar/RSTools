@@ -1,53 +1,53 @@
-#include "tool.hpp"
-
-#include "timecourse.hpp"
-#include "regression.hpp"
-#include "bandpass.hpp"
-#include "motionscrubbing.hpp"
-#include "correlation.hpp"
-#include "roi.hpp"
-#include "unix.hpp"
+#include "rstool.hpp"
 
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace util {
 
-const short Tool::tools[] = {
-    RSTask::TASK_RSTIMECOURSE,
-    RSTask::TASK_RSREGRESSION,
-    RSTask::TASK_RSBANDPASS,
-    RSTask::TASK_RSMOTIONSCRUBBING,
-    RSTask::TASK_RSCORRELATION,
-    RSTask::TASK_RSROI,
-    RSTask::TASK_UNIX,
-    -1
-};
-    
-Tool* Tool::factory(const short taskCode) {
+vector<rsToolRegistration*> RSTool::tools;
 
-    switch ( taskCode ) {
-        case RSTask::TASK_RSTIMECOURSE:
-            return new Timecourse();
-        case RSTask::TASK_RSREGRESSION:
-            return new Regression();
-        case RSTask::TASK_RSBANDPASS:
-            return new Bandpass();
-        case RSTask::TASK_RSMOTIONSCRUBBING:
-            return new MotionScrubbing();
-        case RSTask::TASK_RSCORRELATION:
-            return new Correlation();
-        case RSTask::TASK_RSROI:
-            return new Roi();
-        case RSTask::TASK_UNIX:
-            return new Unix();
+rsToolRegistration* RSTool::findRegistration(const char* name)
+{
+    for(vector<rsToolRegistration*>::iterator it = tools.begin(); it != tools.end(); ++it) {
+        rsToolRegistration* registration = *it;
+        
+        if ( ! strcmp(registration->name, name) ) {
+            return registration;
+        }
     }
     
-    throw std::invalid_argument("taskCode unknown");
+    return NULL;
+}
+    
+RSTool* RSTool::toolFactory(const char* name)
+{
+    rsToolRegistration *registration = findRegistration(name);
+    
+    if ( registration == NULL ) {
+        throw std::invalid_argument(string("tool '") + string(name) + string("' unknown"));
+    }
+    
+    return registration->createTool();
 }
 
-void Tool::parseParams(int argc, char** argv)
+void RSTool::registerTool(rsToolRegistration* registration)
 {
-    oc = new rstools::batch::OutputCatcher();
+    tools.push_back(registration);
+}
+
+vector<const char*> RSTool::getTools()
+{
+    vector<const char*> toolNames;
+    for(vector<rsToolRegistration*>::iterator it = tools.begin(); it != tools.end(); ++it) {
+        rsToolRegistration* registration = *it;
+        toolNames.push_back(registration->name);
+    }
+    return toolNames;
+}
+
+void RSTool::parseParams(int argc, char** argv)
+{
+    oc = new OutputCatcher();
     oc->beginCapture();
     
     // copy call arguments
@@ -67,9 +67,9 @@ void Tool::parseParams(int argc, char** argv)
     delete oc;
 }
 
-void Tool::init()
+void RSTool::init()
 {
-    oc = new rstools::batch::OutputCatcher();
+    oc = new OutputCatcher();
     oc->beginCapture();
 
     this->_init();
@@ -79,12 +79,12 @@ void Tool::init()
     delete oc;
 }
 
-void Tool::run()
+void RSTool::run()
 {
     if ( this->getTask()->shouldShowOutput() ) {
         this->_run();
     } else {
-        oc = new rstools::batch::OutputCatcher();
+        oc = new OutputCatcher();
         oc->beginCapture();
     
         this->_run();
@@ -95,39 +95,39 @@ void Tool::run()
     }
 }
 
-char const* Tool::getOutput()
+char const* RSTool::getOutput()
 {
     return _message.c_str();
 }
 
-char** Tool::getCallString(int *argc)
+char** RSTool::getCallString(int *argc)
 {
     *argc = this->argc;
     return this->argv;
 }
 
-RSTask* Tool::getTask()
+RSTask* RSTool::getTask()
 {
     return this->task;
 }
 
-void Tool::setTask(RSTask *task)
+void RSTool::setTask(RSTask *task)
 {
     this->task = task;
 }
 
-void Tool::setThreads(int threads)
+void RSTool::setThreads(int threads)
 {
     this->threads = threads;
 }
 
-void Tool::showProgressCallback(rsReportProgressEvent *event, void *userdata)
+void RSTool::showProgressCallback(rsReportProgressEvent *event, void *userdata)
 {
-    rstools::batch::OutputCatcher *oc = (rstools::batch::OutputCatcher*) userdata;
+    OutputCatcher *oc = (OutputCatcher*) userdata;
     printProgressBar(oc->getStdout(), event->percentage, event->run, (char*)"");
 }
 
-void Tool::printProgressBar(FILE* stream, double percentage, int run, char* description)
+void RSTool::printProgressBar(FILE* stream, double percentage, int run, char* description)
 {
     // determine the width of the terminal window
     struct winsize max;
@@ -166,4 +166,4 @@ void Tool::printProgressBar(FILE* stream, double percentage, int run, char* desc
     fprintf(stream, "] % 3d%%", (int)ceil(percentage));
 }
 
-}}} // namespace rstools::batch::execution
+}}} // namespace rstools::batch::util

@@ -125,3 +125,15 @@ char* rsStringConcat(char *first, ...)
     
     return result;
 }
+
+/*
+ * Case-insensitive version of strcmp
+ */
+int rsStringCompareCaseInsensitive(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+}

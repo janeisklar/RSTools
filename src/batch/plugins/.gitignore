@@ -1,0 +1,14 @@
+*
+!*.c
+!*.cpp
+!*.h
+!*.hpp
+!rsbandpass
+!rsregression
+!rscorrelation
+!rstimecourse
+!rsroi
+!rsmotionscrubbing
+!unix
+!.gitignore
+

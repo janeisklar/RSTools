@@ -4,12 +4,15 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace rstools::batch;
+using namespace rstools::batch::util;
 
 void rsBatchInit(rsBatchParameters* p)
 {
     p->parametersValid = FALSE;
     p->verbose = ! p->quiet;
+
+    // ensure that plugins are loaded
+    PluginManager::getInstance().loadPlugins();
 
     // Parse job-file
     RSJobParser* parser = new RSJobParser(p->jobpath);
@@ -47,7 +50,7 @@ void rsBatchRun(rsBatchParameters *p)
     
     // Parse the runtime arguments
     vector<RSTask*> tasks = p->job->getTasks();
-    execution::Tool** tools = (execution::Tool**)rsMalloc(tasks.size()*sizeof(execution::Tool*));
+    RSTool** tools = (RSTool**)rsMalloc(tasks.size()*sizeof(RSTool*));
     
     
     if ( p->verbose ) {
@@ -58,11 +61,11 @@ void rsBatchRun(rsBatchParameters *p)
         RSTask *task = tasks[t];
         
         if ( p->verbose ) {
-            execution::Tool::printProgressBar(stdout, ((double)t*100.0)/(double)tasks.size(), t, task->getDescription());
+            RSTool::printProgressBar(stdout, ((double)t*100.0)/(double)tasks.size(), t, task->getDescription());
         }
         
         // create the tool that's needed to execute the current task
-        execution::Tool *tool = execution::Tool::factory(task->getTask());
+        RSTool *tool = RSTool::toolFactory(task->getCode());
         tool->setTask(task);
         tool->setThreads(p->threads);
         
@@ -87,14 +90,14 @@ void rsBatchRun(rsBatchParameters *p)
     }
     
     if ( p->verbose ) {
-        execution::Tool::printProgressBar(stdout, 100, tasks.size(), (char*)" ");
+        RSTool::printProgressBar(stdout, 100, tasks.size(), (char*)" ");
         fprintf(stdout, "\n\n# Executing tasks\n");
     }
     
     // Execute tasks
     for ( short t = 0; t < tasks.size(); t++ ) {
                 
-        execution::Tool *tool = tools[t];
+        RSTool *tool = tools[t];
 
         if ( p->verbose ) {
             fprintf(stdout, "Task %d of %d\n", (int)t+1, (int)tasks.size());
@@ -131,11 +134,12 @@ void rsBatchRun(rsBatchParameters *p)
     }
 }
 
-void rsBatchPrintExecutionError(execution::Tool *tool, int taskNum, char const * state)
+void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
 {
     fprintf(stderr, "\nError in task #%d:\n", taskNum);
     
-    if ( tool->getTask()->getTask() == RSTask::TASK_UNIX ) {
+    #pragma message "TODO: Fix rsBatchPrintExecutionError() in " __FILE__ " Hint: migrate to RSTool"
+    if ( tool->getTask()->getCode() == "" ) {
         fprintf(stdout, "Command: %s\n", tool->getTask()->getCmd());
     } else {
         int argc;
@@ -172,13 +176,13 @@ void rsBatchDestroy(rsBatchParameters* p)
     XMLPlatformUtils::Terminate();
 }
 
-void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools) {
+void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools) {
     
     vector<RSTask*>::size_type nTasks = p->job->getTasks().size();
     
     for ( vector<RSTask*>::size_type t=0; t<nTasks; t++ ) {
         
-        execution::Tool *tool = tools[t];
+        RSTool *tool = tools[t];
         RSTask *task = tool->getTask();
         
         char **chunkedDescription;
@@ -194,7 +198,8 @@ void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools) {
         fprintf(stdout, "################################################################\n");
         fprintf(stdout, "\n");
     
-        if ( task->getTask() == RSTask::TASK_UNIX ) {
+        #pragma message "TODO: Fix rsBatchShowJobOverview() in " __FILE__
+        if ( task->getCode() == "" ) {
             fprintf(stdout, "Unix command: \n%s\n", task->getCmd());
         } else {
             int argc;

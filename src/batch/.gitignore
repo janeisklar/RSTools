@@ -6,4 +6,6 @@
 !Makefile.am
 !execution
 !jobeditor
+!util
+!plugins
 !.gitignore

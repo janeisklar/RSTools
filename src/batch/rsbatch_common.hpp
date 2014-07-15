@@ -2,17 +2,18 @@
 #define rstools_rsbatch_common_h
 
 #include "rsbatch_ui.hpp"
-#include "execution/tool.hpp"
+#include "src/batch/util/rstool.hpp"
+#include "src/batch/util/pluginmanager.hpp"
 #include <sstream>
 #include "src/utils/rsstring.h"
 
-using namespace rstools::batch;
+using namespace rstools::batch::util;
 
 void rsBatchInit(rsBatchParameters* p);
 void rsBatchRun(rsBatchParameters *p);
 void rsBatchDestroy(rsBatchParameters* p);
 void rsBatchPrintParameter(rsBatchParameters *p);
-void rsBatchPrintExecutionError(execution::Tool *tool, int taskNum, char const * state);
-void rsBatchShowJobOverview(rsBatchParameters* p, execution::Tool** tools);
+void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state);
+void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools);
 
 #endif

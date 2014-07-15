@@ -1,5 +1,5 @@
-#ifndef rstools_parseerrorhandler_hpp
-#define rstools_parseerrorhandler_hpp
+#ifndef rstools_rsbatch_util_parseerrorhandler_hpp
+#define rstools_rsbatch_util_parseerrorhandler_hpp
 
 #include <stdio.h>
  
@@ -12,6 +12,10 @@
 
 XERCES_CPP_NAMESPACE_USE
 
+namespace rstools {
+namespace batch {
+namespace util {
+    
 class ParserErrorHandler : public ErrorHandler
 {
     private:
@@ -44,5 +48,7 @@ class ParserErrorHandler : public ErrorHandler
         {
         }
 };
+
+}}} // namespace rstools::batch::util
 
 #endif

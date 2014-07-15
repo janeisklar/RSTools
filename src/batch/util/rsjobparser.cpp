@@ -1,5 +1,9 @@
 #include "rsjobparser.hpp"
 
+namespace rstools {
+namespace batch {
+namespace util {
+
 RSJobParser::RSJobParser(char *jobfile)
 {
     this->job = new RSJob(jobfile);
@@ -142,8 +146,7 @@ void RSJobParser::parseTasks()
 void RSJobParser::parseTask()
 {
     char *taskName = XMLString::transcode(current_node->getNodeName());
-    short taskCode = RSTask::getTaskFromName(taskName);
-    RSTask *task = new RSTask(taskCode);
+    RSTask *task = RSTask::taskFactory(taskName);
     
     for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
 
@@ -440,3 +443,5 @@ char* RSJobParser::replaceString(char *orig, char *rep, char *with)
     strcpy(tmp, orig);
     return result;
 }
+
+}}} // namespace rstools::batch::util

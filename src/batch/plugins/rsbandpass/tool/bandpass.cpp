@@ -1,8 +1,12 @@
 #include "bandpass.hpp"
 
+using namespace rstools::batch::util;
+
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace plugins {
+namespace rsbandpass {
+namespace tool {
     
 void Bandpass::_parseParams(int argc, char * argv[])
 {
@@ -18,7 +22,7 @@ void Bandpass::_init()
 void Bandpass::_run()
 {
     params->progressCallback = (rsReportProgressCallback*)rsMalloc(sizeof(rsReportProgressCallback));
-    params->progressCallback->cb = (rsReportProgressCallback_t) Tool::showProgressCallback;
+    params->progressCallback->cb = (rsReportProgressCallback_t) RSTool::showProgressCallback;
     params->progressCallback->data = (void*)oc;
         
     rsBandpassRun(params);
@@ -36,4 +40,4 @@ bool Bandpass::isEverythingFine()
     return params != NULL && params->parametersValid;
 }
 
-}}} // namespace rstools::batch::execution
+}}}}} // namespace rstools::batch::plugins::rsbandpass::tool

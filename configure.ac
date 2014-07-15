@@ -4,10 +4,12 @@
 AC_PREREQ([2.65])
 AC_INIT([RSTools], [0.9.0], [andre.hoffmann@meduniwien.ac.at])
 
+ACLOCAL_AMFLAGS=-I m4
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([m4])
 
-CFLAGS="-ansi -pedantic -Woverlength-strings -g -std=c99 -fopenmp $CFLAGS"
-CXXFLAGS="-ansi -pedantic -Woverlength-strings -g -std=c++11 -fopenmp $CXXFLAGS"
+CFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c99 -fopenmp $CFLAGS"
+CXXFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c++11 -fopenmp $CXXFLAGS"
 
 # prepare for automake
 AM_INIT_AUTOMAKE([foreign -Wall])
@@ -17,8 +19,12 @@ AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_AR
 AC_PROG_RANLIB
+#AC_LIBTOOL_DLOPEN
+AC_ENABLE_SHARED
+AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
+LT_INIT
 
 # Qt with AutoTroll.
 AT_WITH_QT([+widgets +designer])
@@ -213,6 +219,8 @@ AC_CONFIG_FILES([Makefile
  		 src/maths/Makefile
  		 src/nifti/Makefile
  		 src/batch/Makefile
+		 src/batch/plugins/Makefile
+		 src/batch/util/Makefile
  		 src/utils/Makefile])
 
 AC_OUTPUT

@@ -1,5 +1,5 @@
-#ifndef rstools_batcb_outputcatcher_hpp
-#define rstools_batcb_outputcatcher_hpp
+#ifndef rstools_rsbatch_util_outputcatcher_hpp
+#define rstools_rsbatch_util_outputcatcher_hpp
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -10,6 +10,7 @@
 
 namespace rstools {
 namespace batch {
+namespace util {
 
 class OutputCatcher
 {
@@ -141,6 +142,6 @@ private:
     FILE *oldStdout;
 };
 
-}}
+}}} // namespace rstools::batch::util
 
 #endif
