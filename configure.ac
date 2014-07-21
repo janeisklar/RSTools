@@ -26,6 +26,11 @@ AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 LT_INIT
 
+# Check if on OS X
+AC_CANONICAL_HOST
+AM_CONDITIONAL(BUILD_OS_IS_DARWIN, [test x"$build_os" = darwin])
+
+
 # Qt with AutoTroll.
 AT_WITH_QT([+widgets +designer])
 

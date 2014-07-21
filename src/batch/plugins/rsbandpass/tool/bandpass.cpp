@@ -40,4 +40,12 @@ bool Bandpass::isEverythingFine()
     return params != NULL && params->parametersValid;
 }
 
+rsUIInterface* Bandpass::createUI()
+{
+    rsBandpassParameters *p = rsBandpassInitParameters();    
+    rsBandpassBuildInterface(p);
+    
+    return p->interface;
+}
+
 }}}}} // namespace rstools::batch::plugins::rsbandpass::tool

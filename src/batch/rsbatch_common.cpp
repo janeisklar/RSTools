@@ -136,8 +136,10 @@ void rsBatchRun(rsBatchParameters *p)
 
 void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
 {
-    fprintf(stderr, "\nError in task #%d:\n", taskNum);
+    fprintf(stderr, "\nError in task #%d while %s\n", taskNum, state);
+    tool->printCallString(stderr);
     
+    /*
     #pragma message "TODO: Fix rsBatchPrintExecutionError() in " __FILE__ " Hint: migrate to RSTool"
     if ( tool->getTask()->getCode() == "" ) {
         fprintf(stdout, "Command: %s\n", tool->getTask()->getCmd());
@@ -149,7 +151,7 @@ void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
         for ( int i=1; i<argc; i++ ) {
             fprintf(stderr, "  %s\n", argv[i]);
         }
-    }
+    }*/
     
     if ( strcmp(tool->getOutput(), "") ) {
         fprintf(stderr, "\n\nMessage:\n%s\n", tool->getOutput());
@@ -197,7 +199,10 @@ void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools) {
         }
         fprintf(stdout, "################################################################\n");
         fprintf(stdout, "\n");
-    
+        
+        tool->printCallString(stdout);
+        
+        /*
         #pragma message "TODO: Fix rsBatchShowJobOverview() in " __FILE__
         if ( task->getCode() == "" ) {
             fprintf(stdout, "Unix command: \n%s\n", task->getCmd());
@@ -212,5 +217,6 @@ void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools) {
         }
         
         fprintf(stdout, "\n");
+        */
     }
 }

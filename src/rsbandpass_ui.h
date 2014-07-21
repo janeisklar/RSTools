@@ -52,7 +52,8 @@ typedef struct {
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]);
 rsBandpassParameters *rsBandpassInitParameters();
 void rsBandpassFreeParams(rsBandpassParameters *p);
-
+void rsBandpassBuildInterface(rsBandpassParameters *p);
+    
 #ifdef __cplusplus
 }
 #endif

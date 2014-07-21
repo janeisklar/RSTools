@@ -6,12 +6,12 @@ namespace util {
 
 vector<rsToolRegistration*> RSTool::tools;
 
-rsToolRegistration* RSTool::findRegistration(const char* name)
+rsToolRegistration* RSTool::findRegistration(const char* code)
 {
     for(vector<rsToolRegistration*>::iterator it = tools.begin(); it != tools.end(); ++it) {
         rsToolRegistration* registration = *it;
         
-        if ( ! strcmp(registration->name, name) ) {
+        if ( ! strcmp(registration->code, code) ) {
             return registration;
         }
     }
@@ -19,12 +19,12 @@ rsToolRegistration* RSTool::findRegistration(const char* name)
     return NULL;
 }
     
-RSTool* RSTool::toolFactory(const char* name)
+RSTool* RSTool::toolFactory(const char* code)
 {
-    rsToolRegistration *registration = findRegistration(name);
+    rsToolRegistration *registration = findRegistration(code);
     
     if ( registration == NULL ) {
-        throw std::invalid_argument(string("tool '") + string(name) + string("' unknown"));
+        throw std::invalid_argument(string("tool '") + string(code) + string("' is unknown"));
     }
     
     return registration->createTool();
@@ -37,12 +37,12 @@ void RSTool::registerTool(rsToolRegistration* registration)
 
 vector<const char*> RSTool::getTools()
 {
-    vector<const char*> toolNames;
+    vector<const char*> toolCodes;
     for(vector<rsToolRegistration*>::iterator it = tools.begin(); it != tools.end(); ++it) {
         rsToolRegistration* registration = *it;
-        toolNames.push_back(registration->name);
+        toolCodes.push_back(registration->code);
     }
-    return toolNames;
+    return toolCodes;
 }
 
 void RSTool::parseParams(int argc, char** argv)
@@ -164,6 +164,19 @@ void RSTool::printProgressBar(FILE* stream, double percentage, int run, char* de
     }
 
     fprintf(stream, "] % 3d%%", (int)ceil(percentage));
+}
+
+void RSTool::printCallString(FILE *stream)
+{
+    int argc;
+    char **argv = getCallString(&argc);
+
+    fprintf(stream, "Tool:\n %s\n\nParams:\n", getTask()->getName());
+    for ( int i=1; i<argc; i++ ) {
+        fprintf(stream, "  %s\n", argv[i]);
+    }
+    
+    fprintf(stream, "\n");
 }
 
 }}} // namespace rstools::batch::util

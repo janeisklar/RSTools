@@ -1,6 +1,7 @@
 #include "rsbandpass_ui.h"
 
-rsBandpassParameters *rsBandpassInitParameters() {
+rsBandpassParameters *rsBandpassInitParameters()
+{
     rsBandpassParameters *p = (rsBandpassParameters*)rsMalloc(sizeof(rsBandpassParameters));
     
     p->inputpath            = NULL;
@@ -29,7 +30,8 @@ rsBandpassParameters *rsBandpassInitParameters() {
     return p;
 }
 
-void rsBandpassFreeParams(rsBandpassParameters *p) {
+void rsBandpassFreeParams(rsBandpassParameters *p)
+{
     free(p->inputpath);
     free(p->maskpath);
     free(p->savemaskpath);
@@ -43,11 +45,21 @@ void rsBandpassFreeParams(rsBandpassParameters *p) {
     free(p);
 }
 
-rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
+rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[])
+{
 
     rsBandpassParameters *p = rsBandpassInitParameters();
     p->callString = rsMergeStringArray(argc, argv);
     
+    rsBandpassBuildInterface(p);
+    
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv);
+    return p;
+}
+
+void rsBandpassBuildInterface(rsBandpassParameters *p)
+{
     // initialize the most common options
     rsUIOption *o;
     p->interface = rsUINewInterface();
@@ -121,6 +133,7 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
     o->storage             = &p->threads;
     o->cli_description     = "number of threads used for processing";
     o->cli_arg_description = "<n>";
+    o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
     
     o = rsUINewOption();
@@ -128,6 +141,7 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
     o->shorthand           = 'v';
     o->storage             = &p->verbose;
     o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
         
     // initialize the more advanced and rather unusual options
@@ -144,7 +158,7 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
     o = rsUINewOption();
     o->name                = "fftw";
     o->storage             = &p->fftw;
-    o->cli_description     = "show debug information";
+    o->cli_description     = "use the FFTW3-library for the fourier transformation instead of GSL";
     o->group               = RS_UI_GROUP_EXTENDED;
     rsUIAddOption(p->interface, o);
 #endif  
@@ -166,8 +180,4 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[]) {
     o->cli_arg_description = "<double>";
     o->group               = RS_UI_GROUP_EXTENDED;
     rsUIAddOption(p->interface, o);
-    
-    // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv);
-    return p;
 }

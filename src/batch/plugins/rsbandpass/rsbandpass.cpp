@@ -19,6 +19,7 @@ rsToolRegistration* RSBandpass::createToolRegistration()
 {
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
+    toolRegistration->code       = getCode();
     toolRegistration->createTool = (rsToolToolCreator)RSBandpass::createBandpassTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSBandpass::createBandpassTask;
     return toolRegistration;
@@ -27,6 +28,11 @@ rsToolRegistration* RSBandpass::createToolRegistration()
 const char* RSBandpass::getName()
 {
     return "Bandpass Filter";
+}
+
+const char* RSBandpass::getCode()
+{
+    return "rsbandpass";
 }
 
 const char* RSBandpass::getVersion()

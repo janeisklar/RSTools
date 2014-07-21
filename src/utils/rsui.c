@@ -32,6 +32,7 @@ rsUIOption* rsUINewOption()
     o->cli_arg_description = NULL;
     o->gui_description     = NULL;
     o->group               = RS_UI_GROUP_MAIN;
+    o->showInGUI           = TRUE;
     
     return o;
 }

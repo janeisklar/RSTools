@@ -29,6 +29,8 @@ typedef struct {
     gchar*         gui_description;
     unsigned short group;
     
+    BOOL           showInGUI;
+    
 } rsUIOption;
 
 typedef struct {

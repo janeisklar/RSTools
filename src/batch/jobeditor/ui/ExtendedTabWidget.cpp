@@ -118,7 +118,9 @@ void ExtendedTabWidget::setCurrentIndex(int index)
     if( index != currentIndex() )
     {
         stackWidget->setCurrentIndex(index);
-        buttonGroup->button(index)->setChecked(true);
+        if ( buttonGroup->button(index) != NULL ) {
+            buttonGroup->button(index)->setChecked(true);
+        }
         emit currentIndexChanged(index);
     }
 }

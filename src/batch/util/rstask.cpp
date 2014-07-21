@@ -57,6 +57,20 @@ vector<rsArgument*> RSTask::getArguments()
     return this->arguments;
 }
 
+rsArgument* RSTask::getArgument(char* name)
+{
+    vector<rsArgument*> arguments = this->getArguments();
+    for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
+        rsArgument *arg = arguments[i];
+        
+        if ( ! strcmp(arg->key, name) ) {
+            return  arg;
+        }
+    }
+    
+    return NULL;
+}
+
 char* RSTask::getOutputPath()
 {
     return this->outputPath;
@@ -67,12 +81,12 @@ void RSTask::setOutputPath(char* outputPath)
     this->outputPath = outputPath;
 }
 
-RSTask* RSTask::taskFactory(const char *name)
+RSTask* RSTask::taskFactory(const char *code)
 {
-    rsToolRegistration* registration = RSTool::findRegistration(name);
+    rsToolRegistration* registration = RSTool::findRegistration(code);
     
     if ( registration == NULL ) {
-        throw std::invalid_argument(string("Task '") + string(name) + string("' unknown"));
+        throw std::invalid_argument(string("Task with the code '") + string(code) + string("' unknown"));
     }
     
     return registration->createTask();

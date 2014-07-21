@@ -13,9 +13,9 @@ class Plugin {
 
     public:
         virtual const char* getName()        = 0;
+        virtual const char* getCode()        = 0;
         virtual const char* getVersion()     = 0;
         virtual void        registerPlugin() = 0;
-        
 };
 
 typedef Plugin* (*rsGetPluginFunc) (void);

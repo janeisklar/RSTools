@@ -18,6 +18,7 @@ class RSBandpass : Plugin {
         RSBandpass();
         void  registerPlugin();
         const char* getName();
+        const char* getCode();
         const char* getVersion();
 
         static RSTool* createBandpassTool();

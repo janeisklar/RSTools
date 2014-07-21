@@ -9,6 +9,7 @@
 #include "src/rscommon.h"
 #include "outputCatcher.hpp"
 #include "rstask.hpp"
+#include "src/utils/rsui.h"
 
 namespace rstools {
 namespace batch {
@@ -21,6 +22,7 @@ typedef RSTask* (*rsToolTaskCreator) (void);
 
 typedef struct {
     const char* name;
+    const char* code;
     rsToolToolCreator createTool;
     rsToolTaskCreator createTask;
 } rsToolRegistration;
@@ -28,8 +30,8 @@ typedef struct {
 class RSTool {
 
     public:
-        static rsToolRegistration* findRegistration(const char* name);
-        static RSTool* toolFactory(const char* name);
+        static rsToolRegistration* findRegistration(const char* code);
+        static RSTool* toolFactory(const char* code);
         static void registerTool(rsToolRegistration* registration);
         
         void parseParams(int argc, char** argv);
@@ -37,12 +39,15 @@ class RSTool {
         void run();
         virtual void destroy() = 0;
         virtual bool isEverythingFine() = 0;
+        virtual rsUIInterface* createUI() = 0;
         
         char const * getOutput();
         char **getCallString(int *argc);
         RSTask *getTask();
         void setTask(RSTask *task);
         void setThreads(int threads);
+        
+        void printCallString(FILE *stream);
         
         static void showProgressCallback(rsReportProgressEvent *event, void *userdata);
         static void printProgressBar(FILE* stream, double percentage, int run, char* description);

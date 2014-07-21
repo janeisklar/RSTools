@@ -6,8 +6,12 @@
 #include <QMenuBar>
 #include <QSignalMapper>
 #include "ui/jobeditor.ui.h"
+#include "ui/TaskWidget.h"
 #include "src/batch/util/rstool.hpp"
+#include "src/batch/util/rstask.hpp"
+#include "src/batch/util/rsjob.hpp"
 #include "src/batch/util/pluginmanager.hpp"
+#include "src/batch/util/rsjobparser.hpp"
 
 class JobEditorWindow : public QMainWindow
 {
@@ -20,12 +24,15 @@ protected slots:
     void newFile();
     void open();
     void save();
-    void insertTask(int taskIndex);
+    void insertNewTask(int taskIndex);
     
 protected:
     void createActions();
     void createMenus();
     void createInsertTaskMenuItems();
+    void insertTask(RSTask* task);
+    
+    void openJob(char* job);
     
     Ui::JobEditor ui;
     
@@ -38,6 +45,8 @@ protected:
     QAction *exitAct;
     
     QMenu *insertMenu;
+    
+    RSJob *currentJob;
 };
 
 #endif

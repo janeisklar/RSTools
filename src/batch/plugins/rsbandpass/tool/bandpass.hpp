@@ -4,6 +4,7 @@
 #include <iostream>
 #include "src/batch/util/rstool.hpp"
 #include "src/rsbandpass_common.h"
+#include "src/rsbandpass_ui.h"
 
 using namespace rstools::batch::util;
 
@@ -18,6 +19,7 @@ class Bandpass : public RSTool {
 public:
     void destroy();
     bool isEverythingFine();
+    rsUIInterface* createUI();
     
 protected:
     void _parseParams(int argc, char * argv[]);

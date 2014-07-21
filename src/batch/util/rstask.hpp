@@ -29,6 +29,7 @@ class RSTask {
         char* getDescription();
         void addArgument(rsArgument*);
         vector<rsArgument*> getArguments();
+        rsArgument* getArgument(char* name);
         char* getOutputPath();
         void setOutputPath(char*);
         void setShowOutput(bool showOutput);
