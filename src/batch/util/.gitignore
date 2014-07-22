@@ -4,4 +4,4 @@
 !*.h
 !*.hpp
 !.gitignore
-
+!*.am

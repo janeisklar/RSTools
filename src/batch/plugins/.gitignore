@@ -11,4 +11,5 @@
 !rsmotionscrubbing
 !unix
 !.gitignore
+!*.am
 
