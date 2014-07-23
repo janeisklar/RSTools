@@ -1,4 +1,5 @@
 #include "rscorrelation_common.h"
+#include <sys/types.h>
 
 void rsCorrelationInit(rsCorrelationParameters* p)
 {

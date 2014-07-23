@@ -27,12 +27,15 @@ class PluginManager {
         void registerPlugin(Plugin* plugin);
         
     private:
-        PluginManager() {}; 
+        PluginManager()
+	{
+		pluginsLoaded = false;
+	}; 
         PluginManager(PluginManager const&);
         void operator=(PluginManager const&);
 
     protected:
-        bool pluginsLoaded = false;
+        bool pluginsLoaded;
         vector<Plugin*> plugins;
         
         
