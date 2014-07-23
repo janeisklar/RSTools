@@ -137,3 +137,31 @@ int rsStringCompareCaseInsensitive(char const *a, char const *b)
             return d;
     }
 }
+
+/*
+ * Removes all space characters from either side of the string
+ */
+char* rsTrimString(char *s)
+{
+    return rsRightTrimString(rsLeftTrimString(s));
+}
+
+/*
+ * Removes all space characters to the left of the string
+ */
+char* rsLeftTrimString(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+/*
+ * Removes all space characters to the right of the string
+ */
+char* rsRightTrimString(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}

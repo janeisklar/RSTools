@@ -25,7 +25,8 @@ class RSBandpass : Plugin {
         static RSTask* createBandpassTask();
         
     protected:
-        rsToolRegistration* createToolRegistration();
+        rsToolRegistration* createBandpassToolRegistration();
+        rsXSDExtension* createBandpassToolXSDExtension();
 };
 
 }}}} // namespace rstools::batch::plugins::rsbandpass

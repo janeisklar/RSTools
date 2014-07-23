@@ -1,5 +1,7 @@
 #include "rsjobparser.hpp"
 
+using namespace std;
+
 namespace rstools {
 namespace batch {
 namespace util {
@@ -28,9 +30,10 @@ bool RSJobParser::parse()
         return false;
     }
     
-    const char schemaLocationTemplate[] = "http://www.fmri.at/rstools %s/%s/jobs/job.xsd";
-    char schemaLocation[strlen(schemaLocationTemplate)+strlen(RSTOOLS_DATA_DIR)+strlen(PACKAGE)];
-    sprintf(&schemaLocation[0], schemaLocationTemplate, RSTOOLS_DATA_DIR, PACKAGE);
+    const char *schemaFile = mergePluginXSDExtensions();
+    const char schemaLocationTemplate[] = "http://www.fmri.at/rstools %s";
+    char schemaLocation[strlen(schemaLocationTemplate)+strlen(schemaFile)+1];
+    sprintf(&schemaLocation[0], schemaLocationTemplate, schemaFile);
     
     parser = new XercesDOMParser();
     parser->setValidationScheme(XercesDOMParser::Val_Always);
@@ -124,8 +127,8 @@ void RSJobParser::parseParameters()
 
     do {
         rsArgument *arg = (rsArgument*)malloc(sizeof(rsArgument));
-        arg->key   = this->trimString(XMLString::transcode(current_node->getAttributes()->getNamedItem(XMLString::transcode("name"))->getNodeValue()));
-        arg->value = this->trimString(XMLString::transcode(current_node->getFirstChild()->getNodeValue()));
+        arg->key   = rsTrimString(XMLString::transcode(current_node->getAttributes()->getNamedItem(XMLString::transcode("name"))->getNodeValue()));
+        arg->value = rsTrimString(XMLString::transcode(current_node->getFirstChild()->getNodeValue()));
         this->job->addArgument(arg);
         
         current_node = walker->nextNode();
@@ -139,75 +142,11 @@ void RSJobParser::parseParameters()
 void RSJobParser::parseTasks()
 {
     do {
-        this->parseTask();
+        char *taskName = XMLString::transcode(current_node->getNodeName());
+        RSTask *task = RSTask::taskFactory(taskName);
+        task->parseTaskFromXml(walker, current_node);
+        this->job->addTask(task);
     } while ( ! strcmp("tasks", XMLString::transcode(current_node->getParentNode()->getNodeName())) );
-}
-
-void RSJobParser::parseTask()
-{
-    char *taskName = XMLString::transcode(current_node->getNodeName());
-    RSTask *task = RSTask::taskFactory(taskName);
-    
-    for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
-
-        char *thisNodeName   = XMLString::transcode(current_node->getNodeName());
-        char *parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
-
-        if( strcmp(parentNodeName, taskName) ) {
-            break;
-        }
-        
-        if( ! strcmp(thisNodeName, "description") ) {
-                char *desc = XMLString::transcode(current_node->getFirstChild()->getNodeValue());
-                task->setDescription(desc);
-        } else if( ! strcmp(thisNodeName, "args") ) {
-            // parse arguments
-            for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
-                
-                parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
-
-                if( strcmp(parentNodeName, "args") ) {
-                    break;
-                }
-                
-                rsArgument *arg = (rsArgument*)malloc(sizeof(rsArgument));
-                arg->key   = this->trimString(XMLString::transcode(current_node->getAttributes()->getNamedItem(XMLString::transcode("name"))->getNodeValue()));
-                DOMNode *valueNode = current_node->getFirstChild();
-                if ( valueNode == NULL ) {
-                    arg->value = NULL;
-                } else {
-                    arg->value = this->trimString(XMLString::transcode(valueNode->getNodeValue()));
-                }
-                task->addArgument(arg);
-            }
-            current_node = walker->previousNode();
-        } else if( ! strcmp(thisNodeName, "options") ) {
-            // parse options
-            for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
-                
-                thisNodeName = XMLString::transcode(current_node->getNodeName());
-                parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
-                
-                if( strcmp(parentNodeName, "options") ) {
-                    break;
-                }
-                
-                char *value = this->trimString(XMLString::transcode(current_node->getFirstChild()->getNodeValue()));
-                                
-                if ( ! strcmp(thisNodeName, "save_output") ) {
-                    task->setOutputPath(value);
-                } else if ( ! strcmp(thisNodeName, "show_output") ) {
-                    task->setShowOutput( ! strcmp(value, "1") );
-                }
-            }
-            current_node = walker->previousNode();
-        } else if( ! strcmp(thisNodeName, "cmd") ) {
-            char *cmd = XMLString::transcode(current_node->getFirstChild()->getNodeValue());
-            task->setCmd(cmd);
-        }
-    }
-    
-    this->job->addTask(task);
 }
 
 void RSJobParser::fillInUserArguments(rsArgument **userArguments, const short nUserArguments)
@@ -273,46 +212,7 @@ void RSJobParser::fillInUserArguments(rsArgument **userArguments, const short nU
     vector<RSTask*> tasks = this->job->getTasks();
     for ( vector<RSTask*>::size_type t = 0; t < tasks.size(); t++ ) {
         RSTask *task = tasks[t];
-        vector<rsArgument*> arguments = task->getArguments();
-
-        for ( vector<rsArgument*>::size_type i = 0; i < jobArguments.size(); i++ ) {
-            rsArgument *arg = jobArguments[i];
-
-            for ( vector<rsArgument*>::size_type j = 0; j != arguments.size(); j++ ) {
-
-                // create placeholder string
-                char *key = (char*)malloc((strlen(arg->key)+(size_t)4)*sizeof(char));
-                sprintf(key, "${%s}", arg->key);
-
-                // replace
-                rsArgument *arg2 = arguments[j];                
-                arg2->value = this->replaceString(arg2->value, key, arg->value);
-
-                free(key);
-            }
-        }
-    }
-    
-    // finally, replace all job argument placeholders within the unix cmd
-    
-    
-    for ( vector<rsArgument*>::size_type i = 0; i < jobArguments.size(); i++ ) {
-        rsArgument *arg = jobArguments[i];
-        
-        // create placeholder string
-        char *key = (char*)malloc((strlen(arg->key)+(size_t)4)*sizeof(char));
-        sprintf(key, "${%s}", arg->key);
-    
-        for ( vector<RSTask*>::size_type t = 0; t < tasks.size(); t++ ) {
-            RSTask *task = tasks[t];
-            
-            // replace
-            task->setCmd(
-                this->replaceString(task->getCmd(), key, arg->value)
-            );
-        }
-        
-        free(key);
+        task->fillInJobArguments(job, this);
     }
 }
 
@@ -379,46 +279,30 @@ vector<char*> RSJobParser::getMissingArguments()
     return uniqueArguments;
 }
 
-char* RSJobParser::leftTrimString(char *s)
-{
-    while(isspace(*s)) s++;
-    return s;
-}
-
-char* RSJobParser::rightTrimString(char *s)
-{
-    char* back = s + strlen(s);
-    while(isspace(*--back));
-    *(back+1) = '\0';
-    return s;
-}
-
-char* RSJobParser::trimString(char *s)
-{
-    return this->rightTrimString(this->leftTrimString(s));
-}
-
 // from: http://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c
-char* RSJobParser::replaceString(char *orig, char *rep, char *with)
+char* RSJobParser::replaceString(const char *orig, const char *rep, const char *with)
 {
-    char *result; // the return string
-    char *ins;    // the next insert point
-    char *tmp;    // varies
-    int len_rep;  // length of rep
-    int len_with; // length of with
+    char *result;  // the return string
+    char *ins;     // the next insert point
+    char *tmp;     // varies
+    char *input;   // copy of orig
+    int len_rep;   // length of rep
+    int len_with;  // length of with
     int len_front; // distance between rep and end of last rep
-    int count;    // number of replacements
+    int count;     // number of replacements
 
     if (!orig)
         return NULL;
-    if (!rep)
-        sprintf(rep, "");
+    
+    // copy the original string so it is not affected
+    input = (char*)malloc(sizeof(char)*(strlen(orig)+1));
+    sprintf(input, "%s", orig);
+    
     len_rep = strlen(rep);
-    if (!with)
-        sprintf(with, "");
     len_with = strlen(with);
 
-    ins = orig;
+    ins = input;
+    
     for (count = 0; (tmp = strstr(ins, rep)); ++count) {
         ins = tmp + len_rep;
     }
@@ -426,22 +310,96 @@ char* RSJobParser::replaceString(char *orig, char *rep, char *with)
     // first time through the loop, all the variable are set correctly
     // from here on,
     //    tmp points to the end of the result string
-    //    ins points to the next occurrence of rep in orig
-    //    orig points to the remainder of orig after "end of rep"
-    tmp = result = (char*)malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+    //    ins points to the next occurrence of rep in input
+    //    input points to the remainder of orig after "end of rep"
+    tmp = result = (char*)malloc(strlen(input) + (len_with - len_rep) * count + 1);
 
     if (!result)
         return NULL;
 
     while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
+        ins = strstr(input, rep);
+        len_front = ins - input;
+        tmp = strncpy(tmp, input, len_front) + len_front;
         tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
+        input += len_front + len_rep; // move to next "end of rep"
     }
-    strcpy(tmp, orig);
+    strcpy(tmp, input);
     return result;
+}
+
+/*
+ * Merges all known extension of the XSD schema
+ * into a single temporary file and returns its
+ * file path
+ */
+char* RSJobParser::mergePluginXSDExtensions()
+{
+    vector<rsXSDExtension*> extensions = RSTool::getXSDExtensions();
+    stringstream extensionStream;
+    stringstream typeStream;
+    
+    // read in and merge all extensions
+    for ( vector<rsXSDExtension*>::size_type t = 0; t < extensions.size(); t++ ) {
+        rsXSDExtension *extension = extensions[t];
+        const char* filePath = extension->file;
+        fprintf(stdout, "%s\n", filePath);
+        ifstream extfile;
+        extfile.open(filePath, ifstream::in | ios::binary);
+        
+        if ( extfile.is_open() ) {
+            extensionStream << extfile.rdbuf() << endl;            
+            extfile.close();
+        } else {
+            throw runtime_error("Could not read a plugin's job validation extension file!");
+        }
+    }
+    
+    string extensionReplacement = extensionStream.str();
+    
+    // create list of registered types
+    for ( vector<rsXSDExtension*>::size_type t = 0; t < extensions.size(); t++ ) {
+        rsXSDExtension *extension = extensions[t];
+        typeStream << "                <xs:element name=\"" << extension->name << "\" type=\"" << extension->type << "\"/>" << endl;
+    }
+    
+    string typeReplacement = typeStream.str();
+    
+    // read in main xsd-schema definiton
+    const char* xsdFilePath = RSTOOLS_DATA_DIR "/" PACKAGE "/jobs/job.xsd";
+    stringstream schemaStream;
+    ifstream xsdfile;
+    xsdfile.open(xsdFilePath, ifstream::in | ios::binary);
+
+    if ( xsdfile.is_open() ) {
+        schemaStream << xsdfile.rdbuf() << endl;
+        xsdfile.close();
+    } else {
+        throw runtime_error("Could not read job valdation file!");
+    }
+    
+    string xsdSchema = schemaStream.str();
+        
+    // replace both the typelist and the extensions in the xsdSchema
+    replaceAll(xsdSchema, string("<!-- %%TYPELIST%% -->"  ),      typeReplacement);
+    replaceAll(xsdSchema, string("<!-- %%EXTENSIONS%% -->"), extensionReplacement);
+    
+    // write result to a temporary file
+    char* tmpFileName = (char*)malloc(sizeof(char)*255);
+    sprintf(tmpFileName, "%s", "/tmp/job.xsd-XXXXXXX");
+    int filedes = mkstemp(tmpFileName);
+    //unlink(tmpFileName);
+    
+    if ( filedes < 1 ) {
+        throw runtime_error("Could not create a temporary file to merge the job-validation files for all plugins.");
+    }
+    
+    if ( -1 == write(filedes, xsdSchema.c_str(), strlen(xsdSchema.c_str())) ) {
+        throw runtime_error("Could not write to temporary file");
+    }
+    
+    // return path to the merged xsd-file
+    return tmpFileName;
 }
 
 }}} // namespace rstools::batch::util

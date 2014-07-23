@@ -1,8 +1,6 @@
 #ifndef rstools_rsbatch_jobeditor_ui_taskwidget_h
 #define rstools_rsbatch_jobeditor_ui_taskwidget_h
 
-#include <QScrollArea>
-#include <QTabWidget>
 #include "src/batch/util/rstool.hpp"
 #include "src/batch/util/pluginmanager.hpp"
 #include "src/batch/util/rstask.hpp"
@@ -13,7 +11,7 @@
 using namespace std;
 using namespace rstools::batch::util;
 
-class TaskWidget : public QTabWidget
+class TaskWidget : public QWidget
 {
     Q_OBJECT
 public:

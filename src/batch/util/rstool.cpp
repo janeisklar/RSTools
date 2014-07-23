@@ -5,6 +5,7 @@ namespace batch {
 namespace util {
 
 vector<rsToolRegistration*> RSTool::tools;
+vector<rsXSDExtension*> RSTool::xsdExtensions;
 
 rsToolRegistration* RSTool::findRegistration(const char* code)
 {
@@ -33,6 +34,17 @@ RSTool* RSTool::toolFactory(const char* code)
 void RSTool::registerTool(rsToolRegistration* registration)
 {
     tools.push_back(registration);
+}
+
+
+void RSTool::registerXSDExtension(rsXSDExtension* extension)
+{
+    xsdExtensions.push_back(extension);
+}
+
+vector<rsXSDExtension*> RSTool::getXSDExtensions()
+{
+    return xsdExtensions;
 }
 
 vector<const char*> RSTool::getTools()

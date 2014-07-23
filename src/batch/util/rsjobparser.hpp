@@ -7,9 +7,16 @@
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 #include <vector>
+#include <cstdlib>
+#include <unistd.h>
+#include "rstool.hpp"
 #include "rsjob.hpp"
 #include "src/rscommon.h"
+#include "src/utils/rsstring.h"
 #include "parseErrorHandler.hpp"
 
 using namespace std;
@@ -18,6 +25,8 @@ using namespace xercesc;
 namespace rstools {
 namespace batch {
 namespace util {
+
+class RSJob;
     
 class RSJobParser {
     protected:
@@ -36,16 +45,23 @@ class RSJobParser {
         RSJob* getJob();
         void fillInUserArguments(rsArgument **arguments, const short nArguments);
         vector<char*> getMissingArguments();
+        char *replaceString(const char *orig, const char *rep, const char *with);
         
     protected:
         void parseParameters();
         void parseTasks();
         void parseTask();
         
-        char *leftTrimString(char *s);
-        char *rightTrimString(char *s);
-        char *trimString(char *s);
-        char *replaceString(char *orig, char *rep, char *with);
+        char *mergePluginXSDExtensions();
+        
+        static inline void replaceAll(std::string &str, const std::string& from, const std::string& to)
+        {
+            size_t start_pos = 0;
+            while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+                str.replace(start_pos, from.length(), to);
+                start_pos += to.length();
+            }
+        }
 };
 
 }}} // namespace rstools::batch::util

@@ -10,6 +10,8 @@ namespace rstools {
 namespace batch {
 namespace util {
 
+class RSTask;
+
 class RSJob {
     protected:
         char *jobfile;

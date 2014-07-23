@@ -27,13 +27,20 @@
     <xs:element name="tasks">
         <xs:complexType>
             <xs:choice minOccurs="0" maxOccurs="unbounded">
-                <xs:element name="rstimecourse"      type="rstask"/>
-                <xs:element name="rsregression"      type="rstask"/>
-                <xs:element name="rsbandpass"        type="rstask"/>
-                <xs:element name="rsmotionscrubbing" type="rstask"/>
-                <xs:element name="rscorrelation"     type="rstask"/>
-                <xs:element name="rsroi"             type="rstask"/>
-                <xs:element name="unix"              type="unix"/>
+                <!--
+                    for every registered xsd-extension one entry is added in the form:
+                    
+                    <xs:element name="extensionName" type="extensionType"/>
+                    
+                    extensionName - refers to the name of the xml-node in the job-file
+                    extensionType - refers to the name of xsd-schema type defnition
+                    
+                    'extensionName' and 'extensionType' may and mostly will be the equal.
+                    
+                    The type that is referenced here should be defined in a separate
+                    extension file and is than brought in the second placeholder below.
+                -->
+                <!-- %%TYPELIST%% -->
             </xs:choice>
         </xs:complexType>
     </xs:element>
@@ -64,17 +71,11 @@
             </xs:element>
         </xs:choice>
     </xs:complexType>
-    <xs:complexType name="unix">
-        <xs:choice minOccurs="0" maxOccurs="unbounded">
-            <xs:element name="description" type="xs:string"/>
-            <xs:element name="cmd" type="xs:string" />
-            <xs:element name="options">
-                <xs:complexType>
-                    <xs:choice minOccurs="0" maxOccurs="unbounded">
-                        <xs:element name="show_output" type="xs:string"/>
-                    </xs:choice>
-                </xs:complexType>
-            </xs:element>
-        </xs:choice>
-    </xs:complexType>
+    <!--
+        all registered xsd-extensions will be brought in below, this allows
+        to define custom xml-schema type definitions that accomodate the
+        needs for tools that need more or other arguments than the definition
+        of type 'rstask' contains
+    -->
+    <!-- %%EXTENSIONS%% -->
 </xs:schema>

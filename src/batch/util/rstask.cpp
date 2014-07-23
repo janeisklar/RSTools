@@ -133,4 +133,85 @@ const char* RSTask::getCode()
     return code;
 }
 
+void RSTask::fillInJobArguments(RSJob* job, RSJobParser* parser)
+{
+    vector<rsArgument*> jobArguments = job->getArguments();
+    
+    for ( vector<rsArgument*>::size_type i = 0; i < jobArguments.size(); i++ ) {
+        rsArgument *arg = jobArguments[i];
+
+        for ( vector<rsArgument*>::size_type j = 0; j != arguments.size(); j++ ) {
+
+            // create placeholder string
+            char *key = (char*)malloc((strlen(arg->key)+(size_t)4)*sizeof(char));
+            sprintf(key, "${%s}", arg->key);
+
+            // replace
+            rsArgument *arg2 = arguments[j];                
+            arg2->value = parser->replaceString(arg2->value, key, arg->value);
+
+            free(key);
+        }
+    }
+}
+
+void RSTask::parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node)
+{   
+    for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
+
+        char *thisNodeName   = XMLString::transcode(current_node->getNodeName());
+        char *parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
+
+        if( strcmp(parentNodeName, getCode()) ) {
+            break;
+        }
+        
+        if( ! strcmp(thisNodeName, "description") ) {
+                char *desc = XMLString::transcode(current_node->getFirstChild()->getNodeValue());
+                setDescription(desc);
+        } else if( ! strcmp(thisNodeName, "args") ) {
+            // parse arguments
+            for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
+                
+                parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
+
+                if( strcmp(parentNodeName, "args") ) {
+                    break;
+                }
+                
+                rsArgument *arg = (rsArgument*)malloc(sizeof(rsArgument));
+                arg->key   = rsTrimString(XMLString::transcode(current_node->getAttributes()->getNamedItem(XMLString::transcode("name"))->getNodeValue()));
+                DOMNode *valueNode = current_node->getFirstChild();
+                if ( valueNode == NULL ) {
+                    arg->value = NULL;
+                } else {
+                    arg->value = rsTrimString(XMLString::transcode(valueNode->getNodeValue()));
+                }
+                addArgument(arg);
+            }
+            current_node = walker->previousNode();
+        } else if( ! strcmp(thisNodeName, "options") ) {
+            // parse options
+            for ( current_node = walker->nextNode(); current_node != NULL; current_node = walker->nextNode() ) {
+                
+                thisNodeName = XMLString::transcode(current_node->getNodeName());
+                parentNodeName = XMLString::transcode(current_node->getParentNode()->getNodeName());
+                
+                if( strcmp(parentNodeName, "options") ) {
+                    break;
+                }
+                
+                char *value = rsTrimString(XMLString::transcode(current_node->getFirstChild()->getNodeValue()));
+                                
+                if ( ! strcmp(thisNodeName, "save_output") ) {
+                    setOutputPath(value);
+                } else if ( ! strcmp(thisNodeName, "show_output") ) {
+                    setShowOutput( ! strcmp(value, "1") );
+                }
+            }
+            current_node = walker->previousNode();
+        }
+    }
+}
+
 }}} // namespace rstools::batch::util

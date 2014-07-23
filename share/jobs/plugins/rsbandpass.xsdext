@@ -1,0 +1,7 @@
+<xs:complexType name="rsbandpass">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rsbandpass -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>

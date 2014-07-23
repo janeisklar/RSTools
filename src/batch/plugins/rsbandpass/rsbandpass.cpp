@@ -12,10 +12,11 @@ RSBandpass::RSBandpass()
 
 void RSBandpass::registerPlugin()
 {
-    RSTool::registerTool(createToolRegistration());
+    RSTool::registerTool(createBandpassToolRegistration());
+    RSTool::registerXSDExtension(createBandpassToolXSDExtension());
 }
 
-rsToolRegistration* RSBandpass::createToolRegistration()
+rsToolRegistration* RSBandpass::createBandpassToolRegistration()
 {
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
@@ -23,6 +24,14 @@ rsToolRegistration* RSBandpass::createToolRegistration()
     toolRegistration->createTool = (rsToolToolCreator)RSBandpass::createBandpassTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSBandpass::createBandpassTask;
     return toolRegistration;
+}
+rsXSDExtension* RSBandpass::createBandpassToolXSDExtension()
+{
+    rsXSDExtension* toolExtension = (rsXSDExtension*)malloc(sizeof(rsXSDExtension));
+    toolExtension->name           = getCode();
+    toolExtension->file           = RSTOOLS_DATA_DIR "/" PACKAGE "/jobs/plugins/rsbandpass.xsdext";
+    toolExtension->type           = getCode();
+    return toolExtension;
 }
 
 const char* RSBandpass::getName()

@@ -19,6 +19,8 @@ class JobEditorWindow : public QMainWindow
 public:
     explicit JobEditorWindow(QMainWindow *parent = 0);
     ~JobEditorWindow();
+    
+    void openJob(char* job);
 
 protected slots:
     void newFile();
@@ -32,7 +34,6 @@ protected:
     void createInsertTaskMenuItems();
     void insertTask(RSTask* task);
     
-    void openJob(char* job);
     
     Ui::JobEditor ui;
     

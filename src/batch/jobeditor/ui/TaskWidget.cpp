@@ -4,8 +4,10 @@
 #include <QSpacerItem>
 #include <QLabel>
 #include <QTextEdit>
+#include <QScrollArea>
+#include <QTabWidget>
 
-TaskWidget::TaskWidget(RSTool *tool, QWidget *parent) : QTabWidget(parent)
+TaskWidget::TaskWidget(RSTool *tool, QWidget *parent) : QWidget(parent, 0)
 {
     this->tool = tool;
     setupLayout();
@@ -27,7 +29,8 @@ RSTool* TaskWidget::getTool()
 }
 
 void TaskWidget::setupLayout()
-{    
+{   
+    QTabWidget *tabWidget = new QTabWidget();
     QWidget *mainContent = new QWidget();
     QWidget *extendedContent = new QWidget();
     QScrollArea *mainScrollArea = new QScrollArea();
@@ -74,8 +77,17 @@ void TaskWidget::setupLayout()
     mainScrollArea->setWidget(mainContent);
     extendedScrollArea->setWidget(extendedContent);
     
-    setTabPosition(QTabWidget::East);
+    tabWidget->setTabPosition(QTabWidget::East);
     
-    addTab(mainScrollArea, QString("Main Settings"));
-    addTab(extendedScrollArea, QString("Advanced Settings"));
+    tabWidget->addTab(mainScrollArea, QString("Main Settings"));
+    tabWidget->addTab(extendedScrollArea, QString("Advanced Settings"));
+    
+    QLabel* headline = new QLabel(getTask()->getName());
+    QFont f("Arial", 12, QFont::Bold);
+    headline->setFont(f);
+    
+    QBoxLayout *taskLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+    taskLayout->addWidget(headline);
+    taskLayout->addWidget(tabWidget);
+    setLayout(taskLayout);
 }

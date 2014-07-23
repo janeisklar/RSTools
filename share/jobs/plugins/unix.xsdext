@@ -1,0 +1,13 @@
+<xs:complexType name="unix">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="description" type="xs:string"/>
+        <xs:element name="cmd" type="xs:string" />
+        <xs:element name="options">
+            <xs:complexType>
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="show_output" type="xs:string"/>
+                </xs:choice>
+            </xs:complexType>
+        </xs:element>
+    </xs:choice>
+</xs:complexType>
