@@ -8,3 +8,4 @@
 *.ui.h
 !Makefile.am
 !ui
+!*.plist
