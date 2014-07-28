@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <nifti1.h>
 #include <fslio.h>
 #include <glib.h>
 #include <dlfcn.h>

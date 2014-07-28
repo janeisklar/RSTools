@@ -2,7 +2,6 @@
 #define rstools_rsroi_ui_h
 
 #include <stdio.h>
-#include <nifti1.h>
 #include <glib.h>
 #include <fslio.h>
 #include "src/nifti/rsniftiutils.h"

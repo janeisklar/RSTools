@@ -5,7 +5,6 @@
 
 #include <omp.h>
 
-#include <nifti1.h>
 #include <fslio.h>
 #include <gsl/gsl_statistics_double.h>
 #include "src/rscommon.h"

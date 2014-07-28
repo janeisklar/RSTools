@@ -1,5 +1,0 @@
-*
-!*.c
-!*.cpp
-!*.h
-!Makefile.am

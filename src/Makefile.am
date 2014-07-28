@@ -1,8 +1,4 @@
-if INCUBATOR
-SUBDIRS = utils nifti maths . incubator batch
-else
 SUBDIRS = utils nifti maths . batch
-endif
 
 AM_CFLAGS = -DDATA_PATH=\"$(datadir)\"
 AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\"

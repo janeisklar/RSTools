@@ -65,17 +65,6 @@ AC_ARG_ENABLE(
     [incubator=false])
 AM_CONDITIONAL([INCUBATOR], [test x$incubator = xtrue])
 
-AM_COND_IF([INCUBATOR],
-    [
-        echo 'Incubator enabled'
-        AC_CONFIG_FILES([src/incubator/Makefile])
-    ],
-    [
-        echo 'Incubator disabled'
-        AC_DEFINE(INCUBATOR_ENABLED, 0, [whether or not additional software that is not yet considered to be stable will be compiled])
-    ]
-)
-
 # Check for FFTW3 library
 AC_SEARCH_LIBS([fftw_execute], [fftw3],
     [AC_DEFINE( [RS_FFTW_ENABLED], [1], [Use FFTW])

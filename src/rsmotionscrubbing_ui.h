@@ -2,7 +2,6 @@
 #define rstools_motionscrubbing_ui_h
 
 #include <stdio.h>
-#include <nifti1.h>
 #include <fslio.h>
 #include <glib.h>
 #include "src/nifti/rsniftiutils.h"
