@@ -86,8 +86,14 @@ void TaskWidget::setupLayout()
     QFont f("Arial", 12, QFont::Bold);
     headline->setFont(f);
     
+    QLabel* description = new QLabel(I->description);
+    QFont f2("Arial", 11, QFont::Normal);
+    description->setFont(f2);
+    description->setWordWrap(true);
+    
     QBoxLayout *taskLayout = new QBoxLayout(QBoxLayout::TopToBottom);
     taskLayout->addWidget(headline);
+    taskLayout->addWidget(description);
     taskLayout->addWidget(tabWidget);
     setLayout(taskLayout);
 }

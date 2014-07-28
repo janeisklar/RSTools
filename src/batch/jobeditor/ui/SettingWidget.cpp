@@ -5,9 +5,11 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QSpacerItem>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
+//#include <QSpinBox>
+//#include <QDoubleSpinBox>
 #include <QCheckBox>
+#include <QRadioButton>
+#include <QButtonGroup>
 #include <glib.h>
 
 using namespace rstools::batch::util;
@@ -63,12 +65,52 @@ void SettingWidget::createValueWidget()
         case G_OPTION_ARG_INT64:
         case G_OPTION_ARG_DOUBLE:
             {
-                QLineEdit *w = new QLineEdit();
-                w->setPlaceholderText(option->cli_arg_description);
-                if ( argument != NULL ) {
-                    w->setText(argument->value);
+                // Display text box if number of values is not restricted
+                if ( option->allowedValues == NULL ) {
+                    QLineEdit *w = new QLineEdit();
+                    w->setPlaceholderText(option->cli_arg_description);
+                    if ( argument != NULL ) {
+                        w->setText(argument->value);
+                    }
+                    valueWidget = w;
+                } else { // if the allowed values are restricted display radio buttons instead
+                    QWidget *w = new QWidget();
+                    QBoxLayout *wLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+                    QButtonGroup *buttonGroup = new QButtonGroup();
+                    buttonGroup->setExclusive(true);
+                    
+                    // go through all options and add a radio button for them
+                    rsUIOptionValue** values = option->allowedValues;
+                    for (size_t i=0; values[i] != NULL; i++ ) {
+                        // add radio button
+                        QRadioButton *b = new QRadioButton(QString("'")+QString(values[i]->name)+QString("'"));
+                        QFont f("Arial", 12, QFont::Bold);
+                        b->setFont(f);
+                        buttonGroup->addButton(b);
+                        wLayout->addWidget(b);
+                        
+                        // set it to checked if it is the default or set value
+                        b->setChecked(false);
+                        if ( argument != NULL ) {
+                            if ( ! strcmp(argument->value,values[i]->name) ) {
+                                b->setChecked(true);
+                            }
+                        } else if ( ! strcmp(option->defaultValue,values[i]->name) ) {
+                            b->setChecked(true);
+                        }
+                        
+                        // add its description
+                        QLabel *label = new QLabel(values[i]->description);
+                        label->setIndent(22);
+                        label->setWordWrap(true);
+                        label->setContentsMargins(0, 0, 0, 4);
+                        QFont f2("Arial", 11, QFont::Normal);
+                        label->setFont(f2);
+                        wLayout->addWidget(label);
+                    }
+                    w->setLayout(wLayout);
+                    valueWidget = w;
                 }
-                valueWidget = w;
             }
             break;
         /*

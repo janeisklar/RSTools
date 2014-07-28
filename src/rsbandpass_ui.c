@@ -32,17 +32,17 @@ rsBandpassParameters *rsBandpassInitParameters()
 
 void rsBandpassFreeParams(rsBandpassParameters *p)
 {
-    free(p->inputpath);
-    free(p->maskpath);
-    free(p->savemaskpath);
-    free(p->saveFilteredPath);
-    free(p->saveAttenuationPath);
-    free(p->input);
-    free(p->filteredOutput);
-    free(p->callString);
-    free(p->fftParams);
+    rsFree(p->inputpath);
+    rsFree(p->maskpath);
+    rsFree(p->savemaskpath);
+    rsFree(p->saveFilteredPath);
+    rsFree(p->saveAttenuationPath);
+    rsFree(p->input);
+    rsFree(p->filteredOutput);
+    rsFree(p->callString);
+    rsFree(p->fftParams);
     rsUIDestroyInterface(p->interface);
-    free(p);
+    rsFree(p);
 }
 
 rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[])

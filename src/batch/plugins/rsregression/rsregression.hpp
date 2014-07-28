@@ -3,6 +3,7 @@
 
 #include "src/rscommon.h"
 #include "src/batch/util/plugin.hpp"
+#include "tool/regression.hpp"
 
 using namespace rstools::batch::util;
 
@@ -17,7 +18,15 @@ class RSRegression : Plugin {
         RSRegression();
         void  registerPlugin();
         const char* getName();
+        const char* getCode();
         const char* getVersion();
+
+        static RSTool* createRegressionTool();
+        static RSTask* createRegressionTask();
+        
+    protected:
+        rsToolRegistration* createRegressionToolRegistration();
+        rsXSDExtension* createRegressionToolXSDExtension();
 };
 
 }}}} // namespace rstools::batch::plugins::rsregression

@@ -1,0 +1,7 @@
+<xs:complexType name="rscorrelation">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rscorrelation -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>

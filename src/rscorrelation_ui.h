@@ -9,6 +9,7 @@
 #include <dlfcn.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #define RSTOOLS_CORRELATION_CONVERSION_NONE 1
 #define RSTOOLS_CORRELATION_CONVERSION_Z    2
@@ -48,9 +49,9 @@ typedef struct {
     rsNiftiFile *output;
     double ***mask;
     double ***correlation;
-
-    GOptionContext *context;
     
+    rsUIInterface *interface;
+        
     int threads;
     size_t wordsize;
 
@@ -60,8 +61,8 @@ typedef struct {
 
 rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[]);
 rsCorrelationParameters* rsCorrelationInitParameters();
+void rsCorrelationBuildInterface(rsCorrelationParameters *p);
 void rsCorrelationFreeParams(rsCorrelationParameters* p);
-void rsCorrelationPrintHelp(rsCorrelationParameters* p);
 
 gboolean rsCorrelationParseConversionMode(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 gboolean rsCorrelationParseMonteCarloParams(const gchar *option_name, const gchar *value, gpointer data, GError **error);

@@ -25,7 +25,7 @@ rsCorrelationParameters* rsCorrelationInitParameters()
     p->conversionMode        = RSTOOLS_CORRELATION_CONVERSION_Z;
     p->monteCarloRepetitions = 0;
     p->monteCarloSampleSize  = 0;
-    p->context               = NULL;
+    p->interface             = NULL;
     p->progressCallback      = NULL;
 
     return p;
@@ -37,55 +37,125 @@ rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[])
     rsCorrelationParameters *p = rsCorrelationInitParameters();
     p->callString = rsMergeStringArray(argc, argv);
 
-    // initialize the most common options
-    GError *error = NULL;
-    p->context = g_option_context_new("\n\nThis tool will correlate the timecourse of of every voxel in a 4D-nifti volume with a timecourse that is supplied via standard input.");
-    GOptionGroup *g = g_option_group_new("common", "Common options", "The most commonly used options", (void*)p, NULL);
+    rsCorrelationBuildInterface(p);
     
-    g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv);
     
-    GOptionArgFunc cbConversion = (GOptionArgFunc)rsCorrelationParseConversionMode;
-    
-     /* long, short, flags, arg, arg_data, desc, arg_desc */
-    GOptionEntry entries[] = {
-      { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,     "the volume for which the correlation of the timecourse for each voxel is computed", "<volume>" },
-      { "output",          'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,    "the volume in which the correlation values will be saved in", "<volume>" },
-      { "regressor",       'r', 0, G_OPTION_ARG_FILENAME, &p->regressorpath, "txt-file containg a timecourse for which the correlation to the rest of the brain will be computed. if ommitted, the timecourse is expected to be supplied through the standard input instead", "<txt-file>" },
-      { "conversion",      'c', 0, G_OPTION_ARG_CALLBACK, cbConversion,      "<mode> specifies what is stored in the output file, it can take the follwing values:\n\n\t'none' - the correlation coefficients will be stored without converting them\n\t'z'    - the correlation coefficients will be converted to z-values before being stored(default)\n\t't'    - the correlation coefficients will be converted to values of the T-statistic\n", "<mode>" },
-      { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,      "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)", "<volume>" },
-      { "comment",           0, 0, G_OPTION_ARG_STRING,   &p->commentpath,   "adds a comment about the origin of thereference timecourse to the nifti header of the correlation map", "<txt-file>" },
-      { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,       "number of threads used for processing", "<n>" },
-      { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,       "show debug information", NULL},
-      { NULL }
-    };
-    
-    g_option_context_set_main_group(p->context, g);
-    g_option_group_add_entries(g, entries);
-
-    // initialize the more advanced and rather unusual options
-    g = g_option_group_new("extended", "Extended options", "Additional options that are rarely going to be used", (void*)p, NULL);
-    g_option_context_add_group(p->context, g);
-
-    GOptionArgFunc cbMonteCarlo = rsCorrelationParseMonteCarloParams;
-
-    GOptionEntry extended_entries[] = {
-      { "montecarlo",        0, 0, G_OPTION_ARG_CALLBACK, &cbMonteCarlo,   "repeats the computation of the correlation n times and uses m randomly drawn timepoints in each run. eventually the average is being saved. (using it enforces the conversion to z-scores)", "<n>,<m>" },
-      { "delay",           'd', 0, G_OPTION_ARG_INT,      &p->delay,       "delay the regressor by <n> volumes(<n> * TR)", "<n>" },
-      { NULL }
-    };
-
-    g_option_group_add_entries(g, extended_entries);
-
-    // check if parameters are valid
-    if ( ! g_option_context_parse(p->context, &argc, &argv, &error) ) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        return p;
-    }
-
-    p->parametersValid = TRUE;
     return p;
 }
 
+void rsCorrelationBuildInterface(rsCorrelationParameters *p)
+{
+    // initialize the most common options
+    rsUIOption *o;
+    p->interface = rsUINewInterface();
+    p->interface->description   = "This tool will correlate the timecourse of every voxel in a 4D-nifti volume with a given timecourse.";
+    p->interface->helpIndent    = 33;
+    
+    GOptionArgFunc cbConversion = (GOptionArgFunc)rsCorrelationParseConversionMode;
+    GOptionArgFunc cbMonteCarlo = rsCorrelationParseMonteCarloParams;
+    
+    o = rsUINewOption();
+    o->name                = "input";
+    o->shorthand           = 'i';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->inputpath;
+    o->cli_description     = "the volume for which the correlation of the timecourse for each voxel is computed";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "output";
+    o->shorthand           = 'o';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->outputpath;
+    o->cli_description     = "the volume in which the correlation values will be saved in";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "regressor";
+    o->shorthand           = 'r';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->regressorpath;
+    o->cli_description     = "txt-file containg a reference timecourse for which the correlation to the rest of the brain will be computed. if ommitted, the timecourse is expected to be supplied through the standard input instead";
+    o->gui_description     = "txt-file containg a reference timecourse for which the correlation to the rest of the brain will be computed.";
+    o->cli_arg_description = "<txt-file>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "conversion";
+    o->shorthand           = 'c';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbConversion;
+    o->cli_description     = "<mode> specifies what is stored in the output file. It can take the follwing values:";
+    o->cli_arg_description = "<mode>";
+    o->defaultValue        = "z";
+    rsUIOptionValue allowedValues[] = {
+      {"none", "the correlation coefficients will be stored without converting them"},
+      {"z",    "the correlation coefficients will be converted to z-values before being stored(default)"},
+      {"t",    "the correlation coefficients will be converted to values of the T-statistic"},
+      NULL
+    };
+    rsUISetOptionValues(o, allowedValues);
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->maskpath;
+    o->cli_description     = "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "comment";
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->commentpath;
+    o->cli_description     = "adds a comment about the origin of thereference timecourse to the nifti header of the correlation map";
+    o->cli_arg_description = "<txt>";    
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "threads";
+    o->shorthand           = 't';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->threads;
+    o->cli_description     = "number of threads used for processing";
+    o->cli_arg_description = "<n>";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "verbose";
+    o->shorthand           = 'v';
+    o->storage             = &p->verbose;
+    o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+        
+    // initialize the more advanced and rather unusual options
+    o = rsUINewOption();
+    o->name                = "montecarlo";
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbMonteCarlo;
+    o->cli_description     = "repeats the computation of the correlation n times and uses m randomly drawn timepoints in each run. eventually the average is being saved. (using it enforces the conversion to z-scores)";
+    o->cli_arg_description = "<n>,<m>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "delay";
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->delay;
+    o->cli_description     = "delay the regressor by <n> volumes(<n> * TR)";
+    o->cli_arg_description = "<n>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+}
 
 void rsCorrelationFreeParams(rsCorrelationParameters* p)
 {
@@ -100,13 +170,8 @@ void rsCorrelationFreeParams(rsCorrelationParameters* p)
     rsFree(p->correlation);
     rsFree(p->mask);
     rsFree(p->regressor);
-    g_option_context_free(p->context);
+    rsUIDestroyInterface(p->interface);
     rsFree(p);
-}
-
-void rsCorrelationPrintHelp(rsCorrelationParameters* p)
-{
-    fprintf(stdout, "%s\n", g_option_context_get_help(p->context, TRUE, NULL));
 }
 
 gboolean rsCorrelationParseConversionMode(const gchar *option_name, const gchar *value, gpointer data, GError **error)

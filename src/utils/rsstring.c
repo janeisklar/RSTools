@@ -23,13 +23,20 @@ void rsStringWordWrap(const char* inputString, char*** lineArray, size_t* nLines
     (*lineArray)[0] = line;
     *nLines = 1;
     
+    if ( inputString[0] == '\n' || inputString[0] == '\r' ) {
+        wordStart = 1;
+    }
+    
     for ( size_t i=0; i<inputLength; i++ ) {
 
         // last character?
         BOOL lastCharacter = (i+one) >= inputLength;
+        
+        // new line?
+        BOOL newLine = inputString[i+1] == '\n' || inputString[i+1] == '\r';
 
         // check if we completed the word
-        BOOL wordComplete = lastCharacter == TRUE || inputString[i+1] == ' ' || inputString[i+1] == '\n' || inputString[i+1] == '\r';
+        BOOL wordComplete = lastCharacter == TRUE || inputString[i+1] == ' ' || newLine;
         
         BOOL startedNewLine = FALSE;
         

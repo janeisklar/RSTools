@@ -6,11 +6,6 @@ int main(int argc, char * argv[]) {
     // Parse run arguments
     rsRegressionParameters *p = rsRegressionParseParams(argc, argv);
     
-    if( argc < 2 ) {
-        rsRegressionPrintHelp(p);
-        return 0;
-    }
-    
     // If arguments are valid, initialize niftis, etc.
     if ( p->parametersValid ) {
         rsRegressionInit(p);

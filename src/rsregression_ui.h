@@ -9,6 +9,7 @@
 #include <glib.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,13 +42,13 @@ typedef struct {
     rsNiftiFile *residuals;
     rsNiftiFile *fitted;
 
-    GOptionContext *context;
-
     long nRegressors;
     long nRegressorValues;
 
     double **regressors;
     double ***mask;
+
+    rsUIInterface *interface;
     
     double nyquist_frequency;
     double bin_width;
@@ -68,8 +69,8 @@ typedef struct {
 
 rsRegressionParameters* rsRegressionParseParams(int argc, char * argv[]);
 rsRegressionParameters* rsRegressionInitParameters();
+void rsRegressionBuildInterface(rsRegressionParameters *p);
 void rsRegressionFreeParams(rsRegressionParameters* p);
-void rsRegressionPrintHelp(rsRegressionParameters* p);
 
 #ifdef __cplusplus
 }
