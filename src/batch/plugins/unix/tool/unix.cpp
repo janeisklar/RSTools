@@ -52,4 +52,14 @@ rsUIInterface* Unix::createUI()
     return interface;
 }
 
+void Unix::printCallString(FILE *stream)
+{
+    int argc;
+    char **argv = getCallString(&argc);
+
+    fprintf(stream, "Tool:\n %s\n\n", getTask()->getName());
+    fprintf(stream, "Cmd:\n%s\n", getUnixTask()->getCmd());
+    fprintf(stream, "\n");
+}
+
 }}}}} // namespace rstools::batch::plugins::unix::tool

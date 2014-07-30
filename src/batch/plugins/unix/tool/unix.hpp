@@ -21,6 +21,7 @@ public:
     void destroy();
     bool isEverythingFine();
     rsUIInterface* createUI();
+    void printCallString(FILE *stream);
     
 protected:
     void _parseParams(int argc, char * argv[]);

@@ -73,20 +73,20 @@ class RSTool {
         static void registerTool(rsToolRegistration* registration);
         static void registerXSDExtension(rsXSDExtension* extension);
         
-        void parseParams(int argc, char** argv);
-        void init();
-        void run();
+        virtual void parseParams(int argc, char** argv);
+        virtual void init();
+        virtual void run();
         virtual void destroy() = 0;
         virtual bool isEverythingFine() = 0;
         virtual rsUIInterface* createUI() = 0;
         
-        char const * getOutput();
-        char **getCallString(int *argc);
-        RSTask *getTask();
-        void setTask(RSTask *task);
-        void setThreads(int threads);
+        virtual char const * getOutput();
+        virtual char **getCallString(int *argc);
+        virtual RSTask *getTask();
+        virtual void setTask(RSTask *task);
+        virtual void setThreads(int threads);
         
-        void printCallString(FILE *stream);
+        virtual void printCallString(FILE *stream);
         
         static void showProgressCallback(rsReportProgressEvent *event, void *userdata);
         static void printProgressBar(FILE* stream, double percentage, int run, char* description);
@@ -98,6 +98,7 @@ class RSTool {
         virtual void _parseParams(int, char**) = 0;
         virtual void _init() = 0;
         virtual void _run() = 0;
+        
         string _message;
         int argc;
         char** argv;
