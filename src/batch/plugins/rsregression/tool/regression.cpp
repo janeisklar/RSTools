@@ -15,7 +15,7 @@ void Regression::_parseParams(int argc, char * argv[])
     
 void Regression::_init()
 {
-    params->threads = this->threads;    
+    params->threads = this->threads;
     rsRegressionInit(params);
 }
 

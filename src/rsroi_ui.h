@@ -2,10 +2,10 @@
 #define rstools_rsroi_ui_h
 
 #include <stdio.h>
-#include <glib.h>
 #include <fslio.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,8 +26,8 @@ typedef struct {
 
     BOOL verbose;
     BOOL parametersValid;
-
-    GOptionContext *context;
+    
+    rsUIInterface *interface;
 
     rsNiftiFile *input;
     rsNiftiFile *mask;
@@ -38,8 +38,8 @@ typedef struct {
 
 rsRoiParameters *rsRoiParseParams(int argc, char * argv[]);
 rsRoiParameters *rsRoiInitParameters();
+void rsRoiBuildInterface(rsRoiParameters *p);
 void rsRoiFreeParams(rsRoiParameters *p);
-void rsRoiPrintHelp(rsRoiParameters *p);
 
 gboolean rsRoiParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 

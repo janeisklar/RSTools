@@ -4,10 +4,11 @@ rsUIInterface* rsUINewInterface()
 {
     rsUIInterface *I = rsMalloc(sizeof(rsUIInterface));
     
-    I->nOptions    = 0;
-    I->options     = (rsUIOption**)rsMalloc(sizeof(rsUIOption*));
-    I->description = "Description: TBD";
-    I->helpIndent  = 35;
+    I->nOptions        = 0;
+    I->options         = (rsUIOption**)rsMalloc(sizeof(rsUIOption*));
+    I->description     = "Description: TBD";
+    I->gui_description = NULL;
+    I->helpIndent      = 35;
     
     return I;
 }
@@ -84,19 +85,19 @@ void rsUISetOptionValues(rsUIOption* o, rsUIOptionValue values[])
     o->allowedValues[length] = NULL;
 }
 
-GOptionContext* rsUICreateCLI(rsUIInterface* I)
+GOptionContext* rsUICreateCLI(rsUIInterface* I, void *userData)
 {
     // create a new context using the description
     char *lineFeed = "\n";
-    char *description = rsUIPrepareHelpText(I->description, 60, lineFeed);
+    char *description = rsUIPrepareHelpText(I->description, 80, lineFeed);
     char *oldDescription = description;
     
-    description = rsStringConcat("", description, NULL);
+    description = rsStringConcat("\n\n", description, NULL);
     rsFree(oldDescription);
     
     GOptionContext *context = g_option_context_new(description);
     rsFree(description);
-    
+        
     // add the current version number to the header output of the help
     g_option_context_set_summary(context, RSTOOLS_VERSION_LABEL);
     
@@ -197,6 +198,10 @@ GOptionContext* rsUICreateCLI(rsUIInterface* I)
     memcpy(iMainEntries,     &entry, sizeof(GOptionEntry));
     memcpy(iExtendedEntries, &entry, sizeof(GOptionEntry));
 
+    // set user data to the main option group
+    GOptionGroup *mainGroup = g_option_group_new(NULL, NULL, NULL, userData, NULL);
+    g_option_context_set_main_group(context, mainGroup);
+
     // add main options
     g_option_context_add_main_entries(context, mainEntries, GETTEXT_PACKAGE);
     
@@ -205,16 +210,16 @@ GOptionContext* rsUICreateCLI(rsUIInterface* I)
     }
     
     // add extended options if there are any
-    GOptionGroup *g = g_option_group_new("extended", "Extended options", "Additional options that are rarely going to be used", NULL, NULL);
+    GOptionGroup *g = g_option_group_new("extended", "Extended options", "Additional options that are rarely going to be used", userData, NULL);
     g_option_context_add_group(context, g);
     g_option_group_add_entries(g, extendedEntries);
     
     return context;
 }
 
-BOOL rsUIParse(rsUIInterface* I, int argc, char * argv[])
+BOOL rsUIParse(rsUIInterface* I, int argc, char * argv[], void *userData)
 {
-    GOptionContext* context = rsUICreateCLI(I);
+    GOptionContext* context = rsUICreateCLI(I, userData);
     GError*         error   = NULL;
     
     if ( argc < 2 ) {

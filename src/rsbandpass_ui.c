@@ -54,7 +54,7 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[])
     rsBandpassBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv);
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     return p;
 }
 

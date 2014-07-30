@@ -43,22 +43,20 @@ class RSTask {
         RSTask(const char*, const char*);
         ~RSTask();
         
-        void setDescription(char*);
-        char* getDescription();
-        void addArgument(rsArgument*);
-        vector<rsArgument*> getArguments();
-        rsArgument* getArgument(char* name);
-        char* getOutputPath();
-        void setOutputPath(char*);
-        void setShowOutput(bool showOutput);
-        bool shouldShowOutput();
-        char** getCallString(int *argc);
-        const char* getName();
-        const char* getCode();
-        void setCmd(char* cmd);
-        char* getCmd();
-        void fillInJobArguments(RSJob* job, RSJobParser* parser);
-        void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);
+        virtual void setDescription(char*);
+        virtual char* getDescription();
+        virtual void addArgument(rsArgument*);
+        virtual vector<rsArgument*> getArguments();
+        virtual rsArgument* getArgument(char* name);
+        virtual char* getOutputPath();
+        virtual void setOutputPath(char*);
+        virtual void setShowOutput(bool showOutput);
+        virtual bool shouldShowOutput();
+        virtual char** getCallString(int *argc);
+        virtual const char* getName();
+        virtual const char* getCode();
+        virtual void fillInJobArguments(RSJob* job, RSJobParser* parser);
+        virtual void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);
         
         static RSTask* taskFactory(const char *code);
     
@@ -68,7 +66,6 @@ class RSTask {
         char *description;
         vector<rsArgument*> arguments;
         char *outputPath;
-        char *cmd;
         bool showOutput;
 };
 

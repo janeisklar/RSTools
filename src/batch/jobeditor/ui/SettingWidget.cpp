@@ -71,6 +71,8 @@ void SettingWidget::createValueWidget()
                     w->setPlaceholderText(option->cli_arg_description);
                     if ( argument != NULL ) {
                         w->setText(argument->value);
+                    } else if ( option->defaultValue != NULL ) {
+                        w->setText(option->defaultValue);
                     }
                     valueWidget = w;
                 } else { // if the allowed values are restricted display radio buttons instead

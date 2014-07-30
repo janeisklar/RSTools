@@ -40,10 +40,11 @@ typedef struct {
 } rsUIOption;
 
 typedef struct {
-    gchar      *description;
-    rsUIOption **options;
-    size_t     nOptions;
-    size_t     helpIndent;
+    char*        description;
+    char*        gui_description;
+    rsUIOption** options;
+    size_t       nOptions;
+    size_t       helpIndent;
 } rsUIInterface;
 
 rsUIInterface*  rsUINewInterface();
@@ -55,8 +56,8 @@ void            rsUIDestroyOption(rsUIOption* o);
 void            rsUIAddOption(rsUIInterface* I, rsUIOption* o);
 void            rsUISetOptionValues(rsUIOption* o, rsUIOptionValue values[]);
 
-GOptionContext* rsUICreateCLI(rsUIInterface* I);
-BOOL            rsUIParse(rsUIInterface* I, int argc, char * argv[]);
+GOptionContext* rsUICreateCLI(rsUIInterface* I, void *userData);
+BOOL            rsUIParse(rsUIInterface* I, int argc, char * argv[], void *userData);
 
 char*           rsUIPrepareHelpText(const char* text, const size_t lineWidth, char *lineGlue);
 

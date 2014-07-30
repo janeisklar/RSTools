@@ -1,8 +1,12 @@
 #include "timecourse.hpp"
 
+using namespace rstools::batch::util;
+
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace plugins {
+namespace rstimecourse {
+namespace tool {
     
 void Timecourse::_parseParams(int argc, char * argv[])
 {
@@ -30,4 +34,12 @@ bool Timecourse::isEverythingFine()
     return params != NULL && params->parametersValid;
 }
 
-}}} // namespace rstools::batch::execution
+rsUIInterface* Timecourse::createUI()
+{
+    rsTimecourseParameters *p = rsTimecourseInitParameters();    
+    rsTimecourseBuildInterface(p);
+    
+    return p->interface;
+}
+
+}}}}} // namespace rstools::batch::plugins::rstimecourse::tool

@@ -16,8 +16,15 @@ class Unix : public RSTask {
 
 public: 
     Unix(const char* code, const char* name);
-    void fillInJobArguments(RSJob* job, RSJobParser* parser);
+    
+    void fillInJobArguments(RSJob* job, RSJobParser* parser);    
     void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);
+    
+    void setCmd(char* cmd);
+    char* getCmd();
+    
+protected:
+    char *cmd;
 };
 
 }}}}} // namespace rstools::batch::plugins::unix::task

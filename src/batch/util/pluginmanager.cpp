@@ -23,9 +23,7 @@ void PluginManager::loadPlugins()
 }
 
 void PluginManager::loadLibrary(const char* library)
-{
-    fprintf(stdout, "Loading Plugin: %s\n", library);
-    
+{    
     GModule *module = NULL;
     rsGetPluginFunc getPluginFunc = NULL;
 

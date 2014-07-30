@@ -1,21 +1,20 @@
-#ifndef rstools_rsbatch_plugin_unix_tool_unix_h
-#define rstools_rsbatch_plugin_unix_tool_unix_h
+#ifndef rstools_rsbatch_plugin_rstimecourse_tool_timecourse_h
+#define rstools_rsbatch_plugin_rstimecourse_tool_timecourse_h
 
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
 #include "src/batch/util/rstool.hpp"
-#include "../task/unix.hpp"
+#include "src/rstimecourse_common.h"
+#include "src/rstimecourse_ui.h"
 
 using namespace rstools::batch::util;
 
 namespace rstools {
 namespace batch {
 namespace plugins {
-namespace unix {
+namespace rstimecourse {
 namespace tool {
     
-class Unix : public RSTool {
+class Timecourse : public RSTool {
 
 public:
     void destroy();
@@ -26,12 +25,9 @@ protected:
     void _parseParams(int argc, char * argv[]);
     void _init();
     void _run();
-    
-    rstools::batch::plugins::unix::task::Unix* getUnixTask();
-    
-    bool executionSuccessful;
+    rsTimecourseParameters *params;
 };
 
-}}}}} // namespace rstools::batch::plugins::unix::tool
+}}}}} // namespace rstools::batch::plugins::rstimecourse::tool
 
 #endif

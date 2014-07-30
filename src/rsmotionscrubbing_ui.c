@@ -18,7 +18,7 @@ rsMotionScrubbingParameters *rsMotionScrubbingInitParameters() {
     p->output               = NULL;
     p->parametersValid      = FALSE;
     p->mask                 = NULL;
-    p->context              = NULL;
+    p->interface            = NULL;
     p->rp                   = NULL;
     p->maskPoints           = NULL;
     
@@ -42,12 +42,8 @@ void rsMotionScrubbingFreeParams(rsMotionScrubbingParameters *p) {
     }
     rsFree(p->rp);
     rsFree(p->maskPoints);
-    g_option_context_free(p->context);
+    rsUIDestroyInterface(p->interface);
     rsFree(p);
-}
-
-void rsMotionScrubbingPrintHelp(rsMotionScrubbingParameters *p) {
-    fprintf(stdout, "%s\n", g_option_context_get_help(p->context, TRUE, NULL));
 }
 
 rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[]) {
@@ -55,35 +51,123 @@ rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[
     rsMotionScrubbingParameters *p = rsMotionScrubbingInitParameters();
     p->callString = rsMergeStringArray(argc, argv);
     
-    // initialize the most common options
-    GError *error = NULL;
-    p->context = g_option_context_new("\n\nGiven a 4D-Nifti and a txt-file containing the 6 head realignment parameters, this application performs motion-scrubbing as described in: Power, Jonathan D., et al. \"Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion.\" Neuroimage 59.3 (2012): 2142-2154. APA");
-    g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
-
-    /* long, short, flags, arg, arg_data, desc, arg_desc */
-    GOptionEntry entries[] = {
-      { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,       "the 4D volume to be scrubbed", "<volume>" },
-      { "output",          'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,      "the volume in which the result will be saved", "<volume>" },
-      { "rp",              'r', 0, G_OPTION_ARG_FILENAME, &p->realignmentpath, "the file containing the realignment parameters", "<*.txt>" },
-      { "dvars",           'd', 0, G_OPTION_ARG_FILENAME, &p->dvarspath,       "(optional) file where the DVARS values will be saved to", "<*.txt>" },
-      { "fd",              'f', 0, G_OPTION_ARG_FILENAME, &p->fdpath,          "(optional) file to which the framewise displacement will be saved to", "<*.txt>" },
-      { "flagged",         'e', 0, G_OPTION_ARG_FILENAME, &p->flaggedpath,     "(optional) file to which the indices of all flagged frames will be saved to", "<*.txt>" },
-      { "dvarsthreshold",  'a', 0, G_OPTION_ARG_DOUBLE,   &p->dvarsthreshold,  "(optional) DVARs threshold", "<float>" },
-      { "fdthreshold",     'k', 0, G_OPTION_ARG_DOUBLE,   &p->fdthreshold,     "(optional) framewise displacement threshold", "<float>" },
-      { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,        "a mask specifying the region that is used for the computation of DVARs", "<volume>" },
-      { "threads",         't', 0, G_OPTION_ARG_INT,      &p->threads,         "number of threads used for processing", "<n>" },
-      { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,         "show debug information", NULL},
-      { NULL }
-    };
+    rsMotionScrubbingBuildInterface(p);
     
-    g_option_context_add_main_entries(p->context, entries, GETTEXT_PACKAGE);
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     
-    // check if parameters are valid
-    if ( ! g_option_context_parse(p->context, &argc, &argv, &error) ) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        return p;
-    }
-    
-    p->parametersValid = TRUE;
     return p;
+}
+
+void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
+{  
+    // initialize the most common options
+    rsUIOption *o;
+    p->interface = rsUINewInterface();
+    p->interface->description   = "Given a 4D-Nifti and a txt-file containing the 6 head realignment parameters, this application performs motion-scrubbing as described in: Power, Jonathan D., et al. \"Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion.\" Neuroimage 59.3 (2012): 2142-2154. APA";
+
+    o = rsUINewOption();
+    o->name                = "input";
+    o->shorthand           = 'i';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->inputpath;
+    o->cli_description     = "the 4D volume to be scrubbed";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "output";
+    o->shorthand           = 'o';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->outputpath;
+    o->cli_description     = "the volume in which the result will be saved";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "rp";
+    o->shorthand           = 'r';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->realignmentpath;
+    o->cli_description     = "the file containing the realignment parameters";
+    o->cli_arg_description = "<*.txt>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "dvarsthreshold";
+    o->shorthand           = 'a';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->dvarsthreshold;
+    o->cli_description     = "(optional) DVARs threshold";
+    o->cli_arg_description = "<float>";
+    o->defaultValue        = "0.05";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "fdthreshold";
+    o->shorthand           = 'k';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->fdthreshold;
+    o->cli_description     = "(optional) framewise displacement threshold";
+    o->cli_arg_description = "<float>";
+    o->defaultValue        = "1.0";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->maskpath;
+    o->cli_description     = "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "threads";
+    o->shorthand           = 't';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->threads;
+    o->cli_description     = "number of threads used for processing";
+    o->cli_arg_description = "<n>";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "verbose";
+    o->shorthand           = 'v';
+    o->storage             = &p->verbose;
+    o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+        
+    // initialize the more advanced and rather unusual options
+    o = rsUINewOption();
+    o->name                = "dvars";
+    o->shorthand           = 'd';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->dvarspath;
+    o->cli_description     = "(optional) file where the DVARS values will be saved to";
+    o->cli_arg_description = "<*.txt>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "fd";
+    o->shorthand           = 'f';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->fdpath;
+    o->cli_description     = "(optional) file to which the framewise displacement values will be saved to";
+    o->cli_arg_description = "<*.txt>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "flagged";
+    o->shorthand           = 'e';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->flaggedpath;
+    o->cli_description     = "(optional) file to which the indices of all flagged frames will be saved to";
+    o->cli_arg_description = "<*.txt>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
 }

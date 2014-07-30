@@ -23,7 +23,7 @@ rsTimecourseParameters* rsTimecourseInitParameters()
 
     p->parametersValid      = FALSE;
     p->verbose              = FALSE;
-    p->context              = NULL;
+    p->interface            = NULL;
     p->callString           = NULL;
     p->threads              = 1;
 
@@ -35,56 +35,160 @@ rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[])
     rsTimecourseParameters *p = rsTimecourseInitParameters();
     p->callString = rsMergeStringArray(argc, argv);
 
-    // initialize the most common options
-    GError *error = NULL;
-    p->context = g_option_context_new("\n\n Given a 4D-Nifti, this tool extracts the time course for a single voxel or aggregates the timecourse in a mask using different algorithms");
-    GOptionGroup *g = g_option_group_new("common", "Common options", "The most commonly used options", (void*)p, NULL);
+    rsTimecourseBuildInterface(p);
+
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     
-    g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
+    return p;
+}
+
+void rsTimecourseBuildInterface(rsTimecourseParameters *p)
+{
+    // initialize the most common options
+    rsUIOption *o;
+    p->interface = rsUINewInterface();
+    p->interface->description   = "Given a 4D-Nifti, this tool extracts the time course for a single voxel or aggregates the timecourse in a mask using different algorithms";
+    //p->interface->helpIndent    = 33;
     
     GOptionArgFunc cbAlgorithm = (GOptionArgFunc)rsTimecourseParseAlgorithm;
     GOptionArgFunc cbPoint     = (GOptionArgFunc)rsTimecourseParsePoint;
     
-     /* long, short, flags, arg, arg_data, desc, arg_desc */
-    GOptionEntry entries[] = {
-      { "input",             'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,         "the volume to be regressed", "<volume>" },
-      { "output",            'o', 0, G_OPTION_ARG_FILENAME, &p->outputpath,        "file to which the resulting timecourse will be writting to. if omitted the result will be printed directly to stdout", "<*.txt>" },
-      { "algorithm",         'a', 0, G_OPTION_ARG_CALLBACK, cbAlgorithm,           "<algo> the algorithm used to aggregate the data within the specified mask(s), e.g. mean, stddev, spca, tpca or csp\n\n\t'mean'\t\t- for every volume in the 4D input file the\n\t\t\t  intensity values in the mask region are \n\t\t\t  meaned, resulting in a meaned timecourse\n\t\t\t  for that region\n\t'stddev'\t- like 'mean', but instead of meaning the\n\t\t\t  mask region, the standard deviation is\n\t\t\t  computed\n\t'tpca'\t\t- performs a PCA on the temporal dimension\n\t\t\t  of the 4D input in the mask region\n\t'spca'\t\t- performs a PCA on the spatial dimension of\n\t\t\t  the 4D input limited to voxels in the mask\n\t\t\t  region\n\t'csp'\t\t- performs the common spatial pattern\n\t\t\t  procedure on the 4D input in the mask\n\t\t\t  region for both masks. The first half of\n\t\t\t  the returned components will maximize the\n\t\t\t  variance for mask1 while the variance for\n\t\t\t  mask2 is minimal. The second half will be\n\t\t\t  exactly the opposite (var(mask1) minimal,\n\t\t\t  var(mask2) maximal)\n", "<algo>" },
-      { "mask",              'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,          "a mask specifying the region that the algorithm is perforned on", "<volume>" },
-      { "mask2",             'n', 0, G_OPTION_ARG_FILENAME, &p->mask2path,         "(use only with csp) a second mask specifying the region for the second condition", "<volume>" },
-      { "point",             'p', 0, G_OPTION_ARG_CALLBACK, cbPoint,               "speficies a voxel using nifti coordinates(0-based) from which the timecourse is to be extracted", "<x> <y> <z>" },
-      { "retainVariance",      0, 0, G_OPTION_ARG_DOUBLE,   &p->minVariance,       "(use only with pca) percentage of explained variance that will be retained, e.g. '0.4'. keep in mind that a higher percentage will result in more components that are to be returned.", "<float>" },
-      { "retainComponents",  'c', 0, G_OPTION_ARG_INT,      &p->nComponents,       "(use only with pca or csp) number of PCA/CSP components that will be outputted. This should be a multiple of two when running CSP as the components will be distributed equally over both masks.", "<int>" },
-      { "useStandardScores", 's', 0, G_OPTION_ARG_NONE,     &p->useStandardScores, "(use only with pca) remove mean and set std. dev to 1 prior to running pca", NULL },
-      { "spatialMap",          0, 0, G_OPTION_ARG_FILENAME, &p->spatialmappath,    "(use only with pca) store the spatial map that is created using the PCA components(4D nifti with one volume for every component)", "<volume>" },
-      { "eigenvalues",       'e', 0, G_OPTION_ARG_FILENAME, &p->eigenvaluespath,   "(use only with pca) write out all eigenvalues to the file that is specified with this option", "<txt>" },
-      { "threads",           't', 0, G_OPTION_ARG_INT,      &p->threads,           "number of threads used for processing", "<n>" },
-      { "verbose",           'v', 0, G_OPTION_ARG_NONE,     &p->verbose,           "show debug information", NULL},
-      { NULL }
-    };
+    o = rsUINewOption();
+    o->name                = "input";
+    o->shorthand           = 'i';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->inputpath;
+    o->cli_description     = "the volume from which the timecourse is to be extracted";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
     
-    g_option_context_set_main_group(p->context, g);
-    g_option_group_add_entries(g, entries);
-
-    // initialize the more advanced and rather unusual options
-    g = g_option_group_new("extended", "Extended options", "Additional options that are rarely going to be used", (void*)p, NULL);
-    g_option_context_add_group(p->context, g);
-
-    GOptionEntry extended_entries[] = {
-      { "savemask",          0, 0, G_OPTION_ARG_FILENAME, &p->savemaskpath,        "optional path where the rescaled mask specified with -mask will be saved. The saved file with have the same dimensions as the input volume.", "volume" },
-      { NULL }
+    o = rsUINewOption();
+    o->name                = "output";
+    o->shorthand           = 'o';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->outputpath;
+    o->cli_description     = "file in which the resulting timecourse will be saved. If omitted the result will be printed directly to stdout";
+    o->gui_description     = "file in which the resulting timecourse will be saved";
+    o->cli_arg_description = "<*.txt>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "algorithm";
+    o->shorthand           = 'a';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbAlgorithm;
+    o->cli_description     = "the algorithm used to aggregate the data within the specified mask(s), e.g. mean, stddev, spca, tpca or csp";
+    o->cli_arg_description = "<algo>";
+    o->defaultValue        = "mean";
+    rsUIOptionValue allowedValues[] = {
+      {"mean",   "for every volume in the 4D input file the intensity values in the mask region are meaned, resulting in a meaned timecourse for that region"},
+      {"stddev", "like 'mean', but instead of meaning the mask region, the standard deviation is computed"},
+      {"tpca",   "performs a PCA on the temporal dimension of the 4D input in the mask region"},
+      {"spca",   "performs a PCA on the spatial dimension of the 4D input limited to voxels in the mask region"},
+      {"csp",    "performs the common spatial pattern procedure on the 4D input in the mask region for both masks. The first half of the returned components will maximize the variance for mask1 while the variance for mask2 is minimal. The second half will be exactly the opposite (var(mask1) minimal, var(mask2) maximal)"},
+      NULL
     };
-
-    g_option_group_add_entries(g, extended_entries);
-
-    // check if parameters are valid
-    if ( ! g_option_context_parse(p->context, &argc, &argv, &error) ) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        return p;
-    }
-
-    p->parametersValid = TRUE;
-    return p;
+    rsUISetOptionValues(o, allowedValues);
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->maskpath;
+    o->cli_description     = "a mask specifying the region that the algorithm is perforned on";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask2";
+    o->shorthand           = 'n';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->mask2path;
+    o->cli_description     = "(use only with the csp algorithm) a second mask specifying the region for the second condition";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "point";
+    o->shorthand           = 'p';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbPoint;
+    o->cli_description     = "speficies a voxel using nifti coordinates(0-based) from which the timecourse is to be extracted";
+    o->cli_arg_description = "<x>,<y>,<z>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "retainVariance";
+    o->shorthand           = 'V';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->minVariance;
+    o->cli_description     = "(use only with pca) percentage of explained variance that will be retained, e.g. '0.4'. keep in mind that a higher percentage will result in more components that are to be returned.";
+    o->cli_arg_description = "<float>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "retainComponents";
+    o->shorthand           = 'c';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->nComponents;
+    o->cli_description     = "(use only with pca or csp) number of PCA/CSP components that will be outputted. This should be a multiple of two when running CSP as the components will be distributed equally over both masks.";
+    o->cli_arg_description = "<n>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "useStandardScores";
+    o->shorthand           = 's';
+    o->storage             = &p->useStandardScores;
+    o->cli_description     = "(use only with pca) remove mean and set std. dev to 1 prior to running the pca";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "spatialMap";
+    o->shorthand           = 'M';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->spatialmappath;
+    o->cli_description     = "(use only with pca) store the spatial map that is created using the PCA components(4D nifti with one volume for every component)";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+        
+    o = rsUINewOption();
+    o->name                = "eigenvalues";
+    o->shorthand           = 'e';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->eigenvaluespath;
+    o->cli_description     = "(use only with pca) write out all eigenvalues to the file that is specified with this option";
+    o->cli_arg_description = "<*.txt>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "threads";
+    o->shorthand           = 't';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->threads;
+    o->cli_description     = "number of threads used for processing";
+    o->cli_arg_description = "<n>";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "verbose";
+    o->shorthand           = 'v';
+    o->storage             = &p->verbose;
+    o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+       
+    // initialize the more advanced and rather unusual options   
+    o = rsUINewOption();
+    o->name                = "savemask";
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->savemaskpath;
+    o->cli_description     = "optional path where the rescaled mask specified with -mask will be saved. The saved file with have the same dimensions as the input volume.";
+    o->cli_arg_description = "<volume>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
 }
 
 void rsTimecourseFreeParams(rsTimecourseParameters* p)
@@ -98,13 +202,8 @@ void rsTimecourseFreeParams(rsTimecourseParameters* p)
     rsFree(p->spatialmappath);
     rsFree(p->input);
     rsFree(p->callString);
-    g_option_context_free(p->context);
+    rsUIDestroyInterface(p->interface);
     rsFree(p);
-}
-
-void rsTimecoursePrintHelp(rsTimecourseParameters* p)
-{
-    fprintf(stdout, "%s\n", g_option_context_get_help(p->context, TRUE, NULL));
 }
 
 gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error)

@@ -146,7 +146,7 @@ void RSJobParser::parseTasks()
         RSTask *task = RSTask::taskFactory(taskName);
         task->parseTaskFromXml(walker, current_node);
         this->job->addTask(task);
-    } while ( ! strcmp("tasks", XMLString::transcode(current_node->getParentNode()->getNodeName())) );
+    } while ( current_node != NULL && ! strcmp("tasks", XMLString::transcode(current_node->getParentNode()->getNodeName())) );
 }
 
 void RSJobParser::fillInUserArguments(rsArgument **userArguments, const short nUserArguments)
@@ -343,7 +343,7 @@ char* RSJobParser::mergePluginXSDExtensions()
     for ( vector<rsXSDExtension*>::size_type t = 0; t < extensions.size(); t++ ) {
         rsXSDExtension *extension = extensions[t];
         const char* filePath = extension->file;
-        fprintf(stdout, "%s\n", filePath);
+        
         ifstream extfile;
         extfile.open(filePath, ifstream::in | ios::binary);
         

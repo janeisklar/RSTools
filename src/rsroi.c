@@ -6,11 +6,6 @@ int main(int argc, char * argv[]) {
     // Parse run arguments
     rsRoiParameters *p = rsRoiParseParams(argc, argv);
 
-    if( argc < 2 ) {
-        rsRoiPrintHelp(p);
-        return 0;
-    }
-
     // If arguments are valid, initialize niftis, etc.
     if ( p->parametersValid ) {
         rsRoiInit(p);

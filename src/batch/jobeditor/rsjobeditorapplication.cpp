@@ -87,8 +87,6 @@ void JobEditorWindow::createInsertTaskMenuItems()
         const char* code   = (char*)*it;
         RSTask* task = RSTask::taskFactory(code);
         const char* name   = task->getName();
-        
-        fprintf(stdout, "Tool: %s\n", name);
 
         QAction *action = new QAction(tr(name), this);
         connect(action, SIGNAL(triggered()), signalMapper, SLOT(map()));
@@ -157,13 +155,10 @@ void JobEditorWindow::insertNewTask(int taskIndex)
 void JobEditorWindow::insertTask(RSTask* task)
 {
     const char* code = task->getCode();
-    fprintf(stdout, "Inserting task using the tool with the code '%s'\n", code);
     RSTool* tool = RSTool::toolFactory(code);
     tool->setTask(task);
     const char* name = task->getDescription();
 
-    fprintf(stdout, "Tool name '%s'\n", name);
-    
     TaskWidget *widget  = new TaskWidget(tool, ui.pipelineWidget);
     const QString title = QString(name);
     

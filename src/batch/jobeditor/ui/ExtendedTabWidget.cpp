@@ -94,7 +94,7 @@ void ExtendedTabWidget::insertPage(int index, QWidget *page, const QIcon &icon, 
         pix = QIcon(iconList.value(index));
         if( pix.isNull() )
         {
-            pix = QApplication::style()->standardIcon(QStyle::SP_ArrowUp);
+            pix = QApplication::style()->standardIcon(QStyle::SP_CommandLink);
             page->setWindowIcon(pix);
         }
     }

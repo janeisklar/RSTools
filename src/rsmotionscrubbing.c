@@ -6,11 +6,6 @@ int main(int argc, char * argv[])
     // Parse run arguments
     rsMotionScrubbingParameters *p = rsMotionScrubbingParseParams(argc, argv);
     
-    if( argc < 2 ) {
-        rsMotionScrubbingPrintHelp(p);
-        return 0;
-    }
-    
     // If arguments are valid, initialize niftis, etc.
     if ( p->parametersValid ) {
         rsMotionScrubbingInit(p);

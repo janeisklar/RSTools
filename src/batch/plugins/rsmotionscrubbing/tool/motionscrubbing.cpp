@@ -1,8 +1,12 @@
 #include "motionscrubbing.hpp"
 
+using namespace rstools::batch::util;
+
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace plugins {
+namespace rsmotionscrubbing {
+namespace tool {
     
 void MotionScrubbing::_parseParams(int argc, char * argv[])
 {
@@ -30,4 +34,12 @@ bool MotionScrubbing::isEverythingFine()
     return params != NULL && params->parametersValid;
 }
 
-}}} // namespace rstools::batch::execution
+rsUIInterface* MotionScrubbing::createUI()
+{
+    rsMotionScrubbingParameters *p = rsMotionScrubbingInitParameters();    
+    rsMotionScrubbingBuildInterface(p);
+    
+    return p->interface;
+}
+
+}}}}} // namespace rstools::batch::plugins::rsmotionscrubbing::tool

@@ -3,9 +3,9 @@
 
 #include <stdio.h>
 #include <fslio.h>
-#include <glib.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +37,7 @@ typedef struct {
     rsNiftiFile *output;
     double ***mask;
 
-    GOptionContext *context;
+    rsUIInterface *interface;
 
     int threads;
 
@@ -45,8 +45,8 @@ typedef struct {
 
 rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[]);
 rsMotionScrubbingParameters *rsMotionScrubbingInitParameters();
+void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p);
 void rsMotionScrubbingFreeParams(rsMotionScrubbingParameters *p);
-void rsMotionScrubbingPrintHelp(rsMotionScrubbingParameters *p);
 
 #ifdef __cplusplus
 }

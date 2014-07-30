@@ -3,7 +3,7 @@
     <description>Default Preprocessing Pipeline for Resting-state Data</description>
     <parameters>
         <param name="prefix">
-            /Users/andre/tmp/rstools_testbed
+            /Users/ahoffmann/tmp/rstools_testbed
         </param>
         <param name="measurement">
             ${prefix}/analysis/rs/healthy_subjects/any/${subject}

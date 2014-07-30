@@ -9,11 +9,8 @@ namespace unix {
 namespace tool {
     
 void Unix::_parseParams(int argc, char * argv[])
-{
-    fprintf(stdout, "Cmd: %s\n", argv[1]);
-    
-    #pragma message "TODO: Implement Unix::_parseParams() in " __FILE__
-    
+{   
+    this->executionSuccessful = true;
 }
     
 void Unix::_init()
@@ -21,7 +18,9 @@ void Unix::_init()
 
 void Unix::_run()
 {
-    #pragma message "TODO: Implement Unix::_run() in " __FILE__
+    if ( system(this->getUnixTask()->getCmd()) != 0 ) {
+        this->executionSuccessful = false;
+    }
 }
 
 void Unix::destroy()
@@ -29,7 +28,12 @@ void Unix::destroy()
 
 bool Unix::isEverythingFine()
 {
-    return true;
+    return this->executionSuccessful;
+}
+
+rstools::batch::plugins::unix::task::Unix* Unix::getUnixTask()
+{
+    return (rstools::batch::plugins::unix::task::Unix*)this->getTask();
 }
 
 rsUIInterface* Unix::createUI()

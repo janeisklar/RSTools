@@ -6,11 +6,6 @@ int main(int argc, char * argv[]) {
     // Parse run arguments
     rsTimecourseParameters *p = rsTimecourseParseParams(argc, argv);
     
-    if( argc < 2 ) {
-        rsTimecoursePrintHelp(p);
-        return 0;
-    }
-    
     // If arguments are valid, initialize niftis, etc.
     if ( p->parametersValid ) {
         rsTimecourseInit(p);

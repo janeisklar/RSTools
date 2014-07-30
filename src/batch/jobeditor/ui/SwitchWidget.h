@@ -18,7 +18,7 @@ public:
     ~SwitchWidget();
     
 protected:
-    void paintEvent(QPaintEvent* event);
+    void paintEvent(QPaintEvent* /*event*/);
 };
 
 #endif

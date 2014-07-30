@@ -86,7 +86,7 @@ void TaskWidget::setupLayout()
     QFont f("Arial", 12, QFont::Bold);
     headline->setFont(f);
     
-    QLabel* description = new QLabel(I->description);
+    QLabel* description = new QLabel(I->gui_description==NULL ? I->description : I->gui_description);
     QFont f2("Arial", 11, QFont::Normal);
     description->setFont(f2);
     description->setWordWrap(true);

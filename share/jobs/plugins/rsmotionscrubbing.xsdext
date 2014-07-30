@@ -1,0 +1,7 @@
+<xs:complexType name="rsmotionscrubbing">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rsmotionscrubbing -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>

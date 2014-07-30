@@ -11,7 +11,6 @@ RSTask::RSTask(const char* code, const char* name)
     this->name = name;
     setOutputPath(NULL);
     setDescription((char*)"");
-    setCmd((char*)"");
     setShowOutput(false);
 }
 
@@ -36,15 +35,6 @@ void RSTask::setShowOutput(bool showOutput)
 bool RSTask::shouldShowOutput()
 {
     return this->showOutput;
-}
-
-void RSTask::setCmd(char* cmd)
-{
-    this->cmd = cmd;
-} 
-
-char* RSTask::getCmd() {
-    return this->cmd;
 }
 
 void RSTask::addArgument(rsArgument* argument)

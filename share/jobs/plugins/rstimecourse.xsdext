@@ -1,0 +1,7 @@
+<xs:complexType name="rstimecourse">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rstimecourse -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>

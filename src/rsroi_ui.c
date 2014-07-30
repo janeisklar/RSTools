@@ -16,10 +16,10 @@ rsRoiParameters *rsRoiInitParameters()
     p->useImageSpaceCoordinates = FALSE;
     p->verbose                  = FALSE;
     p->parametersValid          = FALSE;
-    p->context                  = NULL;
     p->input                    = NULL;
     p->mask                     = NULL;
     p->inputEqualsOutput        = FALSE;
+    p->interface                = NULL;
 
     return p;
 }
@@ -28,44 +28,114 @@ rsRoiParameters *rsRoiParseParams(int argc, char * argv[])
 {
     rsRoiParameters *p = rsRoiInitParameters();
     p->callString = rsMergeStringArray(argc, argv);
-
-    // initialize the most common options
-    GError *error = NULL;
-    p->context = g_option_context_new("\n\nGiven a 4D-Nifti that will be cloned this tool will create a binary mask for the specified region(sphere or cube). Already existing masks may be extended using -keepVolume.");
-    GOptionGroup *g = g_option_group_new("common", "Common options", "The most commonly used options", (void*)p, NULL);
-
-    g_option_context_set_summary(p->context, RSTOOLS_VERSION_LABEL);
-
-    GOptionArgFunc cbPoint     = (GOptionArgFunc)rsRoiParsePoint;
-
-    /* long, short, flags, arg, arg_data, desc, arg_desc */
-    GOptionEntry entries[] = {
-      { "input",           'i', 0, G_OPTION_ARG_FILENAME, &p->inputpath,                "the volume from which the header, dimension(except for temporal)) and alignment infos will be taken. The resulting mask will thus be coregistered to this volume.", "<volume>" },
-      { "mask",            'm', 0, G_OPTION_ARG_FILENAME, &p->maskpath,                 "the mask that results from the ROI operations below", "<volume>" },
-      { "cube",            'u', 0, G_OPTION_ARG_CALLBACK, cbPoint,                      "use this option if the ROI that is to be added is a cube. The height/weight/depth shoulö be given in mm unless when used with --useImageSpace.", "<w>,<h>,<d>" },
-      { "sphere",          's', 0, G_OPTION_ARG_DOUBLE,   &p->sphereradius,             "use this option if the ROI that is to be added is a sphere. Its radius should be given in mm unless when used with --useImageSpace.", "<float>" },
-      { "center",          'C', 0, G_OPTION_ARG_CALLBACK, cbPoint,                      "this option specifies the center of the sphere/cube in MNI space(mm) unless when used with --useImageSpace.", "<x>,<y>,<z>" },
-      { "roiValue",        'I', 0, G_OPTION_ARG_DOUBLE,   &p->roiValue,                 "intensity value that will be used for the ROI", "<float>" },
-      { "useImageSpace",   'V', 0, G_OPTION_ARG_NONE,     &p->useImageSpaceCoordinates, "values supplied with --sphere, --cube and --center will be interpreted as image space coordinates rather than mm", NULL },
-      { "keepVolume",      'k', 0, G_OPTION_ARG_NONE,     &p->keepVolume,               "keep values from the input volume. Use this option if you want to add ROIs to a mask that you specified as an input.", NULL },
-      { "randomsample",    'n', 0, G_OPTION_ARG_INT,      &p->nSamples,                 "randomly sample <n> voxels from the file specified using --input(through --keepVolume) and/or the other ROI commands(--sphere, --cube)", "<int>" },
-      { "verbose",         'v', 0, G_OPTION_ARG_NONE,     &p->verbose,                  "show debug information", NULL},
-      { NULL }
-    };
-
-    g_option_context_set_main_group(p->context, g);
-    g_option_group_add_entries(g, entries);
-
-    // check if parameters are valid
-    if ( ! g_option_context_parse(p->context, &argc, &argv, &error) ) {
-        fprintf(stderr, "option parsing failed: %s\n", error->message);
-        return p;
-    }
-
-    p->parametersValid = TRUE;
+    
+    rsRoiBuildInterface(p);
+    
+    // parse
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     return p;
 }
 
+void rsRoiBuildInterface(rsRoiParameters *p)
+{
+    rsUIOption *o;
+    p->interface = rsUINewInterface();
+    p->interface->description       = "Given a 4D-Nifti that will be cloned this tool will create a binary mask for the specified region(sphere or cube). Already existing masks may be extended using -keepVolume.";
+    p->interface->gui_description   = "Given a 4D-Nifti that will be cloned this tool will create a binary mask for the specified region(sphere or cube). Already existing masks may be extended using the 'keepVolume' option.";
+    p->interface->helpIndent        = 31;
+        
+    GOptionArgFunc cbPoint = (GOptionArgFunc)rsRoiParsePoint;
+
+    // initialize the most common options
+    o = rsUINewOption();
+    o->name                = "input";
+    o->shorthand           = 'i';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->inputpath;
+    o->cli_description     = "the volume from which the header, dimension(except for temporal)) and alignment infos will be taken. The resulting mask will thus be coregistered to this volume.";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "mask";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->maskpath;
+    o->cli_description     = "the mask that results from the ROI operations below";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "cube";
+    o->shorthand           = 'c';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbPoint;
+    o->cli_description     = "use this option if the ROI that is to be added is a cube. The height/weight/depth should be given in mm unless when used with --useImageSpace.";
+    o->gui_description     = "Use this option if the ROI that is to be added is a cube. The height/weight/depth should be given in mm unless when used with the 'useImageSpace' option.";
+    o->cli_arg_description = "<w>,<h>,<d>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "sphere";
+    o->shorthand           = 's';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->sphereradius;
+    o->cli_description     = "use this option if the ROI that is to be added is a sphere. Its radius should be given in mm unless when used with --useImageSpace.";
+    o->gui_description     = "Use this option if the ROI that is to be added is a sphere. Its radius should be given in mm unless when used with the 'useImageSpace' option.";
+    o->cli_arg_description = "<float>";
+    rsUIAddOption(p->interface, o);
+        
+    o = rsUINewOption();
+    o->name                = "center";
+    o->shorthand           = 'C';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbPoint;
+    o->cli_description     = "this option specifies the center of the sphere/cube in MNI space(mm) unless when used with --useImageSpace.";
+    o->gui_description     = "this option specifies the center of the sphere/cube in MNI space(mm) unless when used with the 'useImageSpace' option.";
+    o->cli_arg_description = "<w>,<h>,<d>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "roiValue";
+    o->shorthand           = 'V';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->roiValue;
+    o->cli_description     = "intensity value that will be used for the ROI";
+    o->cli_arg_description = "<float>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "useImageSpace";
+    o->shorthand           = 'I';
+    o->storage             = &p->useImageSpaceCoordinates;
+    o->cli_description     = "values supplied with --sphere, --cube and --center will be interpreted as image space coordinates rather than mm";
+    o->gui_description     = "values supplied with the 'sphere', 'cube' and 'center' option will be interpreted as image space coordinates rather than mm";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "keepVolume";
+    o->shorthand           = 'k';
+    o->storage             = &p->keepVolume;
+    o->cli_description     = "keep values from the input volume. Use this option if you want to add ROIs to a mask that you specified as an input.";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "randomsample";
+    o->shorthand           = 'S';
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->nSamples;
+    o->cli_description     = "randomly sample <n> voxels from the file specified using --input(through --keepVolume) and/or the other ROI commands(--sphere, --cube)";
+    o->gui_description     = "randomly sample <n> voxels from the file specified using the 'input' combined with the 'keepVolume' option and/or the other ROI options: 'sphere', cube'";
+    o->cli_arg_description = "<int>";
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "verbose";
+    o->shorthand           = 'v';
+    o->storage             = &p->verbose;
+    o->cli_description     = "show debug information";
+    rsUIAddOption(p->interface, o);
+}
 
 void rsRoiFreeParams(rsRoiParameters *p)
 {
@@ -76,13 +146,8 @@ void rsRoiFreeParams(rsRoiParameters *p)
     rsFree(p->cubeDim);
     rsFree(p->input);
     rsFree(p->mask);
-    g_option_context_free(p->context);
+    rsUIDestroyInterface(p->interface);
     rsFree(p);
-}
-
-void rsRoiPrintHelp(rsRoiParameters *p)
-{
-    fprintf(stdout, "%s\n", g_option_context_get_help(p->context, TRUE, NULL));
 }
 
 gboolean rsRoiParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error)

@@ -55,7 +55,7 @@ rsRegressionParameters* rsRegressionParseParams(int argc, char * argv[])
     rsRegressionBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv);
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     return p;
 }
 

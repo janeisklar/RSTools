@@ -9,7 +9,9 @@ namespace unix {
 namespace task {
    
 Unix::Unix(const char* code, const char* name) : RSTask(code, name)
-{}
+{
+    setCmd((char*)"");
+}
     
 void Unix::fillInJobArguments(RSJob* job, RSJobParser* parser)
 {
@@ -50,6 +52,15 @@ void Unix::parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node)
             setCmd(cmd);
         }
     }
+}
+
+void Unix::setCmd(char* cmd)
+{
+    this->cmd = cmd;
+} 
+
+char* Unix::getCmd() {
+    return this->cmd;
 }
 
 }}}}} // namespace rstools::batch::plugins::unix::task

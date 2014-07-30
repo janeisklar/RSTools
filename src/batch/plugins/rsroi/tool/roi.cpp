@@ -1,8 +1,12 @@
 #include "roi.hpp"
 
+using namespace rstools::batch::util;
+
 namespace rstools {
 namespace batch {
-namespace execution {
+namespace plugins {
+namespace rsroi {
+namespace tool {
     
 void Roi::_parseParams(int argc, char * argv[])
 {
@@ -29,4 +33,12 @@ bool Roi::isEverythingFine()
     return params != NULL && params->parametersValid;
 }
 
-}}} // namespace rstools::batch::execution
+rsUIInterface* Roi::createUI()
+{
+    rsRoiParameters *p = rsRoiInitParameters();    
+    rsRoiBuildInterface(p);
+    
+    return p->interface;
+}
+
+}}}}} // namespace rstools::batch::plugins::rsroi::tool

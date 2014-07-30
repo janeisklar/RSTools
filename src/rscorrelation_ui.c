@@ -40,7 +40,7 @@ rsCorrelationParameters* rsCorrelationParseParams(int argc, char * argv[])
     rsCorrelationBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv);
+    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
     
     return p;
 }

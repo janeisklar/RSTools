@@ -13,7 +13,7 @@ SwitchWidget::~SwitchWidget()
     
 }
 
-void SwitchWidget::paintEvent(QPaintEvent* event)
+void SwitchWidget::paintEvent(QPaintEvent* /*event*/)
 {
     QPainter painter(this);
     painter.fillRect(rect(), Qt::gray);

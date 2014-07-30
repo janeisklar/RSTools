@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <strings.h>
 #include <fslio.h>
-#include <glib.h>
 #include <dlfcn.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
+#include "src/utils/rsui.h"
 
 #define RSTOOLS_TIMECOURSE_ALGORITHM_MEAN   1
 #define RSTOOLS_TIMECOURSE_ALGORITHM_SPCA   2
@@ -44,7 +44,7 @@ typedef struct {
     
     BOOL parametersValid;
     BOOL verbose;
-    GOptionContext *context;
+    rsUIInterface *interface;
     char *callString;
     int threads;
 
@@ -52,8 +52,8 @@ typedef struct {
 
 rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[]);
 rsTimecourseParameters* rsTimecourseInitParameters();
+void rsTimecourseBuildInterface(rsTimecourseParameters *p);
 void rsTimecourseFreeParams(rsTimecourseParameters* p);
-void rsTimecoursePrintHelp(rsTimecourseParameters* p);
 
 gboolean rsTimecourseParseAlgorithm(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 gboolean rsTimecourseParsePoint(const gchar *option_name, const gchar *value, gpointer data, GError **error);

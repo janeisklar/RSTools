@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <fslio.h>
-#include <glib.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 #include "src/utils/rsui.h"
