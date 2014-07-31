@@ -3,7 +3,7 @@ SUBDIRS = utils nifti maths . batch
 AM_CFLAGS = -DDATA_PATH=\"$(datadir)\"
 AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\"
 
-rslibraries=utils/librsutils.la maths/librsmathutils.la nifti/librsniftiutils.la
+rslibraries=utils/librsutils.la maths/librsmathutils.la nifti/librsniftiutils.la ../externals/librsfslio.la
 
 LDADD=$(rslibraries)
 

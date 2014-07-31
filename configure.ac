@@ -32,7 +32,7 @@ AM_CONDITIONAL(BUILD_OS_IS_DARWIN, [test x"$build_os" = darwin])
 
 
 # Qt with AutoTroll.
-AT_WITH_QT([+widgets +designer])
+AT_WITH_QT([+widgets +gui +designer], [+widgets +gui +designer])
 
 # determine git version information
 RSTOOLS_VERSION_HASH=esyscmd([git --git-dir=./.git --work-tree=. rev-parse --short HEAD])
@@ -107,6 +107,10 @@ AC_SEARCH_LIBS([znzopen], [znz],
        echo 
        exit 1 ])       
 
+AC_CHECK_HEADER(znzlib.h,
+    break,
+    AC_MSG_ERROR([Couldn't find znzlib.h! Please verify that the include path has been set properly]))
+
 # Check for niftiio-library
 AC_SEARCH_LIBS([nifti_image_load], [niftiio],
     [] ,
@@ -117,6 +121,10 @@ AC_SEARCH_LIBS([nifti_image_load], [niftiio],
        echo 'apt-get install libnifti2 libnifti-dev'
        echo 
        exit 1 ])
+
+AC_CHECK_HEADER(nifti1.h,
+    break,
+    AC_MSG_ERROR([Couldn't find nifti1.h and/or nifti1_io.h! Please verify that the include path has been set properly]))
 
 # Check for FSL library
 # AC_SEARCH_LIBS([FslGetDim], [fslio],
