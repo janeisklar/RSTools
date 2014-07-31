@@ -5,7 +5,6 @@
 
 #include <omp.h>
 
-#include <fslio.h>
 #include <gsl/gsl_statistics_double.h>
 #include "src/rscommon.h"
 #include "src/utils/rsmemory.h"

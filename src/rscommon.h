@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <nifti/nifti1.h>
-#include <fslio.h>
+#include "externals/fslio/fslio.h"
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 

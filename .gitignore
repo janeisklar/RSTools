@@ -38,6 +38,9 @@ utils/nifti_tool
 utils/nifti1_test
 utils/nifti_stats
 include/*
+.deps
+.libs
+*.Plo
 
 # Libtool
 aclocal.m4

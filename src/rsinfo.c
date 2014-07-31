@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <fslio.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"
 

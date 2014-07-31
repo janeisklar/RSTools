@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include <fslio.h>
 #include <dlfcn.h>
 #include "src/nifti/rsniftiutils.h"
 #include "src/maths/rsmathutils.h"

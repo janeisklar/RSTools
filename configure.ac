@@ -119,14 +119,14 @@ AC_SEARCH_LIBS([nifti_image_load], [niftiio],
        exit 1 ])
 
 # Check for FSL library
-AC_SEARCH_LIBS([FslGetDim], [fslio],
-    [] ,
-    [  echo
-       echo 'Fslio not found'
-       echo 'Download from: http://sourceforge.net/projects/niftilib/files/nifticlib/'
-       echo 
-       exit 1 ])
-       
+# AC_SEARCH_LIBS([FslGetDim], [fslio],
+#     [] ,
+#     [  echo
+#        echo 'Fslio not found'
+#        echo 'Download from: http://sourceforge.net/projects/niftilib/files/nifticlib/'
+#        echo 
+#        exit 1 ])
+
 # Checking for Atlas
 AC_ARG_ENABLE(
     [atlas],
@@ -209,6 +209,7 @@ AC_CHECK_FUNCS([floor pow sqrt])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
+		 externals/Makefile
 		 src/Makefile
  		 src/maths/Makefile
  		 src/nifti/Makefile
