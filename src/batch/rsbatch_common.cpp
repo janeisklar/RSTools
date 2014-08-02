@@ -52,17 +52,9 @@ void rsBatchRun(rsBatchParameters *p)
     vector<RSTask*> tasks = p->job->getTasks();
     RSTool** tools = (RSTool**)rsMalloc(tasks.size()*sizeof(RSTool*));
     
-    
-    if ( p->verbose ) {
-        fprintf(stdout, "# Preparing tasks\n");
-    }
-    
+    // Prepare tasks    
     for ( vector<RSTask*>::size_type t = 0; t < tasks.size(); t++ ) {
         RSTask *task = tasks[t];
-        
-        if ( p->verbose ) {
-            RSTool::printProgressBar(stdout, ((double)t*100.0)/(double)tasks.size(), t, task->getDescription());
-        }
         
         // create the tool that's needed to execute the current task
         RSTool *tool = RSTool::toolFactory(task->getCode());

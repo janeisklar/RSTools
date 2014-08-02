@@ -145,7 +145,7 @@ void RSTool::printProgressBar(FILE* stream, double percentage, int run, char* de
     struct winsize max;
     ioctl(0, TIOCGWINSZ , &max);
 
-    const int width = max.ws_col;
+    const int width = max.ws_col > 10 ? max.ws_col : 60;
     const int progressBarWidth = width - 9;
 
     // remove old progress bar if present

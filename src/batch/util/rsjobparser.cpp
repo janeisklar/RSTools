@@ -63,6 +63,8 @@ bool RSJobParser::parse()
         fprintf(stderr, "Unexpected job file parsing error.\n");
         return false;
     }
+    
+    unlink(schemaFile);
 
     doc = parser->getDocument();
     docRootNode = doc->getDocumentElement();
@@ -388,7 +390,6 @@ char* RSJobParser::mergePluginXSDExtensions()
     char* tmpFileName = (char*)malloc(sizeof(char)*255);
     sprintf(tmpFileName, "%s", "/tmp/job.xsd-XXXXXXX");
     int filedes = mkstemp(tmpFileName);
-    //unlink(tmpFileName);
     
     if ( filedes < 1 ) {
         throw runtime_error("Could not create a temporary file to merge the job-validation files for all plugins.");
