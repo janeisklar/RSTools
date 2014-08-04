@@ -9,7 +9,7 @@ using namespace rstools::batch::util;
 void rsBatchInit(rsBatchParameters* p)
 {
     p->parametersValid = FALSE;
-    p->verbose = ! p->quiet;
+    p->verbose = p->quiet == FALSE;
 
     // ensure that plugins are loaded
     PluginManager::getInstance().loadPlugins();

@@ -15,6 +15,7 @@ rsBatchParameters* rsBatchInitParameters()
     p->viewArgument          = NULL;
     p->showOverview          = FALSE;
     p->threads               = 1;
+    p->quiet                 = FALSE;
 
     return p;
 }
