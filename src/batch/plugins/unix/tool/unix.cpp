@@ -82,6 +82,7 @@ rsUIInterface* Unix::createUI()
     o->type                = G_OPTION_ARG_STRING;
     o->cli_description     = "the unix command that is to be executed";
     o->cli_arg_description = "<unix cmd>";
+    o->nLines              = 20;
     rsUIAddOption(interface, o);
     
     return interface;

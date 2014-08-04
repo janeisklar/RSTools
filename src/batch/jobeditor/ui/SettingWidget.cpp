@@ -4,6 +4,7 @@
 #include <QSpacerItem>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 #include <QSpacerItem>
 //#include <QSpinBox>
 //#include <QDoubleSpinBox>
@@ -67,14 +68,28 @@ void SettingWidget::createValueWidget()
             {
                 // Display text box if number of values is not restricted
                 if ( option->allowedValues == NULL ) {
-                    QLineEdit *w = new QLineEdit();
-                    w->setPlaceholderText(option->cli_arg_description);
-                    if ( argument != NULL ) {
-                        w->setText(argument->value);
-                    } else if ( option->defaultValue != NULL ) {
-                        w->setText(option->defaultValue);
+                    if ( option->nLines < 2 ) {
+                        QLineEdit *w = new QLineEdit();
+                        w->setPlaceholderText(option->cli_arg_description);
+                        if ( argument != NULL ) {
+                            w->setText(argument->value);
+                        } else if ( option->defaultValue != NULL ) {
+                            w->setText(option->defaultValue);
+                        }
+                        valueWidget = w;
+                    } else { // create a QTextEdit field instead
+                        QPlainTextEdit *w = new QPlainTextEdit();
+                        if ( argument != NULL ) {
+                            w->setPlainText(argument->value);
+                        } else if ( option->defaultValue != NULL ) {
+                            w->setPlainText(option->defaultValue);
+                        }
+                        QFontMetrics m(w->font()) ;
+                        int rowHeight = m.lineSpacing() ;
+                        w->setFixedHeight(option->nLines * rowHeight) ;
+                        w->setLineWrapMode(QPlainTextEdit::NoWrap);
+                        valueWidget = w;
                     }
-                    valueWidget = w;
                 } else { // if the allowed values are restricted display radio buttons instead
                     QWidget *w = new QWidget();
                     QBoxLayout *wLayout = new QBoxLayout(QBoxLayout::TopToBottom);

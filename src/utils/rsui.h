@@ -34,6 +34,7 @@ typedef struct {
     gchar*            gui_description; // used in the GUI instead of cli_description if present
     unsigned short    group;           // whether this option is listed in the main or extended group (see RS_UI_GROUP_*)
     BOOL              showInGUI;       // whether the option should be visible in the GUI
+    size_t            nLines;          // this variable should be specified if the input field should contain more than one line
     rsUIOptionValue** allowedValues;   // (NULL-terminated) list of values that this option accepts
     char*             defaultValue;
     

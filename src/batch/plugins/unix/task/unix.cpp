@@ -57,6 +57,18 @@ void Unix::parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node)
 void Unix::setCmd(char* cmd)
 {
     this->cmd = cmd;
+    
+    // set argument as well
+    char* optionName = (char*)"command";
+    rsArgument* argument = getArgument(optionName);
+    
+    if ( argument == NULL ) {
+          argument = (rsArgument*)malloc(sizeof(rsArgument));
+          argument->key = optionName;
+          addArgument(argument);
+    }
+    
+    argument->value = cmd;
 } 
 
 char* Unix::getCmd() {

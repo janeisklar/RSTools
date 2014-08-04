@@ -37,6 +37,7 @@ rsUIOption* rsUINewOption()
     o->showInGUI           = TRUE;
     o->allowedValues       = NULL;
     o->defaultValue        = NULL;
+    o->nLines              = 1;
     
     return o;
 }
