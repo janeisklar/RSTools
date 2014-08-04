@@ -27,12 +27,17 @@ lib_LTLIBRARIES =                             \
 	librstimecourse.la
 
 librsbandpass_la_SOURCES = rsbandpass_ui.c rsbandpass_common.c
-
+librsbandpass_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librscorrelation_la_SOURCES = rscorrelation_ui.c rscorrelation_common.c
+librscorrelation_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsmotionscrubbing_la_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c
+librsmotionscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsregression_la_SOURCES = rsregression_ui.c rsregression_common.c 
+librsregression_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsroi_la_SOURCES = rsroi_ui.c rsroi_common.c
-librstimecourse_la_SOURCES = rstimecourse_ui.c rstimecourse_common.c 
+librsroi_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librstimecourse_la_SOURCES = rstimecourse_ui.c rstimecourse_common.c
+librstimecourse_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 
 rsbandpass_SOURCES = rsbandpass.c
 rsbandpass_LDADD = librsbandpass.la @LIBOBJS@ $(rslibraries)
