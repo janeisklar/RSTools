@@ -15,5 +15,6 @@ void rsBatchDestroy(rsBatchParameters* p);
 void rsBatchPrintParameter(rsBatchParameters *p);
 void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state);
 void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools);
+BOOL rsBatchTaskShouldBeSkipped(rsBatchParameters* p, int taskId);
 
 #endif

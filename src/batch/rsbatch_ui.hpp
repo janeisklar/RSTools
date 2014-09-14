@@ -7,6 +7,10 @@
 #include "src/nifti/rsniftiutils.h"
 #include "src/batch/util/rsjobparser.hpp"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 using namespace rstools::batch::util;
 
 typedef struct {
@@ -21,6 +25,7 @@ typedef struct {
     GOptionContext *context;
     char *viewArgument;
     int threads;
+    int *tasksToSkip;
 } rsBatchParameters;
 
 rsBatchParameters* rsBatchParseParams(int argc, char * argv[]);
@@ -28,5 +33,10 @@ rsBatchParameters* rsBatchInitParameters();
 void rsBatchFreeParams(rsBatchParameters* p);
 void rsBatchPrintHelp(rsBatchParameters* p);
 rsArgument* rsBatchParseArgument(char *arg);
+gboolean rsBatchParseSkipParam(const gchar *option_name, const gchar *value, gpointer data, GError **error);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

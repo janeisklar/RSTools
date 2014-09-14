@@ -29,7 +29,7 @@ void rsBatchInit(rsBatchParameters* p)
     // Check if any arguments are missing
     vector<char*> missingArguments = parser->getMissingArguments();
 
-    if ( missingArguments.size() > 0 ) {
+    if ( p->viewArgument == NULL && missingArguments.size() > 0 ) {
         fprintf(stderr, "The following arguments need to be supplied to run the job-file!\n");
         for ( vector<char*>::size_type t = 0; t < missingArguments.size(); t++ ) {
             char *argument = missingArguments[t];
@@ -54,6 +54,11 @@ void rsBatchRun(rsBatchParameters *p)
     
     // Prepare tasks    
     for ( vector<RSTask*>::size_type t = 0; t < tasks.size(); t++ ) {
+        
+        if ( rsBatchTaskShouldBeSkipped(p, (int)t) ) {
+            continue;
+        }
+        
         RSTask *task = tasks[t];
         
         // create the tool that's needed to execute the current task
@@ -88,7 +93,11 @@ void rsBatchRun(rsBatchParameters *p)
     
     // Execute tasks
     for ( short t = 0; t < tasks.size(); t++ ) {
-                
+        
+        if ( rsBatchTaskShouldBeSkipped(p, (int)t) ) {
+            continue;
+        }
+        
         RSTool *tool = tools[t];
 
         if ( p->verbose ) {
@@ -131,20 +140,6 @@ void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
     fprintf(stderr, "\nError in task #%d while %s\n", taskNum, state);
     tool->printCallString(stderr);
     
-    /*
-    #pragma message "TODO: Fix rsBatchPrintExecutionError() in " __FILE__ " Hint: migrate to RSTool"
-    if ( tool->getTask()->getCode() == "" ) {
-        fprintf(stdout, "Command: %s\n", tool->getTask()->getCmd());
-    } else {
-        int argc;
-        char **argv = tool->getCallString(&argc);
-
-        fprintf(stderr, "Tool '%s' has encoutered an error while %s!\n\nParams:\n", argv[0], state);
-        for ( int i=1; i<argc; i++ ) {
-            fprintf(stderr, "  %s\n", argv[i]);
-        }
-    }*/
-    
     if ( strcmp(tool->getOutput(), "") ) {
         fprintf(stderr, "\n\nMessage:\n%s\n", tool->getOutput());
     }
@@ -176,6 +171,10 @@ void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools) {
     
     for ( vector<RSTask*>::size_type t=0; t<nTasks; t++ ) {
         
+        if ( rsBatchTaskShouldBeSkipped(p, (int)t) ) {
+            continue;
+        }
+        
         RSTool *tool = tools[t];
         RSTask *task = tool->getTask();
         
@@ -193,22 +192,20 @@ void rsBatchShowJobOverview(rsBatchParameters* p, RSTool** tools) {
         fprintf(stdout, "\n");
         
         tool->printCallString(stdout);
-        
-        /*
-        #pragma message "TODO: Fix rsBatchShowJobOverview() in " __FILE__
-        if ( task->getCode() == "" ) {
-            fprintf(stdout, "Unix command: \n%s\n", task->getCmd());
-        } else {
-            int argc;
-            char **argv = tool->getCallString(&argc);
+    }
+}
 
-            fprintf(stdout, "Tool:\n %s\n\nParams:\n", argv[0]);
-            for ( int i=1; i<argc; i++ ) {
-                fprintf(stdout, "  %s\n", argv[i]);
-            }
+BOOL rsBatchTaskShouldBeSkipped(rsBatchParameters* p, int taskId)
+{
+    size_t t = 0;
+    while ( p->tasksToSkip[t] != -1 ) {
+        
+        if ( p->tasksToSkip[t] == taskId ) {
+            return TRUE;
         }
         
-        fprintf(stdout, "\n");
-        */
+        t++;
     }
+    
+    return FALSE;
 }

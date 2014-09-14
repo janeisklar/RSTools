@@ -73,36 +73,7 @@
          <number>0</number>
         </property>
         <item row="0" column="0">
-         <widget class="QTableWidget" name="tableWidget">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>1</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="contextMenuPolicy">
-           <enum>Qt::DefaultContextMenu</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
-          </property>
-          <property name="columnCount">
-           <number>2</number>
-          </property>
-          <attribute name="horizontalHeaderMinimumSectionSize">
-           <number>4</number>
-          </attribute>
-          <column>
-           <property name="text">
-            <string>Argument</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>Value</string>
-           </property>
-          </column>
-         </widget>
+         <widget class="QTableView" name="argumentsTable"/>
         </item>
        </layout>
       </widget>

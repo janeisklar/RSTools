@@ -1,4 +1,5 @@
 #include "rsjobeditorapplication.h"
+#include "ui/ArgumentsModel.h"
 #include <QFileDialog>
 #include <QErrorMessage>
 
@@ -128,6 +129,14 @@ void JobEditorWindow::openJob(char* jobFile)
     RSJobParser *parser = new RSJobParser(jobFile);
     parser->parse();
     currentJob = parser->getJob();
+    
+    ui.argumentsTable->setModel(new ArgumentsModel(currentJob));
+    ui.argumentsTable->setSortingEnabled(true);
+#if QT_VERSION >= 0x050000
+    ui.argumentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+#else
+    ui.argumentsTable->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+#endif
     
     vector<RSTask*> tasks = currentJob->getTasks();
     

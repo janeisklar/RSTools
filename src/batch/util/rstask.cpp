@@ -92,7 +92,7 @@ char** RSTask::getCallString(int *argc)
     char **argv = (char**)malloc(sizeof(char*)*(arguments.size()+1));
     *argc = (int)arguments.size()+1;
     
-    const char* taskName = this->getName();
+    const char* taskName = this->getCode();
     argv[0] = (char*)malloc((strlen(taskName)+1)*sizeof(char));
     sprintf(argv[0], "%s", taskName);
     

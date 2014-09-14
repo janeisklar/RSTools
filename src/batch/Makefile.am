@@ -31,6 +31,7 @@ rsjobeditor_SOURCES  = \
  jobeditor/ui/TaskWidget.cpp                           jobeditor/ui/TaskWidget.moc.cpp \
  jobeditor/ui/SettingWidget.cpp                        jobeditor/ui/SettingWidget.moc.cpp \
  jobeditor/ui/SwitchWidget.cpp                         jobeditor/ui/SwitchWidget.moc.cpp \
+ jobeditor/ui/ArgumentsModel.cpp                       jobeditor/ui/ArgumentsModel.moc.cpp \
  jobeditor/rsjobeditorapplication.cpp                  jobeditor/rsjobeditorapplication.moc.cpp \
  jobeditor/rsjobeditorapplication.h
 rsjobeditor_CXXFLAGS = $(QT_CXXFLAGS) $(AM_CXXFLAGS)
@@ -46,6 +47,7 @@ BUILT_SOURCES = \
  jobeditor/ui/ExtendedTabWidgetPlugin.moc.cpp \
  jobeditor/ui/SettingWidget.moc.cpp \
  jobeditor/ui/SwitchWidget.moc.cpp \
+ jobeditor/ui/ArgumentsModel.moc.cpp \
  jobeditor/rsjobeditorapplication.moc.cpp 
  
 clean-local:
