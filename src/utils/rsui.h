@@ -1,7 +1,7 @@
 #ifndef rstools_utils_ui_h
 #define rstools_utils_ui_h
 
-#include "src/rscommon.h"
+#include "rscommon.h"
 #include "rsstring.h"
 #include "glib.h"
 

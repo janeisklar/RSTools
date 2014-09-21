@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rsroi_tool_roi_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rsroi_common.h"
-#include "src/rsroi_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rsroi_common.h"
+#include "rsroi_ui.h"
 
 using namespace rstools::batch::util;
 

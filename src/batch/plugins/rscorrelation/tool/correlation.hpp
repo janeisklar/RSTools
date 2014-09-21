@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rscorrelation_tool_correlation_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rscorrelation_common.h"
-#include "src/rscorrelation_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rscorrelation_common.h"
+#include "rscorrelation_ui.h"
 
 using namespace rstools::batch::util;
 

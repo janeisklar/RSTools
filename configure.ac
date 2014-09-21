@@ -2,14 +2,15 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([RSTools], [0.9.0], [andre.hoffmann@meduniwien.ac.at])
+AC_INIT([RSTools], [0.9.5], [andre.hoffmann@meduniwien.ac.at])
 
 ACLOCAL_AMFLAGS=-I m4
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([m4])
 
-CFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c99 -fopenmp $CFLAGS"
-CXXFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c++0x -fopenmp $CXXFLAGS"
+
+CFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c99 -fopenmp -I./src $CFLAGS"
+CXXFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c++0x -fopenmp -I./src $CXXFLAGS"
 
 # prepare for automake
 AM_INIT_AUTOMAKE([foreign -Wall])
@@ -29,10 +30,6 @@ LT_INIT
 # Check if on OS X
 AC_CANONICAL_HOST
 AM_CONDITIONAL(BUILD_OS_IS_DARWIN, [test x"$build_os" = darwin])
-
-
-# Qt with AutoTroll.
-AT_WITH_QT([+widgets +gui +designer], [+widgets +gui +designer])
 
 # determine git version information
 RSTOOLS_VERSION_HASH=esyscmd([git --git-dir=./.git --work-tree=. rev-parse --short HEAD])
@@ -214,7 +211,7 @@ AC_TYPE_SSIZE_T
 AC_CHECK_FUNCS([floor pow sqrt])
 
 # Define included makefiles
-AC_CONFIG_SRCDIR([src])
+AC_CONFIG_SRCDIR(src/rscommon.h)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile
 		 externals/Makefile

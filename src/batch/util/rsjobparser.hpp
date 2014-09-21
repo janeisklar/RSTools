@@ -15,8 +15,8 @@
 #include <unistd.h>
 #include "rstool.hpp"
 #include "rsjob.hpp"
-#include "src/rscommon.h"
-#include "src/utils/rsstring.h"
+#include "rscommon.h"
+#include "utils/rsstring.h"
 #include "parseErrorHandler.hpp"
 
 using namespace std;

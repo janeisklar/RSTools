@@ -1,8 +1,8 @@
 #ifndef rstools_rsbatch_plugins_rsroi_rsroi_h
 #define rstools_rsbatch_plugins_rsroi_rsroi_h
 
-#include "src/rscommon.h"
-#include "src/batch/util/plugin.hpp"
+#include "rscommon.h"
+#include "batch/util/plugin.hpp"
 #include "tool/roi.hpp"
 
 using namespace rstools::batch::util;

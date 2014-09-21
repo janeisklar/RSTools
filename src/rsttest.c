@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "src/maths/rsmathutils.h"
-#include "src/nifti/rsniftiutils.h"
+#include "maths/rsmathutils.h"
+#include "nifti/rsniftiutils.h"
 
 void rsTTestPrintHelp() {
     printf(

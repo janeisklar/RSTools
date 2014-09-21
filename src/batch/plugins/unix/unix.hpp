@@ -1,8 +1,8 @@
 #ifndef rstools_rsbatch_plugins_unix_unix_h
 #define rstools_rsbatch_plugins_unix_unix_h
 
-#include "src/rscommon.h"
-#include "src/batch/util/plugin.hpp"
+#include "rscommon.h"
+#include "batch/util/plugin.hpp"
 #include "tool/unix.hpp"
 #include "task/unix.hpp"
 

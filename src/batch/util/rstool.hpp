@@ -6,10 +6,10 @@
 #include <math.h>
 #include <stdexcept>
 #include <vector>
-#include "src/rscommon.h"
+#include "rscommon.h"
 #include "outputCatcher.hpp"
 #include "rstask.hpp"
-#include "src/utils/rsui.h"
+#include "utils/rsui.h"
 
 using namespace std;
 

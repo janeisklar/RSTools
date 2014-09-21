@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rsmotionscrubbing_tool_motionscrubbing_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rsmotionscrubbing_common.h"
-#include "src/rsmotionscrubbing_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rsmotionscrubbing_common.h"
+#include "rsmotionscrubbing_ui.h"
 
 using namespace rstools::batch::util;
 

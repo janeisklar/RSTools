@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rsbandpass_tool_bandpass_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rsbandpass_common.h"
-#include "src/rsbandpass_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rsbandpass_common.h"
+#include "rsbandpass_ui.h"
 
 using namespace rstools::batch::util;
 

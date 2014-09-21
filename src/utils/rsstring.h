@@ -1,7 +1,7 @@
 #ifndef rstools_utils_string_h
 #define rstools_utils_string_h
 
-#include "src/rscommon.h"
+#include "rscommon.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

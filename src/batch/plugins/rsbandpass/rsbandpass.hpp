@@ -1,8 +1,8 @@
 #ifndef rstools_rsbatch_plugins_rsbandpass_rsbandpass_h
 #define rstools_rsbatch_plugins_rsbandpass_rsbandpass_h
 
-#include "src/rscommon.h"
-#include "src/batch/util/plugin.hpp"
+#include "rscommon.h"
+#include "batch/util/plugin.hpp"
 #include "tool/bandpass.hpp"
 
 using namespace rstools::batch::util;

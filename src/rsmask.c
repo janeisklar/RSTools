@@ -7,7 +7,7 @@
 //
 
 #include <stdio.h>
-#include "src/maths/rsmathutils.h"
+#include "maths/rsmathutils.h"
 
 void rsMaskPrintHelp() {
     printf(

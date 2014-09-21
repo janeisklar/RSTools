@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "rscommon.h"
-#include "src/nifti/rsniftiutils.h"
-#include "src/maths/rsmathutils.h"
+#include "nifti/rsniftiutils.h"
+#include "maths/rsmathutils.h"
 
 int show_help( void )
 {

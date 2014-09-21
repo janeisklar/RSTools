@@ -2,7 +2,7 @@
 #define rstools_rsbatch_jobeditor_ui_argumentmodel_h
 
 #include <QAbstractTableModel>
-#include "src/batch/util/rsjob.hpp"
+#include "batch/util/rsjob.hpp"
 
 using namespace std;
 

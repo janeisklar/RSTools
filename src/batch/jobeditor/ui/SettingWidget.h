@@ -3,8 +3,8 @@
 
 #include <stdexcept>
 #include <QGroupBox>
-#include "src/utils/rsui.h"
-#include "src/batch/util/rstask.hpp"
+#include "utils/rsui.h"
+#include "batch/util/rstask.hpp"
 
 using namespace rstools::batch::util;
 

@@ -2,10 +2,10 @@
 #define rstools_rsbatch_common_h
 
 #include "rsbatch_ui.hpp"
-#include "src/batch/util/rstool.hpp"
-#include "src/batch/util/pluginmanager.hpp"
+#include "batch/util/rstool.hpp"
+#include "batch/util/pluginmanager.hpp"
 #include <sstream>
-#include "src/utils/rsstring.h"
+#include "utils/rsstring.h"
 
 using namespace rstools::batch::util;
 

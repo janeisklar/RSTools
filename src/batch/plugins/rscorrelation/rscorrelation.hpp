@@ -1,8 +1,8 @@
 #ifndef rstools_rsbatch_plugins_rsbandpass_rscorrelation_h
 #define rstools_rsbatch_plugins_rsbandpass_rscorrelation_h
 
-#include "src/rscommon.h"
-#include "src/batch/util/plugin.hpp"
+#include "rscommon.h"
+#include "batch/util/plugin.hpp"
 #include "tool/correlation.hpp"
 
 using namespace rstools::batch::util;

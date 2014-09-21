@@ -12,7 +12,7 @@
 #include <gsl/gsl_blas.h>
 
 #include "utils.h"
-#include "src/nifti/rsniftiutils.h"
+#include "nifti/rsniftiutils.h"
 
 #if !defined(__FILTER_MATHUTILS_H)
 #define __FILTER_MATHUTILS_H

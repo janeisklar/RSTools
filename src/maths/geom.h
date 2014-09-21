@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "src/nifti/rsniftiutils.h"
+#include "nifti/rsniftiutils.h"
 
 #if !defined(__GEOM_MATHUTILS_H)
 #define __GEOM_MATHUTILS_H

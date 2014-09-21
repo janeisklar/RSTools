@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rsbandpass_tool_bandpass_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rsregression_common.h"
-#include "src/rsregression_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rsregression_common.h"
+#include "rsregression_ui.h"
 
 using namespace rstools::batch::util;
 

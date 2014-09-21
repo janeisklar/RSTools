@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <strings.h>
 #include <glib.h>
-#include "src/nifti/rsniftiutils.h"
-#include "src/batch/util/rsjobparser.hpp"
+#include "nifti/rsniftiutils.h"
+#include "batch/util/rsjobparser.hpp"
 
 #ifdef __cplusplus
 extern "C" {

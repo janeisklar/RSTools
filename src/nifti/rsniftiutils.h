@@ -6,8 +6,8 @@
 #include <omp.h>
 
 #include <gsl/gsl_statistics_double.h>
-#include "src/rscommon.h"
-#include "src/utils/rsmemory.h"
+#include "rscommon.h"
+#include "utils/rsmemory.h"
 
 #if !defined(__NIFTIUTILS_H)
 #define __NIFTIUTILS_H

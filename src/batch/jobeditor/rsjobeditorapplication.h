@@ -7,11 +7,11 @@
 #include <QSignalMapper>
 #include "ui/jobeditor.ui.h"
 #include "ui/TaskWidget.h"
-#include "src/batch/util/rstool.hpp"
-#include "src/batch/util/rstask.hpp"
-#include "src/batch/util/rsjob.hpp"
-#include "src/batch/util/pluginmanager.hpp"
-#include "src/batch/util/rsjobparser.hpp"
+#include "batch/util/rstool.hpp"
+#include "batch/util/rstask.hpp"
+#include "batch/util/rsjob.hpp"
+#include "batch/util/pluginmanager.hpp"
+#include "batch/util/rsjobparser.hpp"
 
 class JobEditorWindow : public QMainWindow
 {

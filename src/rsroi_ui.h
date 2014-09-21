@@ -2,9 +2,9 @@
 #define rstools_rsroi_ui_h
 
 #include <stdio.h>
-#include "src/nifti/rsniftiutils.h"
-#include "src/maths/rsmathutils.h"
-#include "src/utils/rsui.h"
+#include "nifti/rsniftiutils.h"
+#include "maths/rsmathutils.h"
+#include "utils/rsui.h"
 
 #ifdef __cplusplus
 extern "C" {

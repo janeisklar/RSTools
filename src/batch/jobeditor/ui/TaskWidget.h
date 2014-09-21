@@ -1,11 +1,11 @@
 #ifndef rstools_rsbatch_jobeditor_ui_taskwidget_h
 #define rstools_rsbatch_jobeditor_ui_taskwidget_h
 
-#include "src/batch/util/rstool.hpp"
-#include "src/batch/util/pluginmanager.hpp"
-#include "src/batch/util/rstask.hpp"
-#include "src/batch/util/rstool.hpp"
-#include "src/utils/rsui.h"
+#include "batch/util/rstool.hpp"
+#include "batch/util/pluginmanager.hpp"
+#include "batch/util/rstask.hpp"
+#include "batch/util/rstool.hpp"
+#include "utils/rsui.h"
 #include "SettingWidget.h"
 
 using namespace std;

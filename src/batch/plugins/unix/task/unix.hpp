@@ -2,7 +2,7 @@
 #define rstools_rsbatch_plugin_unix_task_unix_h
 
 #include <iostream>
-#include "src/batch/util/rstask.hpp"
+#include "batch/util/rstask.hpp"
 
 using namespace rstools::batch::util;
 

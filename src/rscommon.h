@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <nifti1.h>
 #include "externals/fslio/fslio.h"
-#include "src/nifti/rsniftiutils.h"
-#include "src/maths/rsmathutils.h"
+#include "nifti/rsniftiutils.h"
+#include "maths/rsmathutils.h"
 
 #define RSTOOLS_XSTR(x) #x
 #define RSTOOLS_STR(x) RSTOOLS_XSTR(x)

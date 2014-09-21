@@ -1,4 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
+AM_CFLAGS = -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)/src
 
 lib_LTLIBRARIES = librsutils.la
 librsutils_la_SOURCES = \
@@ -7,8 +9,3 @@ librsutils_la_SOURCES = \
 	rsui.c
 librsutils_la_LDFLAGS= -version-info 0:0:0
 librsutils_la_LIBADD = @LIBOBJS@
-
-pkginclude_HEADERS =    \
-	rsmemory.h          \
-	rsstring.h          \
-	rsui.h

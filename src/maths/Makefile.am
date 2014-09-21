@@ -1,3 +1,6 @@
+AM_CFLAGS = -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)/src
+
 lib_LTLIBRARIES = librsmathutils.la
 librsmathutils_la_SOURCES =                \
 	correlation.c                          \
@@ -9,14 +12,3 @@ librsmathutils_la_SOURCES =                \
 	stats.c                                \
 	utils.c
 librsmathutils_la_LIBADD = ../nifti/librsniftiutils.la @LIBOBJS@
-
-pkginclude_HEADERS =                       \
-	correlation.h                          \
-	filter.h                               \
-	geom.h                                 \
-	linalg.h                               \
-	multivar_analysis.h                    \
-	regression.h                           \
-	rsmathutils.h                          \
-	stats.h                                \
-	utils.h                                

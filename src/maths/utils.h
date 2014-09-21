@@ -4,7 +4,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#include "src/nifti/rsniftiutils.h"
+#include "nifti/rsniftiutils.h"
 
 #if !defined(__UTILS_MATHUTILS_H)
 #define __UTILS_MATHUTILS_H

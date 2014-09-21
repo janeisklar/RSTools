@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include "src/batch/util/rstool.hpp"
+#include "batch/util/rstool.hpp"
 #include "../task/unix.hpp"
 
 using namespace rstools::batch::util;

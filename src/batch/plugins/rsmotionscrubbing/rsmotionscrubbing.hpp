@@ -1,8 +1,8 @@
 #ifndef rstools_rsbatch_plugins_rsmotionscrubbing_rsmotionscrubbing_h
 #define rstools_rsbatch_plugins_rsmotionscrubbing_rsmotionscrubbing_h
 
-#include "src/rscommon.h"
-#include "src/batch/util/plugin.hpp"
+#include "rscommon.h"
+#include "batch/util/plugin.hpp"
 #include "tool/motionscrubbing.hpp"
 
 using namespace rstools::batch::util;

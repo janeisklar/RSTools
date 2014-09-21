@@ -2,9 +2,9 @@
 #define rstools_rsbatch_plugin_rstimecourse_tool_timecourse_h
 
 #include <iostream>
-#include "src/batch/util/rstool.hpp"
-#include "src/rstimecourse_common.h"
-#include "src/rstimecourse_ui.h"
+#include "batch/util/rstool.hpp"
+#include "rstimecourse_common.h"
+#include "rstimecourse_ui.h"
 
 using namespace rstools::batch::util;
 

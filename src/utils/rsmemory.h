@@ -1,7 +1,7 @@
 #ifndef rstools_utils_memory_h
 #define rstools_utils_memory_h
 
-#include "src/rscommon.h"
+#include "rscommon.h"
 
 #define rsFree(x) { free(x); x=NULL; }
 

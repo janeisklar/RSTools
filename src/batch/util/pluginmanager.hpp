@@ -9,7 +9,7 @@
 #include <string>
 #include <stdexcept>
 #include "plugin.hpp"
-#include "src/rscommon.h"
+#include "rscommon.h"
 
 using namespace std;
 
