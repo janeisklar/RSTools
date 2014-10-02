@@ -3,6 +3,11 @@
 #ifndef rstools_rscommon_h
 #define rstools_rscommon_h
 
+// Dirty hack for a naming overlap with
+// dirent.h on some distributions
+#include <dirent.h>
+#undef DT_UNKNOWN
+
 #include <stdio.h>
 #include <nifti1.h>
 #include "externals/fslio/fslio.h"

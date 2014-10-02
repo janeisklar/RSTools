@@ -1,6 +1,11 @@
 #ifndef _DBH_H_
 #define _DBH_H_
 
+// Dirty hack for a naming overlap with
+// dirent.h on some distributions
+#include <dirent.h>
+#undef DT_UNKNOWN
+
 /*
  * 
  * (c) Copyright, 1986-1994
