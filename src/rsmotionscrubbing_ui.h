@@ -10,6 +10,9 @@
 extern "C" {
 #endif
 
+#define RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_SPM 1
+#define RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_FSL 2
+
 typedef struct {
     char *inputpath;
     char *maskpath;
@@ -29,6 +32,8 @@ typedef struct {
     Point3D *maskPoints;
     unsigned long nMaskPoints;
 
+    short rpformat;
+
     BOOL verbose;
     BOOL parametersValid;
 
@@ -46,6 +51,8 @@ rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[
 rsMotionScrubbingParameters *rsMotionScrubbingInitParameters();
 void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p);
 void rsMotionScrubbingFreeParams(rsMotionScrubbingParameters *p);
+
+gboolean rsMotionScrubbingParseRPFormat(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 
 #ifdef __cplusplus
 }

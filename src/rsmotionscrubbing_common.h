@@ -17,6 +17,10 @@ void rsComputeDVARs(double *dvars, const double min, const double max, const rsN
 void rsSaveIndexVector(char *path, BOOL *vector, const int length);
 void rsSaveDoubleVector(char *path, double *vector, const int length);
 
+inline double rad2deg(const double rad) {
+    return rad * M_PI / 180.0;
+}
+
 inline double deg2mm(const double dist, const double deg) {
     return M_PI * dist * (deg/180.0);
 }

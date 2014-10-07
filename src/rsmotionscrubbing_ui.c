@@ -20,6 +20,7 @@ rsMotionScrubbingParameters *rsMotionScrubbingInitParameters() {
     p->mask                 = NULL;
     p->interface            = NULL;
     p->rp                   = NULL;
+    p->rpformat             = RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_SPM;
     p->maskPoints           = NULL;
     
     return p;
@@ -66,6 +67,8 @@ void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
     p->interface = rsUINewInterface();
     p->interface->description   = "Given a 4D-Nifti and a txt-file containing the 6 head realignment parameters, this application performs motion-scrubbing as described in: Power, Jonathan D., et al. \"Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion.\" Neuroimage 59.3 (2012): 2142-2154. APA";
 
+    GOptionArgFunc cbRPFormat = (GOptionArgFunc)rsMotionScrubbingParseRPFormat;
+
     o = rsUINewOption();
     o->name                = "input";
     o->shorthand           = 'i';
@@ -94,6 +97,22 @@ void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
     rsUIAddOption(p->interface, o);
     
     o = rsUINewOption();
+    o->name                = "rpformat";
+    o->shorthand           = 'f';
+    o->type                = G_OPTION_ARG_CALLBACK;
+    o->storage             = cbRPFormat;
+    o->cli_description     = "the format of the supplied realignment parameters (defaults to SPM)";
+    o->cli_arg_description = "<format>";
+    o->defaultValue        = "spm";
+    rsUIOptionValue allowedValues[] = {
+      {"spm",  "Column order: x,y,z,pitch,roll,yaw. Rotations are supplied in degrees."},
+      {"fsl",  "Column order: pitch,roll,yaw,x,y,z. Rotations are supplied in radians."},
+      NULL
+    };
+    rsUISetOptionValues(o, allowedValues);
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
     o->name                = "dvarsthreshold";
     o->shorthand           = 'a';
     o->type                = G_OPTION_ARG_DOUBLE;
@@ -118,7 +137,7 @@ void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
     o->shorthand           = 'm';
     o->type                = G_OPTION_ARG_FILENAME;
     o->storage             = &p->maskpath;
-    o->cli_description     = "a mask specifying the region that the correlation is perforned on (may be specified for improved performance)";
+    o->cli_description     = "a mask specifying the region considered for the calculation of the DVARS. specify a brain/gm mask";
     o->cli_arg_description = "<volume>";
     rsUIAddOption(p->interface, o);
     
@@ -170,4 +189,29 @@ void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
     o->cli_arg_description = "<*.txt>";
     o->group               = RS_UI_GROUP_EXTENDED;
     rsUIAddOption(p->interface, o);
+}
+
+gboolean rsMotionScrubbingParseRPFormat(const gchar *option_name, const gchar *value, gpointer data, GError **error)
+{
+    rsMotionScrubbingParameters *p = (rsMotionScrubbingParameters*) data;
+
+    // parse value
+    if ( ! strcmp(value, "fsl") ) {
+        p->rpformat = RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_FSL;
+    } else if ( ! strcmp(value, "spm") ) {
+        p->rpformat = RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_SPM;
+    } else {    
+        // any other value should lead to an error
+        g_set_error(
+            error,
+            G_OPTION_ERROR,
+            G_OPTION_ERROR_BAD_VALUE,
+            "%s: %s",
+            option_name,
+            "accepted values are 'fsl' and 'spm'"
+        );
+        return FALSE;
+    }
+    
+    return TRUE;
 }

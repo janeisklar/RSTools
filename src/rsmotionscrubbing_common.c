@@ -1,5 +1,6 @@
 #include "rsmotionscrubbing_common.h"
 
+extern double rad2deg(const double rad);
 extern double deg2mm(const double dist, const double deg);
 extern int rsMax(const int a, const int b);
 extern int rsMin(const int a, const int b);
@@ -48,6 +49,7 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
         fprintf(stdout, "DVARS threshold: %.4f\n", p->dvarsthreshold);
         fprintf(stdout, "Framewise displacement threshold: %.4f\n", p->fdthreshold);
         fprintf(stdout, "Realignment parameters file: %s\n", p->realignmentpath);
+        fprintf(stdout, "Realignment parameters format: %s\n", (p->rpformat==RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_SPM) ? "SPM" : "FSL");
         
         if ( p->dvarspath != NULL ) 
             fprintf(stdout, "DVARS file: %s\n", p->dvarspath);
@@ -64,6 +66,36 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
     
     /* load realignment parameters */
     p->rp = rsLoadRegressors(p->realignmentpath, &p->rpColumns, &p->rpEntries, 1.0);
+    
+    if ( p->rpColumns != 6 ) {
+        fprintf(stderr, "\nError: The realignment file '%s' should contain exactly 6 columns, but has %d.\n", p->realignmentpath, (int)p->rpColumns);
+        return;
+    }
+    
+    if ( p->rpEntries < 2 ) {
+        fprintf(stderr, "\nError: The realignment file '%s' contains only %d rows.\n", (int)p->rpEntries);
+        return;
+    }
+        
+    /* if the parameter format is fsl, we need to convert from the fsl format */
+    if ( p->rpformat == RSTOOLS_REALIGNMENT_PARAMETER_FORMAT_FSL ) {
+        for ( int i=0; i<(int)p->rpEntries; i=i+1 ) {
+
+            const double pitch = rad2deg(p->rp[1][i]);
+            const double roll  = rad2deg(p->rp[2][i]);
+            const double yaw   = rad2deg(p->rp[3][i]);
+            const double x     = p->rp[4][i];
+            const double y     = p->rp[5][i];
+            const double z     = p->rp[6][i];
+    
+            p->rp[1][i] = x;
+            p->rp[2][i] = y;
+            p->rp[3][i] = z;
+            p->rp[4][i] = pitch;
+            p->rp[5][i] = roll;
+            p->rp[6][i] = yaw;
+        }
+    }
     
     /* load mask */
     p->nMaskPoints = 0L;
