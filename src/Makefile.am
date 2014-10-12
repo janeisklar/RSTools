@@ -90,6 +90,8 @@ nobase_pkginclude_HEADERS =                                   \
 	batch/plugins/rscorrelation/tool/correlation.hpp          \
 	batch/plugins/rsmotionscrubbing/rsmotionscrubbing.hpp     \
 	batch/plugins/rsmotionscrubbing/tool/motionscrubbing.hpp  \
+	batch/plugins/rsscrubbing/rsscrubbing.hpp                 \
+	batch/plugins/rsscrubbing/tool/scrubbing.hpp              \
 	batch/plugins/rsregression/rsregression.hpp               \
 	batch/plugins/rsregression/tool/regression.hpp            \
 	batch/plugins/rsroi/rsroi.hpp                             \
@@ -133,7 +135,7 @@ install-exec-hook:
 	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsniftiutils -lrsregression -lrsroi -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrsniftiutils -lrsregression -lrsroi -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	

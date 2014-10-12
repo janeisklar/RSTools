@@ -9,6 +9,7 @@
 !rstimecourse
 !rsroi
 !rsmotionscrubbing
+!rsscrubbing
 !unix
 !.gitignore
 !*.am
