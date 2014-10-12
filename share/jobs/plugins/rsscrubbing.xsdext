@@ -1,0 +1,7 @@
+<xs:complexType name="rsscrubbing">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rsscrubbing -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>

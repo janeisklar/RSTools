@@ -238,36 +238,3 @@ void rsCorrelationDestroy(rsCorrelationParameters* p)
 
     rsCorrelationFreeParams(p);
 }
-
-double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues)
-{
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    double value;
-    unsigned int nBuffer = 10;
-    *nValues = 0;
-    double *regressor = (double*)rsMalloc(nBuffer * sizeof(double));
-    
-    while ((read = getline(&line, &len, stream)) != -1) {
-        value = atof(line);
-        regressor[*nValues] = value;
-        *nValues = *nValues + 1;
-        
-        // Check if we're running out of memory and extend the array if necessary
-        if ( *nValues + 1 >= nBuffer ) {
-            nBuffer = nBuffer + 10;
-            double* tmpRegressor = realloc(regressor, nBuffer * sizeof(double));
-            if (tmpRegressor) {
-                regressor = tmpRegressor;
-            } else {
-                fprintf(stderr, "Could not allocate enough memory to save the regressor.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
-    
-    if (line) free(line);
-    
-    return regressor;
-}

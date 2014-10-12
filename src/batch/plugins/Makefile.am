@@ -16,6 +16,7 @@ lib_LTLIBRARIES = \
 	libRSRegressionPlugin.la \
 	libRSCorrelationPlugin.la \
 	libRSMotionScrubbingPlugin.la \
+	libRSScrubbingPlugin.la \
 	libRSRoiPlugin.la \
 	libRSTimecoursePlugin.la \
 	libUnixPlugin.la
@@ -36,6 +37,10 @@ libRSMotionScrubbingPlugin_la_SOURCES = rsmotionscrubbing/rsmotionscrubbing.cpp 
 libRSMotionScrubbingPlugin_la_LIBADD  = $(LDADD) ../../librsmotionscrubbing.la  @LIBOBJS@
 libRSMotionScrubbingPlugin_la_LDFLAGS = -module -export-dynamic
 
+libRSScrubbingPlugin_la_SOURCES = rsscrubbing/rsscrubbing.cpp rsscrubbing/tool/scrubbing.cpp
+libRSScrubbingPlugin_la_LIBADD  = $(LDADD) ../../librsscrubbing.la  @LIBOBJS@
+libRSScrubbingPlugin_la_LDFLAGS = -module -export-dynamic
+
 libRSRoiPlugin_la_SOURCES = rsroi/rsroi.cpp rsroi/tool/roi.cpp
 libRSRoiPlugin_la_LIBADD  = $(LDADD) ../../librsroi.la  @LIBOBJS@
 libRSRoiPlugin_la_LDFLAGS = -module -export-dynamic
@@ -54,6 +59,7 @@ plugins_DATA = \
 	.libs/libRSRegressionPlugin.so \
 	.libs/libRSCorrelationPlugin.so \
 	.libs/libRSMotionScrubbingPlugin.so \
+	.libs/libRSScrubbingPlugin.so \
 	.libs/libRSRoiPlugin.so \
 	.libs/libRSTimecoursePlugin.so \
 	.libs/libUnixPlugin.so
@@ -64,6 +70,7 @@ jobplugins_DATA = \
 	../../../share/jobs/plugins/rsregression.xsdext \
 	../../../share/jobs/plugins/rscorrelation.xsdext \
 	../../../share/jobs/plugins/rsmotionscrubbing.xsdext \
+	../../../share/jobs/plugins/rsscrubbing.xsdext \
 	../../../share/jobs/plugins/rsroi.xsdext \
 	../../../share/jobs/plugins/rstimecourse.xsdext \
 	../../../share/jobs/plugins/unix.xsdext

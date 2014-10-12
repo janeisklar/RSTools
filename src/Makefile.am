@@ -13,6 +13,7 @@ bin_PROGRAMS =                                \
 	rsinfo                                    \
 	rsmask                                    \
 	rsmotionscrubbing                         \
+	rsscrubbing                               \
 	rsregression                              \
 	rsroi                                     \
 	rstimecourse                              \
@@ -22,6 +23,7 @@ lib_LTLIBRARIES =                             \
 	librsbandpass.la                          \
 	librscorrelation.la                       \
 	librsmotionscrubbing.la                   \
+	librsscrubbing.la                         \
 	librsregression.la                        \
 	librsroi.la                               \
 	librstimecourse.la
@@ -32,6 +34,8 @@ librscorrelation_la_SOURCES = rscorrelation_ui.c rscorrelation_common.c
 librscorrelation_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsmotionscrubbing_la_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c
 librsmotionscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsscrubbing_la_SOURCES = rsscrubbing_ui.c rsscrubbing_common.c
+librsscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsregression_la_SOURCES = rsregression_ui.c rsregression_common.c 
 librsregression_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsroi_la_SOURCES = rsroi_ui.c rsroi_common.c
@@ -47,6 +51,9 @@ rscorrelation_LDADD = librscorrelation.la @LIBOBJS@ $(rslibraries)
 
 rsmotionscrubbing_SOURCES = rsmotionscrubbing.c
 rsmotionscrubbing_LDADD = librsmotionscrubbing.la @LIBOBJS@ $(rslibraries)
+
+rsscrubbing_SOURCES = rsscrubbing.c
+rsscrubbing_LDADD = librsscrubbing.la @LIBOBJS@ $(rslibraries)
 
 rsregression_SOURCES = rsregression.c
 rsregression_LDADD = librsregression.la @LIBOBJS@ $(rslibraries)
@@ -69,6 +76,8 @@ nobase_pkginclude_HEADERS =                                   \
 	rscorrelation_ui.h                                        \
 	rsmotionscrubbing_common.h                                \
 	rsmotionscrubbing_ui.h                                    \
+	rsscrubbing_common.h                                      \
+	rsscrubbing_ui.h                                          \
 	rsregression_common.h                                     \
 	rsregression_ui.h                                         \
 	rsroi_common.h                                            \

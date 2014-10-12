@@ -12,7 +12,6 @@ void rsCorrelationRun(rsCorrelationParameters *p);
 void rsCorrelationDestroy(rsCorrelationParameters* p);
 
 void rsCorrelationWriteCorrelationFile(rsCorrelationParameters* p);
-double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues);
 
 #ifdef __cplusplus
 }
