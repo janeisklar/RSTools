@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "linalg.h"
+#include <sys/types.h>
 
 static gsl_rng *rsRandomNumberGenerator = NULL;
 
