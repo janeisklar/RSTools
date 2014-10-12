@@ -13,7 +13,12 @@ void rsBatchInit(rsBatchParameters* p)
 
     // ensure that plugins are loaded
     PluginManager::getInstance().loadPlugins();
-
+    
+    if ( p->jobpath == NULL ) {
+        fprintf(stderr, "Error: No jobfile was specified!\n");
+        return;
+    }
+    
     // Parse job-file
     RSJobParser* parser = new RSJobParser(p->jobpath);
     

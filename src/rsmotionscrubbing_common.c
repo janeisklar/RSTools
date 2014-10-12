@@ -16,11 +16,6 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
         return;
     }
     
-    if ( p->outputpath == NULL ) {
-        fprintf(stderr, "No output volume specified!\n");
-        return;
-    }
-    
     if ( p->maskpath == NULL ) {
         fprintf(stderr, "A binary mask must be specified!\n");
         return;
@@ -170,6 +165,12 @@ void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
             framemap[remainingFrames] = t;
             remainingFrames = remainingFrames + 1;
         }
+    }
+    
+    // stop here if the scrubbed file should not be saved
+    if ( p->outputpath == NULL ) {
+        p->parametersValid = TRUE;
+        return;
     }
 
     // create output file
