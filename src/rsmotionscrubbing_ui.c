@@ -54,9 +54,29 @@ rsMotionScrubbingParameters *rsMotionScrubbingParseParams(int argc, char * argv[
     
     rsMotionScrubbingBuildInterface(p);
     
-    // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
     
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return p;
+    }
+    
+    if ( p->maskpath == NULL ) {
+        fprintf(stderr, "A binary mask must be specified!\n");
+        return p;
+    }
+    
+    if ( p->realignmentpath == NULL ) {
+        fprintf(stderr, "A realignment parameter file must be specified!\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 

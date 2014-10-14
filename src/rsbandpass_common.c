@@ -1,22 +1,26 @@
 #include "rsbandpass_common.h"
 #include "rsbandpass_ui.h"
+#include "utils/rsio.h"
 
 void rsBandpassInit(rsBandpassParameters *p)
 {
     p->parametersValid = FALSE;
     
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified(--input)!\n");
-        return;
-    }
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        (const char*)p->maskpath,
+        RSIO_LASTFILE
+    });
     
-    if ( p->saveFilteredPath == NULL ) {
-        fprintf(stderr, "An output path for the filtered data must be specified(--filtered)!\n");
-        return;
-    }
-    
-    if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
-        fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->saveFilteredPath,
+        (const char*)p->savemaskpath,
+        (const char*)p->saveAttenuationPath,
+        RSIO_LASTFILE
+    });
+
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
     

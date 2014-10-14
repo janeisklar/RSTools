@@ -121,6 +121,7 @@ nobase_pkginclude_HEADERS =                                   \
 	maths/stats.h                                             \
 	maths/utils.h                                             \
 	nifti/rsniftiutils.h                                      \
+	utils/rsio.h                                              \
 	utils/rsmemory.h                                          \
 	utils/rsstring.h                                          \
 	utils/rsui.h                                              

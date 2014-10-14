@@ -38,8 +38,29 @@ rsTimecourseParameters* rsTimecourseParseParams(int argc, char * argv[])
     rsTimecourseBuildInterface(p);
 
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
     
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return p;
+    }
+
+    if ( p->maskpath == NULL && p->point == NULL ) {
+        fprintf(stderr, "Either a binary mask or a voxel coordinate must be specified!\n");
+        return p;
+    }
+
+    if ( p->mask2path == NULL && p->algorithm == RSTOOLS_TIMECOURSE_ALGORITHM_CSP ) {
+        fprintf(stderr, "A second binary mask must be supplied to run CSP! (use --mask2)\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 

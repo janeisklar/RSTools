@@ -1,23 +1,26 @@
 #include "rstimecourse_common.h"
+#include "utils/rsio.h"
 
 void rsTimecourseInit(rsTimecourseParameters* p)
 {
     p->parametersValid = FALSE;
-
-    // check if the required arguments have been provided
-
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified!\n");
-        return;
-    }
-
-    if ( p->maskpath == NULL && p->point == NULL ) {
-        fprintf(stderr, "Either a binary mask or a voxel coordinate must be specified!\n");
-        return;
-    }
-
-    if ( p->mask2path == NULL && p->algorithm == RSTOOLS_TIMECOURSE_ALGORITHM_CSP ) {
-        fprintf(stderr, "A second binary mask must be supplied to run CSP! (use --mask2)\n");
+            
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        (const char*)p->maskpath,
+        (const char*)p->mask2path,
+        RSIO_LASTFILE
+    });
+    
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->spatialmappath,
+        (const char*)p->eigenvaluespath,
+        (const char*)p->savemaskpath,
+        RSIO_LASTFILE
+    });
+    
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
 

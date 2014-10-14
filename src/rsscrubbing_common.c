@@ -1,18 +1,24 @@
 #include "rsscrubbing_common.h"
 #include "maths/utils.h"
+#include "utils/rsio.h"
 
 void rsScrubbingInit(rsScrubbingParameters *p)
 {
     p->parametersValid = FALSE;
+
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        (const char*)p->flaggedpath,
+        RSIO_LASTFILE
+    });
     
-    /* check if the required arguments have been provided */
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified!\n");
-        return;
-    }
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->outputpath,
+        RSIO_LASTFILE
+    });
     
-    if ( p->outputpath == NULL ) {
-        fprintf(stderr, "A binary mask must be specified!\n");
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
         
@@ -29,9 +35,7 @@ void rsScrubbingInit(rsScrubbingParameters *p)
         fprintf(stdout, "Input file:  %s\n", p->inputpath);
         fprintf(stdout, "Output file: %s\n", p->outputpath);
         fprintf(stdout, "Flagged frames file: %s\n", p->flaggedpath);
-            
-        if ( p->verbose )
-            fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+        fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
     
     /* load realignment parameters */

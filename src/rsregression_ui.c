@@ -55,7 +55,29 @@ rsRegressionParameters* rsRegressionParseParams(int argc, char * argv[])
     rsRegressionBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
+    
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified(--input)!\n");
+        return p;
+    }
+    
+    if ( p->regressorspath == NULL ) {
+        fprintf(stderr, "A file containing the regressors must be specified(--regressors)!\n");
+        return p;
+    }
+    
+    if ( p->filterActive && (p->TR < 0.0 || p->freqLow < 0.0 || p->freqHigh < 0.0) ) {
+        fprintf(stderr, "Bandpass filter parameters are not complete. (--TR, --f1, --f2)!\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 

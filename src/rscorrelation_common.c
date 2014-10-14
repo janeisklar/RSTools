@@ -1,18 +1,23 @@
 #include "rscorrelation_common.h"
 #include <sys/types.h>
+#include "utils/rsio.h"
 
 void rsCorrelationInit(rsCorrelationParameters* p)
 {
     p->parametersValid = FALSE;
 
-    /* check if the required arguments have been provided */
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified!\n");
-        return;
-    }
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        RSIO_LASTFILE
+    });
     
-    if ( p->outputpath == NULL ) {
-        fprintf(stderr, "No output volume specified!\n");
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->outputpath,
+        RSIO_LASTFILE
+    });
+    
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
     

@@ -1,4 +1,5 @@
 #include "rsmotionscrubbing_common.h"
+#include "utils/rsio.h"
 
 extern double rad2deg(const double rad);
 extern double deg2mm(const double dist, const double deg);
@@ -9,20 +10,24 @@ extern int rsMin(const int a, const int b);
 void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
 {
     p->parametersValid = FALSE;
+        
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        (const char*)p->realignmentpath,
+        (const char*)p->maskpath,
+        RSIO_LASTFILE
+    });
     
-    /* check if the required arguments have been provided */
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified!\n");
-        return;
-    }
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->outputpath,
+        (const char*)p->dvarspath,
+        (const char*)p->fdpath,
+        (const char*)p->flaggedpath,
+        RSIO_LASTFILE
+    });
     
-    if ( p->maskpath == NULL ) {
-        fprintf(stderr, "A binary mask must be specified!\n");
-        return;
-    }
-    
-    if ( p->realignmentpath == NULL ) {
-        fprintf(stderr, "A realignment parameter file must be specified!\n");
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
     

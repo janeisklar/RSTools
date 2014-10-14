@@ -54,7 +54,28 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[])
     rsBandpassBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
+    
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified(--input)!\n");
+        return p;
+    }
+    
+    if ( p->saveFilteredPath == NULL ) {
+        fprintf(stderr, "An output path for the filtered data must be specified(--filtered)!\n");
+        return p;
+    }
+    
+    if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
+        fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 

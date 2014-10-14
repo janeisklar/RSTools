@@ -1,27 +1,22 @@
 #include "rsroi_common.h"
+#include "utils/rsio.h"
 
 void rsRoiInit(rsRoiParameters *p)
 {
     p->parametersValid = FALSE;
 
-    // check if the required arguments have been provided
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified!\n");
-        return;
-    }
-
-    if ( p->maskpath == NULL ) {
-        fprintf(stderr, "A  path for the resulting mask must be specified!\n");
-        return;
-    }
-
-    if ( p->center->x < -9999.0 && p->nSamples < 0 ) {
-        fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
-        return;
-    }
-
-    if ( p->sphereradius <= 0 && p->cubeDim->x < 0 && p->nSamples < 0 ) {
-        fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(--sphere, --cube)!\n");
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        RSIO_LASTFILE
+    });
+    
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->maskpath,
+        RSIO_LASTFILE
+    });
+    
+    if ( ! inputsReadable || ! outputsWritable ) {
         return;
     }
 

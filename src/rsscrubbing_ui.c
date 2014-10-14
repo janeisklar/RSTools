@@ -34,8 +34,29 @@ rsScrubbingParameters *rsScrubbingParseParams(int argc, char * argv[]) {
     rsScrubbingBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
     
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return p;
+    }
+    
+    if ( p->outputpath == NULL ) {
+        fprintf(stderr, "An output volume must be specified!\n");
+        return p;
+    }
+    
+    if ( p->flaggedpath == NULL ) {
+        fprintf(stderr, "A txt-file containing the flagged volumes must be specified!\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 

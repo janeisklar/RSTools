@@ -1,17 +1,30 @@
 #include "rsregression_common.h"
+#include "utils/rsio.h"
 
 void rsRegressionInit(rsRegressionParameters* p)
 {
     p->parametersValid = FALSE;
 
-    // check if the required arguments have been provided
-    if ( p->inputpath == NULL ) {
-        fprintf(stderr, "No input volume specified(--input)!\n");
-    }
+    /* verify accessibility of inputs/outüuts */
+    BOOL inputsReadable = rsCheckInputs((const char*[]){
+        (const char*)p->inputpath,
+        (const char*)p->regressorspath,
+        (const char*)p->maskpath,
+        (const char*)p->regressorCommentPath,
+        RSIO_LASTFILE
+    });
     
-    if ( p->regressorspath == NULL ) {
-        fprintf(stderr, "A file containing the regressors must be specified(--regressors)!\n");
-    }
+    BOOL outputsWritable = rsCheckOutputs((const char*[]){
+        (const char*)p->saveResidualsPath,
+        (const char*)p->saveFittedPath,
+        (const char*)p->saveBetasPath,
+        (const char*)p->savemaskpath,
+        RSIO_LASTFILE
+    });
+    
+    if ( ! inputsReadable || ! outputsWritable ) {
+        return;
+    }    
     
     rsSetThreadsNum(p->threads);
     
@@ -30,11 +43,6 @@ void rsRegressionInit(rsRegressionParameters* p)
             fprintf(stdout, "Sampling rate: %.4f\n", p->TR);
             fprintf(stdout, "Bandpass: (%.4f-%.4fHz)\n", p->freqLow, p->freqHigh);
         }
-    }
-    
-    if ( p->filterActive && (p->TR < 0.0 || p->freqLow < 0.0 || p->freqHigh < 0.0) ) {
-        fprintf(stderr, "Bandpass filter parameters are not complete. (--TR, --f1, --f2)!\n");
-        return;
     }
     
     // load regressors

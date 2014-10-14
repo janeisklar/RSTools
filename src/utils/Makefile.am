@@ -4,6 +4,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 lib_LTLIBRARIES = librsutils.la
 librsutils_la_SOURCES = \
+	rsio.c              \
 	rsmemory.c          \
 	rsstring.c          \
 	rsui.c

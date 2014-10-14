@@ -32,7 +32,34 @@ rsRoiParameters *rsRoiParseParams(int argc, char * argv[])
     rsRoiBuildInterface(p);
     
     // parse
-    p->parametersValid = rsUIParse(p->interface, argc, argv, (void*)p);
+    BOOL parsingSuccessful = rsUIParse(p->interface, argc, argv, (void*)p);
+    
+    if ( ! parsingSuccessful ) {
+        return p;
+    }
+    
+    // check if the required arguments have been provided
+    if ( p->inputpath == NULL ) {
+        fprintf(stderr, "No input volume specified!\n");
+        return p;
+    }
+
+    if ( p->maskpath == NULL ) {
+        fprintf(stderr, "A  path for the resulting mask must be specified!\n");
+        return p;
+    }
+
+    if ( p->center->x < -9999.0 && p->nSamples < 0 ) {
+        fprintf(stderr, "ROI center needs to be specified!(-center)!\n");
+        return p;
+    }
+
+    if ( p->sphereradius <= 0 && p->cubeDim->x < 0 && p->nSamples < 0 ) {
+        fprintf(stderr, "ROI sphere radius or cube dimensions needs to be specified!(--sphere, --cube)!\n");
+        return p;
+    }
+    
+    p->parametersValid = parsingSuccessful;
     return p;
 }
 
