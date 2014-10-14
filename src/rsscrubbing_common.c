@@ -6,7 +6,7 @@ void rsScrubbingInit(rsScrubbingParameters *p)
 {
     p->parametersValid = FALSE;
 
-    /* verify accessibility of inputs/outüuts */
+    /* verify accessibility of inputs/outputs */
     BOOL inputsReadable = rsCheckInputs((const char*[]){
         (const char*)p->inputpath,
         (const char*)p->flaggedpath,
@@ -133,11 +133,7 @@ BOOL rsLoadIndexVector(char *path, BOOL **indices, long length)
     double *content;
     content = rsReadRegressorFromStream(file, &nValues);
     fclose(file);
-    
-    if ( nValues < 1 ) {
-        return FALSE;
-    }
-    
+        
     for (unsigned int i=0; i<nValues; i++ ) {
         long value = (long)round(content[i]);
 

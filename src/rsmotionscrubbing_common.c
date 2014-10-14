@@ -11,7 +11,7 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
 {
     p->parametersValid = FALSE;
         
-    /* verify accessibility of inputs/outüuts */
+    /* verify accessibility of inputs/outputs */
     BOOL inputsReadable = rsCheckInputs((const char*[]){
         (const char*)p->inputpath,
         (const char*)p->realignmentpath,
@@ -73,7 +73,7 @@ void rsMotionScrubbingInit(rsMotionScrubbingParameters *p)
     }
     
     if ( p->rpEntries < 2 ) {
-        fprintf(stderr, "\nError: The realignment file '%s' contains only %d rows.\n", (int)p->rpEntries);
+        fprintf(stderr, "\nError: The realignment file '%s' contains only %d rows.\n", p->realignmentpath, (int)p->rpEntries);
         return;
     }
         

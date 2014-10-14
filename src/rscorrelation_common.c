@@ -6,7 +6,7 @@ void rsCorrelationInit(rsCorrelationParameters* p)
 {
     p->parametersValid = FALSE;
 
-    /* verify accessibility of inputs/outüuts */
+    /* verify accessibility of inputs/outputs */
     BOOL inputsReadable = rsCheckInputs((const char*[]){
         (const char*)p->inputpath,
         RSIO_LASTFILE
