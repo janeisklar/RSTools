@@ -41,7 +41,7 @@ void Unix::_run()
     script.close();
     
     // prepare statement to call it with
-    char* executionCmd = rsStringConcat("/bin/bash ", scriptName, " > output.log", NULL);
+    char* executionCmd = rsStringConcat("/bin/bash ", scriptName, " > ", tmpDirName, "/output.log", NULL);
     
     // if it was executed correctly destroy the temporary working directory
     if ( system(executionCmd) == 0 ) {
