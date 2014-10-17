@@ -51,7 +51,7 @@ void Unix::_run()
         system(rmCommand);
         rsFree(rmCommand);
     } else { // otherwise keep the dir so that the user can debug it
-        fprintf(stderr, "Error while executing shell task. For mor information see '%s'.\n", tmpDirName);
+        fprintf(stderr, "Error while executing shell task. For more information see '%s'.\n", tmpDirName);
     }
     
     rsFree(executionCmd);

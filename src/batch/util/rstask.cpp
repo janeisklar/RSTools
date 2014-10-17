@@ -61,6 +61,19 @@ rsArgument* RSTask::getArgument(char* name)
     return NULL;
 }
 
+void RSTask::removeArgument(char* name)
+{
+    vector<rsArgument*> arguments = this->getArguments();
+    for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
+        rsArgument *arg = arguments[i];
+        
+        if ( ! strcmp(arg->key, name) ) {
+            arguments.erase(arguments.begin() + i);
+            return;
+        }
+    }
+}
+
 char* RSTask::getOutputPath()
 {
     return this->outputPath;
@@ -201,6 +214,53 @@ void RSTask::parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node)
             }
             current_node = walker->previousNode();
         }
+    }
+}
+
+char* RSTask::toXml()
+{
+    char *xml = rsStringConcat(
+        "        <", this->code, ">\n",
+        "            <description>", this->getDescription(), "</description>\n",
+        "            <args>",
+        NULL
+    );
+    
+    for ( vector<rsArgument*>::size_type j = 0; j != arguments.size(); j++ ) {
+        rsArgument *arg = arguments[j];
+        
+        if ( arg->value != NULL && !strcmp(arg->value,"") ) {
+            continue;
+        }
+        
+        char *oldXml = xml;
+        char *argXml = this->_argumentToXml(arg);
+        xml = rsStringConcat(xml, argXml, NULL);
+        rsFree(argXml);
+        rsFree(oldXml);
+    }
+    
+    char *oldXml = xml;
+    xml = rsStringConcat(
+        xml, 
+        "\n",
+        "            </args>\n",
+        "        </", this->code, ">\n",
+        NULL
+    );
+    rsFree(oldXml);
+    
+    return xml;
+}
+
+char* RSTask::_argumentToXml(rsArgument *arg)
+{
+    if ( arg->value == NULL ) {
+        fprintf(stdout, "Name: %s\n", arg->key);
+        return rsStringConcat("\n                <arg name=\"", arg->key, "\"/>", NULL);
+    } else {
+        fprintf(stdout, "Name: %s, Value: %s\n", arg->key, arg->value);
+        return rsStringConcat("\n                <arg name=\"", arg->key, "\">", arg->value, "</arg>", NULL);
     }
 }
 

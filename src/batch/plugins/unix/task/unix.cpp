@@ -75,4 +75,17 @@ char* Unix::getCmd() {
     return this->cmd;
 }
 
+char* Unix::toXml()
+{
+    return rsStringConcat(
+        "        <", this->code, ">\n",
+        "            <description>", this->getDescription(), "</description>\n",
+        "            <cmd>\n",
+        this->getCmd(),
+        "\n",
+        "            </cmd>\n",
+        "        </", this->code, ">\n",
+        NULL
+    );
+}
 }}}}} // namespace rstools::batch::plugins::unix::task

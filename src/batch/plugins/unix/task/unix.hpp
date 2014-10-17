@@ -18,7 +18,8 @@ public:
     Unix(const char* code, const char* name);
     
     void fillInJobArguments(RSJob* job, RSJobParser* parser);    
-    void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);
+    void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);    
+    char* toXml();
     
     void setCmd(char* cmd);
     char* getCmd();

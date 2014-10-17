@@ -31,6 +31,8 @@ class RSJob {
         vector<RSTask*> getTasks();
         void addArgument(rsArgument*);
         vector<rsArgument*> getArguments();
+        char* toXml();
+        char* _argumentToXml(rsArgument *arg);
 };
 
 }}} // namespace rstools::batch::util

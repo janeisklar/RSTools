@@ -48,6 +48,7 @@ class RSTask {
         virtual void addArgument(rsArgument*);
         virtual vector<rsArgument*> getArguments();
         virtual rsArgument* getArgument(char* name);
+        virtual void removeArgument(char* name);
         virtual char* getOutputPath();
         virtual void setOutputPath(char*);
         virtual void setShowOutput(bool showOutput);
@@ -57,6 +58,8 @@ class RSTask {
         virtual const char* getCode();
         virtual void fillInJobArguments(RSJob* job, RSJobParser* parser);
         virtual void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);
+        virtual char* toXml();
+        virtual char* _argumentToXml(rsArgument *arg);
         
         static RSTask* taskFactory(const char *code);
     

@@ -99,7 +99,7 @@ void rsStringWordWrap(const char* inputString, char*** lineArray, size_t* nLines
  * NULL. This is necessary for the method to know when
  * to stop looking for arguments.
  */
-char* rsStringConcat(char *first, ...)
+char* rsStringConcat(const char *first, ...)
 {
     // initialize variable arguments
     va_list ap;
@@ -171,4 +171,14 @@ char* rsRightTrimString(char *s)
     while(isspace(*--back));
     *(back+1) = '\0';
     return s;
+}
+
+/*
+ * Convert inline string to char*
+ */
+char* rsString(const char *s)
+{
+    char *tmp = rsMalloc(sizeof(char) * (strlen(s)+1));
+    sprintf(tmp, "%s", s);
+    return tmp;
 }
