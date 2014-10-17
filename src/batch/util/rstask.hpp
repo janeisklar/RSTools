@@ -49,6 +49,7 @@ class RSTask {
         virtual vector<rsArgument*> getArguments();
         virtual rsArgument* getArgument(char* name);
         virtual void removeArgument(char* name);
+        virtual RSJob* getJob();
         virtual char* getOutputPath();
         virtual void setOutputPath(char*);
         virtual void setShowOutput(bool showOutput);
@@ -70,6 +71,7 @@ class RSTask {
         vector<rsArgument*> arguments;
         char *outputPath;
         bool showOutput;
+        RSJob *job;
 };
 
 }}} // namespace rstools::batch::util

@@ -1,4 +1,5 @@
 #include "rsjobparser.hpp"
+#include "rsconfig.hpp"
 
 using namespace std;
 
@@ -181,6 +182,37 @@ void RSJobParser::fillInUserArguments(rsArgument **userArguments, const short nU
             newArgument->value = (char*)malloc((strlen(userArgument->value)+(size_t)1)*sizeof(char));
             sprintf(newArgument->key,   "%s", userArgument->key);
             sprintf(newArgument->value, "%s", userArgument->value);
+            this->job->addArgument(newArgument);
+        }
+    }
+    
+    vector<rsArgument*> configArguments = RSConfig::getInstance().getArguments();
+    
+    // merge job arguments and config arguments
+    for ( int u=0; u<configArguments.size(); u++ ) {
+        rsArgument* configArgument = configArguments[u];
+        bool found = false;
+
+        // check if config argument already exists in the list of job arguments
+        for ( vector<rsArgument*>::size_type i = 0; i < jobArguments.size(); i++ ) {
+            rsArgument *arg = jobArguments[i];
+
+            if ( strcmp(arg->key, configArgument->key) ) {
+                continue;
+            }
+
+            // if it already exists use the existing value
+            found = true;
+            break;
+        }
+
+        // if it doesn't exist yet add it to the job arguments
+        if ( ! found ) {
+            rsArgument* newArgument = (rsArgument*)malloc(sizeof(rsArgument));
+            newArgument->key   = (char*)malloc((strlen(configArgument->key)  +(size_t)1)*sizeof(char));
+            newArgument->value = (char*)malloc((strlen(configArgument->value)+(size_t)1)*sizeof(char));
+            sprintf(newArgument->key,   "%s", configArgument->key);
+            sprintf(newArgument->value, "%s", configArgument->value);
             this->job->addArgument(newArgument);
         }
     }

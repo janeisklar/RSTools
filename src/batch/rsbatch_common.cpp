@@ -92,8 +92,7 @@ void rsBatchRun(rsBatchParameters *p)
     }
     
     if ( p->verbose ) {
-        RSTool::printProgressBar(stdout, 100, tasks.size(), (char*)" ");
-        fprintf(stdout, "\n\n# Executing tasks\n");
+        fprintf(stdout, "# Executing tasks\n");
     }
     
     // Execute tasks

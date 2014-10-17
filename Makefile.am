@@ -9,3 +9,5 @@ SUBDIRS = externals src
 nobase_pkginclude_HEADERS =      \
 	externals/fslio/fslio.h      \
 	externals/fslio/dbh.h
+
+sysconf_DATA=etc/rstools.conf

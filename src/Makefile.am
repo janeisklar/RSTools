@@ -107,10 +107,12 @@ nobase_pkginclude_HEADERS =                                   \
 	batch/util/parseErrorHandler.hpp                          \
 	batch/util/plugin.hpp                                     \
 	batch/util/pluginmanager.hpp                              \
+	batch/util/rsconfig.hpp                                   \
 	batch/util/rsjob.hpp                                      \
 	batch/util/rsjobparser.hpp                                \
 	batch/util/rstask.hpp                                     \
 	batch/util/rstool.hpp                                     \
+	batch/util/rsunix.hpp                                     \
 	maths/correlation.h                                       \
 	maths/filter.h                                            \
 	maths/geom.h                                              \

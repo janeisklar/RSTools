@@ -9,6 +9,7 @@ RSTask::RSTask(const char* code, const char* name)
 {
     this->code = code;
     this->name = name;
+    this->job = NULL;
     setOutputPath(NULL);
     setDescription((char*)"");
     setShowOutput(false);
@@ -35,6 +36,11 @@ void RSTask::setShowOutput(bool showOutput)
 bool RSTask::shouldShowOutput()
 {
     return this->showOutput;
+}
+
+RSJob* RSTask::getJob()
+{
+    return this->job;
 }
 
 void RSTask::addArgument(rsArgument* argument)
@@ -138,6 +144,7 @@ const char* RSTask::getCode()
 
 void RSTask::fillInJobArguments(RSJob* job, RSJobParser* parser)
 {
+    this->job = job;
     vector<rsArgument*> jobArguments = job->getArguments();
     
     for ( vector<rsArgument*>::size_type i = 0; i < jobArguments.size(); i++ ) {

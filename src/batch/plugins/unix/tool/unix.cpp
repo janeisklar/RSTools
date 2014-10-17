@@ -1,5 +1,6 @@
 #include "unix.hpp"
 #include "utils/rsstring.h"
+#include "batch/util/rsunix.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstdio>
@@ -22,40 +23,7 @@ void Unix::_init()
 
 void Unix::_run()
 {
-    this->executionSuccessful = false;
-    
-    // create a temporay directory where we store the script and log messages
-    char* tmpDirNameTpl = (char*)malloc(sizeof(char)*255);
-    sprintf(tmpDirNameTpl, "%s", "/tmp/rsbatch.unix.cmd-XXXXXXX");
-    char* tmpDirName = mkdtemp(tmpDirNameTpl);
-
-    if ( tmpDirName == NULL ) {
-        throw runtime_error("Could not create a temporary directory for the execution of a command line script.");
-    }
-    
-    // place a bash script containing the command to be executed in the directory
-    char* scriptName = rsStringConcat(tmpDirName, "/cmd.sh", NULL);
-    ofstream script;
-    script.open(scriptName);
-    script << this->getUnixTask()->getCmd();
-    script.close();
-    
-    // prepare statement to call it with
-    char* executionCmd = rsStringConcat("/bin/bash ", scriptName, " > ", tmpDirName, "/output.log", NULL);
-    
-    // if it was executed correctly destroy the temporary working directory
-    if ( system(executionCmd) == 0 ) {
-        this->executionSuccessful = true;
-        
-        char *rmCommand = rsStringConcat("rm -rf ", tmpDirName, NULL);
-        system(rmCommand);
-        rsFree(rmCommand);
-    } else { // otherwise keep the dir so that the user can debug it
-        fprintf(stderr, "Error while executing shell task. For more information see '%s'.\n", tmpDirName);
-    }
-    
-    rsFree(executionCmd);
-    rsFree(scriptName);
+    this->executionSuccessful = rsExecuteUnixCommand(this->getUnixTask()->getCmd());
 }
 
 void Unix::destroy()
@@ -75,13 +43,13 @@ rsUIInterface* Unix::createUI()
 {
     rsUIOption *o;
     rsUIInterface* interface = rsUINewInterface();
-    interface->description   = "Execute Unix Command";
+    interface->description   = rsString("Execute Unix Command");
     
     o = rsUINewOption();
-    o->name                = "command";
+    o->name                = rsString("command");
     o->type                = G_OPTION_ARG_STRING;
-    o->cli_description     = "the unix command that is to be executed";
-    o->cli_arg_description = "<unix cmd>";
+    o->cli_description     = rsString("the unix command that is to be executed");
+    o->cli_arg_description = rsString("<unix cmd>");
     o->nLines              = 20;
     rsUIAddOption(interface, o);
     

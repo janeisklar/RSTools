@@ -31,6 +31,7 @@ class RSJob {
         vector<RSTask*> getTasks();
         void addArgument(rsArgument*);
         vector<rsArgument*> getArguments();
+        rsArgument* getArgument(const char* key);
         char* toXml();
         char* _argumentToXml(rsArgument *arg);
 };

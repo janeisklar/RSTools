@@ -50,6 +50,21 @@ vector<rsArgument*> RSJob::getArguments()
     return this->arguments;
 }
 
+rsArgument* RSJob::getArgument(const char* key)
+{
+    for ( vector<rsArgument*>::size_type i = 0; i < arguments.size(); i++ ) {
+        rsArgument *arg = arguments[i];
+
+        if ( strcmp(arg->key, key) ) {
+            continue;
+        }
+
+        return arg;
+    }
+    
+    return NULL;
+}
+
 char* RSJob::toXml()
 {
     char *oldXml;
