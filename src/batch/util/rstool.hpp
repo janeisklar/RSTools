@@ -33,6 +33,10 @@ typedef struct {
     // tool
     const char* code;
     
+    // category that the tool is listed
+    // under in the jobeditor
+    const char* category;
+    
     // callback function that creates a
     // new instance of the tool
     rsToolToolCreator createTool;

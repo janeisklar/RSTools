@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<job xmlns="http://www.fmri.at/rstools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fmri.at/rstools http://www.fmri.at/rstools/job.xsd">
+    <parameters>
+    </parameters>
+    <tasks>
+    </tasks>
+</job>

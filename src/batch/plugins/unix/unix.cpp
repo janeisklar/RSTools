@@ -21,6 +21,7 @@ rsToolRegistration* Unix::createUnixToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Util";
     toolRegistration->createTool = (rsToolToolCreator)Unix::createUnixTool;
     toolRegistration->createTask = (rsToolTaskCreator)Unix::createUnixTask;
     return toolRegistration;

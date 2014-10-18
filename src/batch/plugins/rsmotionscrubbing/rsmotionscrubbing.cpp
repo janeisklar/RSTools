@@ -21,6 +21,7 @@ rsToolRegistration* RSMotionScrubbing::createMotionScrubbingToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Artifacts / Motion";
     toolRegistration->createTool = (rsToolToolCreator)RSMotionScrubbing::createMotionScrubbingTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSMotionScrubbing::createMotionScrubbingTask;
     return toolRegistration;

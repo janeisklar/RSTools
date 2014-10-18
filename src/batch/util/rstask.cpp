@@ -53,7 +53,7 @@ vector<rsArgument*> RSTask::getArguments()
     return this->arguments;
 }
 
-rsArgument* RSTask::getArgument(char* name)
+rsArgument* RSTask::getArgument(const char* name)
 {
     vector<rsArgument*> arguments = this->getArguments();
     for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
@@ -67,7 +67,7 @@ rsArgument* RSTask::getArgument(char* name)
     return NULL;
 }
 
-void RSTask::removeArgument(char* name)
+void RSTask::removeArgument(const char* name)
 {
     vector<rsArgument*> arguments = this->getArguments();
     for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
@@ -263,10 +263,8 @@ char* RSTask::toXml()
 char* RSTask::_argumentToXml(rsArgument *arg)
 {
     if ( arg->value == NULL ) {
-        fprintf(stdout, "Name: %s\n", arg->key);
         return rsStringConcat("\n                <arg name=\"", arg->key, "\"/>", NULL);
     } else {
-        fprintf(stdout, "Name: %s, Value: %s\n", arg->key, arg->value);
         return rsStringConcat("\n                <arg name=\"", arg->key, "\">", arg->value, "</arg>", NULL);
     }
 }

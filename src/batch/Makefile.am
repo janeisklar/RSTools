@@ -17,4 +17,4 @@ LDADD=$(rslibraries)
 rsbatch_SOURCES = rsbatch_common.cpp rsbatch_ui.cpp rsbatch.cpp
 
 jobdir = $(datadir)/$(PACKAGE)/jobs
-job_DATA = ../../share/jobs/job.xsd ../../share/jobs/dmn.job
+job_DATA = ../../share/jobs/job.xsd ../../share/jobs/dmn.job ../../share/jobs/empty.job

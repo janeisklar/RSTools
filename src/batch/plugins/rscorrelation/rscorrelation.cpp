@@ -23,6 +23,7 @@ rsToolRegistration* RSCorrelation::createCorrelationToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Temporal";
     toolRegistration->createTool = (rsToolToolCreator)RSCorrelation::createCorrelationTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSCorrelation::createCorrelationTask;
     return toolRegistration;

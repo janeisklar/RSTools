@@ -21,6 +21,7 @@ rsToolRegistration* RSScrubbing::createScrubbingToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Artifacts / Motion";
     toolRegistration->createTool = (rsToolToolCreator)RSScrubbing::createScrubbingTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSScrubbing::createScrubbingTask;
     return toolRegistration;

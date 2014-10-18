@@ -21,6 +21,7 @@ rsToolRegistration* RSRoi::createRoiToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "ROI";
     toolRegistration->createTool = (rsToolToolCreator)RSRoi::createRoiTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSRoi::createRoiTask;
     return toolRegistration;

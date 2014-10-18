@@ -21,6 +21,7 @@ rsToolRegistration* RSTimecourse::createTimecourseToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "ROI";
     toolRegistration->createTool = (rsToolToolCreator)RSTimecourse::createTimecourseTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSTimecourse::createTimecourseTask;
     return toolRegistration;

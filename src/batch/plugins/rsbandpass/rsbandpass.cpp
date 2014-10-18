@@ -21,6 +21,7 @@ rsToolRegistration* RSBandpass::createBandpassToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Temporal";
     toolRegistration->createTool = (rsToolToolCreator)RSBandpass::createBandpassTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSBandpass::createBandpassTask;
     return toolRegistration;

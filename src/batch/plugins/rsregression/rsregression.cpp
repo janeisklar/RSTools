@@ -23,6 +23,7 @@ rsToolRegistration* RSRegression::createRegressionToolRegistration()
     rsToolRegistration* toolRegistration = (rsToolRegistration*)malloc(sizeof(rsToolRegistration));
     toolRegistration->name       = getName();
     toolRegistration->code       = getCode();
+    toolRegistration->category   = "Temporal";
     toolRegistration->createTool = (rsToolToolCreator)RSRegression::createRegressionTool;
     toolRegistration->createTask = (rsToolTaskCreator)RSRegression::createRegressionTask;
     return toolRegistration;
