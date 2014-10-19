@@ -18,6 +18,8 @@ char* rsTrimString(char *s);
 char* rsLeftTrimString(char *s);
 char* rsRightTrimString(char *s);
 char* rsString(const char *s);
+BOOL rsStringStartsWith(const char *str, const char *start);
+BOOL rsStringEndsWith(const char *str, const char *end);
 
 #ifdef __cplusplus
 }

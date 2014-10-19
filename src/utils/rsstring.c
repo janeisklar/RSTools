@@ -182,3 +182,16 @@ char* rsString(const char *s)
     sprintf(tmp, "%s", s);
     return tmp;
 }
+
+BOOL rsStringStartsWith(const char *str, const char *start)
+{
+    return 0 == strncmp(str, start, strlen(start));
+}
+
+BOOL rsStringEndsWith(const char *str, const char *end)
+{
+    const size_t str_length = strlen(str);
+    const size_t end_length = strlen(end);
+    
+    return 0 == strncmp( str + str_length - end_length, end, end_length);
+}
