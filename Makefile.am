@@ -10,4 +10,7 @@ nobase_pkginclude_HEADERS =      \
 	externals/fslio/fslio.h      \
 	externals/fslio/dbh.h
 
-sysconf_DATA=etc/rstools.conf
+sysconf_DATA=etc/rstools.conf.default
+
+install-exec-hook:
+	test ! -e $(DESTDIR)$(sysconfdir)/rstools.conf && cp -v $(DESTDIR)$(sysconfdir)/rstools.conf.default $(DESTDIR)$(sysconfdir)/rstools.conf 2>/dev/null || true

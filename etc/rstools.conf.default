@@ -14,7 +14,7 @@ fslPath=/usr/local/fsl5/bin
 ANTSPATH=/usr/local/ants/bin/
 
 # Path to AFNI
-afniPath=/usr/local/afni/bin
+afniPath=/usr/lib/afni/bin
 
 # Home of the preprocessing
 ppsPath=/net/mri.meduniwien.ac.at/departments/physics/fmrilab/lab/preprocessing
