@@ -8,7 +8,7 @@ namespace plugins {
 namespace unix {
 namespace task {
    
-Unix::Unix(const char* code, const char* name) : RSTask(code, name)
+Unix::Unix(const char* code, const char* name) : RSUnixTask(code, name)
 {
     setCmd((char*)"");
 }

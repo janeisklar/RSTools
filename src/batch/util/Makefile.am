@@ -13,6 +13,8 @@ librsbatchutils_la_SOURCES =  \
  rstask.cpp \
  rstool.cpp \
  rsunix.cpp \
+ rsunixtask.cpp \
+ rsunixtool.cpp \
  plugin.cpp \
  pluginmanager.cpp
 librsbatchutils_la_LDFLAGS=-shared

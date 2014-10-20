@@ -2,7 +2,7 @@
 #define rstools_rsbatch_plugin_unix_task_unix_h
 
 #include <iostream>
-#include "batch/util/rstask.hpp"
+#include "batch/util/rsunixtask.hpp"
 
 using namespace rstools::batch::util;
 
@@ -12,7 +12,7 @@ namespace plugins {
 namespace unix {
 namespace task {
     
-class Unix : public RSTask {
+class Unix : public RSUnixTask {
 
 public: 
     Unix(const char* code, const char* name);

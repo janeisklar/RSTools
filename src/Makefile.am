@@ -111,6 +111,8 @@ nobase_pkginclude_HEADERS =                                   \
 	batch/util/rsjob.hpp                                      \
 	batch/util/rsjobparser.hpp                                \
 	batch/util/rstask.hpp                                     \
+	batch/util/rsunixtask.hpp                                 \
+	batch/util/rsunixtool.hpp                                 \
 	batch/util/rstool.hpp                                     \
 	batch/util/rsunix.hpp                                     \
 	maths/correlation.h                                       \

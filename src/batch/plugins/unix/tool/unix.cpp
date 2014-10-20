@@ -13,31 +13,11 @@ namespace plugins {
 namespace unix {
 namespace tool {
     
-void Unix::_parseParams(int argc, char * argv[])
-{   
-    this->executionSuccessful = true;
-}
-    
 void Unix::_init()
 {}
 
-void Unix::_run()
-{
-    this->executionSuccessful = rsExecuteUnixCommand(this->getUnixTask()->getCmd());
-}
-
 void Unix::destroy()
 {}
-
-bool Unix::isEverythingFine()
-{
-    return this->executionSuccessful;
-}
-
-rstools::batch::plugins::unix::task::Unix* Unix::getUnixTask()
-{
-    return (rstools::batch::plugins::unix::task::Unix*)this->getTask();
-}
 
 rsUIInterface* Unix::createUI()
 {
