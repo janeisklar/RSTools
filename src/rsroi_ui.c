@@ -161,6 +161,7 @@ void rsRoiBuildInterface(rsRoiParameters *p)
     o->shorthand           = 'v';
     o->storage             = &p->verbose;
     o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
 }
 
