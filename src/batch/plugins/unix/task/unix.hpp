@@ -21,11 +21,10 @@ public:
     void parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node);    
     char* toXml();
     
-    void setCmd(char* cmd);
+    void setCmd(const char* cmd);
     char* getCmd();
     
 protected:
-    char *cmd;
 };
 
 }}}}} // namespace rstools::batch::plugins::unix::task

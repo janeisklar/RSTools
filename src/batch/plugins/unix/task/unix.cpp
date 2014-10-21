@@ -48,31 +48,35 @@ void Unix::parseTaskFromXml(DOMNodeIterator* walker, DOMNode* &current_node)
                 char *desc = XMLString::transcode(current_node->getFirstChild()->getNodeValue());
                 setDescription(desc);
         } else if( ! strcmp(thisNodeName, "cmd") ) {
-            char *cmd = XMLString::transcode(current_node->getFirstChild()->getNodeValue());
+            char *cmd = rsTrimString(XMLString::transcode(current_node->getFirstChild()->getNodeValue()));
             setCmd(cmd);
         }
     }
 }
 
-void Unix::setCmd(char* cmd)
-{
-    this->cmd = cmd;
-    
+void Unix::setCmd(const char* cmd)
+{   
     // set argument as well
-    char* optionName = (char*)"command";
+    const char* optionName = "command";
     rsArgument* argument = getArgument(optionName);
     
     if ( argument == NULL ) {
           argument = (rsArgument*)malloc(sizeof(rsArgument));
-          argument->key = optionName;
+          argument->key = rsString(optionName);
           addArgument(argument);
     }
     
-    argument->value = cmd;
+    argument->value = rsString(cmd);
 } 
 
 char* Unix::getCmd() {
-    return this->cmd;
+    rsArgument* argument = getArgument("command");
+    
+    if ( argument == NULL ) {
+        return NULL;
+    }
+    
+    return argument->value;
 }
 
 char* Unix::toXml()

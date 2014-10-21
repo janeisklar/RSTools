@@ -17,7 +17,7 @@ ANTSPATH=/usr/local/ants/bin/
 afniPath=/usr/lib/afni/bin
 
 # Home of the preprocessing
-ppsPath=/net/mri.meduniwien.ac.at/departments/physics/fmrilab/lab/preprocessing
+ppsPath=/z/fmrilab/lab/preprocessing
 
 # Path to the templates
 templatePath=${ppsPath}/template
