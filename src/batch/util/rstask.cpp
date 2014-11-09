@@ -1,5 +1,6 @@
 #include "rstask.hpp"
 #include "rstool.hpp"
+#include "batch/util/rsconfig.hpp"
 
 namespace rstools {
 namespace batch {
