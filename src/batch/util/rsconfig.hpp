@@ -22,6 +22,9 @@ class RSConfig {
     
 public:
     vector<rsArgument*> getArguments();
+    void setArguments(vector<rsArgument*> newArguments);
+    rsArgument* getArgument(const char* name);
+    void reload();
     static RSConfig& getInstance()
     {
         static RSConfig instance;

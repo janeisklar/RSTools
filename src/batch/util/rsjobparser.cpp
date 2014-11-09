@@ -241,6 +241,8 @@ void RSJobParser::fillInUserArguments(rsArgument **userArguments, const short nU
             free(key);
         }
     }
+    
+    RSConfig::getInstance().setArguments(jobArguments);
 
     // replace all job argument placeholders within the task arguments
     vector<RSTask*> tasks = this->job->getTasks();

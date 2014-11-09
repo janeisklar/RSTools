@@ -46,9 +46,37 @@ void RSConfig::_loadConfig()
     }
 }
 
+void RSConfig::reload()
+{
+    arguments.clear();
+    _loadConfig();
+}
+
+void RSConfig::setArguments(vector<rsArgument*> newArguments)
+{
+    arguments.clear();
+
+    for ( vector<rsArgument*>::size_type i = 0; i != newArguments.size(); i++ ) {
+        arguments.push_back(newArguments[i]);
+    }
+}
+
 vector<rsArgument*> RSConfig::getArguments()
 {
     return this->arguments;
+}
+
+rsArgument* RSConfig::getArgument(const char* name)
+{
+    for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
+        rsArgument *arg = arguments[i];
+        
+        if ( ! strcmp(arg->key, name) ) {
+            return  arg;
+        }
+    }
+    
+    return NULL;
 }
 
 }}} // namespace rstools::batch::util

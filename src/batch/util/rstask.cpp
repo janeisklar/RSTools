@@ -67,6 +67,26 @@ rsArgument* RSTask::getArgument(const char* name)
     return NULL;
 }
 
+/*
+ * Returns the value of an argument if it was supplied or a 
+ * default value from the config instead
+ */
+const char* RSTask::getDefaultArgumentValue(const char* name)
+{
+    rsArgument* arg = getArgument(name);
+    if ( arg != NULL ) {
+        return arg->value;
+    }
+    
+    arg = RSConfig::getInstance().getArgument(name);
+    
+    if ( arg != NULL ) {
+        return arg->value;
+    }
+    
+    return NULL;
+}
+
 void RSTask::removeArgument(const char* name)
 {
     vector<rsArgument*> arguments = this->getArguments();

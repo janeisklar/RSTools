@@ -48,6 +48,7 @@ class RSTask {
         virtual void addArgument(rsArgument*);
         virtual vector<rsArgument*> getArguments();
         virtual rsArgument* getArgument(const char* name);
+        virtual const char* getDefaultArgumentValue(const char* name);
         virtual void removeArgument(const char* name);
         virtual RSJob* getJob();
         virtual char* getOutputPath();
