@@ -19,8 +19,26 @@
 extern "C" {
 #endif 
     
-void rsLinearRegression(const int nSamples, const double *signal, const int nRegressors, const double **regressors, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
-void rsLinearRegressionFilter(const int nSamples, const double *signal, const int nRegressors, const double **regressors, const double sampling_rate, const double f1, const double f2, double *betas, double *residuals, double *fitted, const int verbose);
+
+typedef struct  {
+    gsl_multifit_linear_workspace* w;
+    gsl_matrix* X;
+} rsMultifitLinearWorkspace;
+
+rsMultifitLinearWorkspace* rsPrepareLinearRegression(const int nSamples, const int nRegressors, const double **regressors, const int zScoreRegression);
+void rsLinearRegression(rsMultifitLinearWorkspace *work, const double *signal, double *betas, double *residuals, double *fitted, const int zScoreRegression, const int verbose);
+
+int rsPrepareMultifitLinearSVD (const gsl_matrix * X, int balance, rsMultifitLinearWorkspace * work);
+int rsMultifitLinearSVD (const gsl_vector * y,
+                         size_t * rank,
+                         gsl_vector * c,
+                         gsl_matrix * cov,
+                         double *chisq, 
+                         rsMultifitLinearWorkspace * work);
+
+rsMultifitLinearWorkspace* rsMultifitLinearWorkspaceAlloc(size_t n, size_t p);
+void rsMultifitLinearWorkspaceFree(rsMultifitLinearWorkspace* work);
+rsMultifitLinearWorkspace* rsMultifitLinearWorkspaceClone(rsMultifitLinearWorkspace* work);
 
 #ifdef __cplusplus
 }

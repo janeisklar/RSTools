@@ -186,6 +186,8 @@ void rsRegressionInit(rsRegressionParameters* p)
 
 void rsRegressionRun(rsRegressionParameters *p)
 {
+    // Preapre regression
+    rsMultifitLinearWorkspace* work = rsPrepareLinearRegression((int)p->input->vDim, p->nAllRegressors, (const double**)p->allRegressors, p->zScoreRegression);
     
     // Prepare empty timecourse (containing NaNs)
     int emptyValuesLength = p->input->vDim > p->nRegressors ? p->input->vDim : p->nRegressors+1;
@@ -200,11 +202,12 @@ void rsRegressionRun(rsRegressionParameters *p)
     double *residuals;
     double *betas;
     double *fitted;
+    rsMultifitLinearWorkspace* tmpWork;
     Point3D *point;
     omp_lock_t updateProgressLock;
     omp_init_lock(&updateProgressLock);
     
-    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point) shared(p,emptybuffer)
+    #pragma omp parallel num_threads(rsGetThreadsNum()) private(y,x,timecourse,residuals,betas,fitted,point,tmpWork) shared(p,emptybuffer)
     {
         #pragma omp for schedule(guided)
         for (z=0; z<p->input->zDim; z++) {
@@ -242,18 +245,21 @@ void rsRegressionRun(rsRegressionParameters *p)
                     
                     rsExtractTimecourseFromRSNiftiFileBuffer(p->input, timecourse, point);
                     
+                    // clone the workspace (for parallel processing)
+                    tmpWork = rsMultifitLinearWorkspaceClone(work);
+                    
                     // run the regression
                     rsLinearRegression(
-                        (int)p->input->vDim,
+                        tmpWork,
                         timecourse,
-                        p->nAllRegressors,
-                        (const double**)p->allRegressors,
                         betas,
                         residuals,
                         fitted,
                         p->zScoreRegression,
                         p->verbose
                     );
+                    
+                    rsMultifitLinearWorkspaceFree(tmpWork);
 
                     // write the results to the buffers
                     if ( p->residuals != NULL ) {
@@ -300,6 +306,7 @@ void rsRegressionRun(rsRegressionParameters *p)
     }
 
     omp_destroy_lock (&updateProgressLock);
+    rsMultifitLinearWorkspaceFree(work);
     
     /* Write out buffers to the corresponding files */
     if ( p->residuals != NULL ) {
