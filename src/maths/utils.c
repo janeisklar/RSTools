@@ -51,7 +51,7 @@ void rsDestroyRandomNumberGenerator()
  * by spaces or tabs.
  * Returns a 2D matrix in the following form: double[regressor][time]
  */
-double **rsLoadRegressors(char *path, long *nRegressors, long *nValues, double constantFactor)
+double **rsLoadRegressors(const char *path, long *nRegressors, long *nValues, double constantFactor)
 {
     FILE *f = fopen(path, "r");
     
