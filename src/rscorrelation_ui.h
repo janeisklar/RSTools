@@ -39,6 +39,7 @@ typedef struct {
     BOOL verbose;
     BOOL parametersValid;
     
+    int nConsideredVolumes;
     unsigned int nRegressorValues;
     double *regressor;
     

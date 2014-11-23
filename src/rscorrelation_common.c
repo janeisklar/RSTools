@@ -111,6 +111,11 @@ void rsCorrelationInit(rsCorrelationParameters* p)
         free(maskPoints);
     }
     
+    /* set number of considered volumes to the number of total volumes if none are specified */
+    if ( p->nConsideredVolumes < 1 ) {
+        p->nConsideredVolumes = p->input->vDim;
+    }
+    
     p->parametersValid = TRUE;    
 }
 
@@ -148,7 +153,7 @@ void rsCorrelationRun(rsCorrelationParameters *p)
                     /* add the defined delay to the regressor and adjust the timecourse */
                     double *regressor = &p->regressor[(short)fmax(0, -1*p->delay)];
                     timecourse = &fullTimecourse[(short)fmax(0, p->delay)];
-                    const size_t regressorLength = p->nRegressorValues - fabs(p->delay);
+                    const size_t regressorLength = (size_t)fmin(p->nRegressorValues - fabs(p->delay), p->nConsideredVolumes);
                     
                     /* compute correlation */
                     if ( p->monteCarloRepetitions > 0 ) {

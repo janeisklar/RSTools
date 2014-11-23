@@ -13,6 +13,7 @@ rsCorrelationParameters* rsCorrelationInitParameters()
     p->comment               = NULL;
     p->callString            = NULL;
     p->delay                 = 0;
+    p->nConsideredVolumes    = 0;
     p->verbose               = FALSE;
     p->input                 = NULL;
     p->output                = NULL;
@@ -168,6 +169,15 @@ void rsCorrelationBuildInterface(rsCorrelationParameters *p)
     o->type                = G_OPTION_ARG_INT;
     o->storage             = &p->delay;
     o->cli_description     = "delay the regressor by <n> volumes(<n> * TR)";
+    o->cli_arg_description = "<n>";
+    o->group               = RS_UI_GROUP_EXTENDED;
+    rsUIAddOption(p->interface, o);
+    
+    o = rsUINewOption();
+    o->name                = "length";
+    o->type                = G_OPTION_ARG_INT;
+    o->storage             = &p->nConsideredVolumes;
+    o->cli_description     = "Number of volumes considered for the computation of the correlation. When specified the correlation will be computed on the volumes t=0..n-1.";
     o->cli_arg_description = "<n>";
     o->group               = RS_UI_GROUP_EXTENDED;
     rsUIAddOption(p->interface, o);

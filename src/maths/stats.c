@@ -148,3 +148,21 @@ void rsSpearmannRank(double *ranks, const double *data, const size_t n) {
     free(d);
     free(p);
 }
+
+double rsComputePValueFromTValue(const double T, const int df)
+{
+	if ( T < 0 ) {
+		return -gsl_cdf_tdist_P(T, df);
+	} else {
+		return gsl_cdf_tdist_Q(T, df);
+	}
+}
+
+double rsComputeTValueFromPValue(const double P, const int df)
+{
+	if ( P < 0 ) {
+		return gsl_cdf_tdist_Pinv(-P, df);
+	} else {
+		return gsl_cdf_tdist_Qinv(P, df);
+	}
+}
