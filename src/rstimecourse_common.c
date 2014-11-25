@@ -176,7 +176,7 @@ void rsTimecourseRunSingleVoxelExtraction(rsTimecourseParameters *p)
 
     // print
     for (int t=0; t<p->input->vDim; t++) {
-        fprintf(p->output, "%.10f\n", series[t]);
+        fprintf(p->output, "%e\n", series[t]);
     }
     
     p->parametersValid = TRUE;
@@ -231,7 +231,7 @@ void rsTimecourseRunMeanOrStdDev(rsTimecourseParameters *p)
 
     // Write out result
     for ( t = 0; t<p->input->vDim; t=t+1 ) {
-        fprintf(p->output, "%.10f\n", timecourse[t]);
+        fprintf(p->output, "%e\n", timecourse[t]);
     }
     
     p->parametersValid = TRUE;
@@ -294,7 +294,7 @@ void rsTimecourseRunPCA(rsTimecourseParameters *p)
         fp = fopen( p->eigenvaluespath , "w" );
 
         for ( long i=0; i<nEigenvalues; i=i+1 ) {
-            fprintf(fp, "%.10f\n", gsl_vector_get(pcaResult->eigenvalues_all, i));
+            fprintf(fp, "%e\n", gsl_vector_get(pcaResult->eigenvalues_all, i));
         }
 
         fclose(fp);
@@ -310,7 +310,7 @@ void rsTimecourseRunPCA(rsTimecourseParameters *p)
 
     for ( int t = 0; t < p->input->vDim; t=t+1 ) {
         for ( int c = 0; c<components->size1; c=c+1) {
-            fprintf(p->output, "% 5.10f", gsl_matrix_get(components, c, t));
+            fprintf(p->output, "%e", gsl_matrix_get(components, c, t));
             if ( c < (components->size1-1) ) {
                 fprintf(p->output, "\t");
             }
@@ -402,7 +402,7 @@ void rsTimecourseRunCSP(rsTimecourseParameters *p)
         fp = fopen(p->eigenvaluespath , "w");
 
         for ( long i=0; i<nEigenvalues; i=i+1 ) {
-            fprintf(fp, "%.10f\n", gsl_vector_get(cspResult->eigenvalues_all, i));
+            fprintf(fp, "%e\n", gsl_vector_get(cspResult->eigenvalues_all, i));
         }
 
         fclose(fp);
@@ -415,7 +415,7 @@ void rsTimecourseRunCSP(rsTimecourseParameters *p)
     // Print out eigenvectors
     for ( int t = 0; t < p->input->vDim; t=t+1 ) {
         for ( int c = 0; c < cspResult->eigenvectors->size1; c=c+1) {
-            fprintf(p->output, "% 5.10f", gsl_matrix_get(cspResult->eigenvectors, c, t));
+            fprintf(p->output, "%e", gsl_matrix_get(cspResult->eigenvectors, c, t));
             if ( c < (cspResult->eigenvectors->size1-1) ) {
                 fprintf(p->output, "\t");
             }
