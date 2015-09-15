@@ -9,8 +9,8 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([m4])
 
 
-CFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c99 -fopenmp -I./src $CFLAGS"
-CXXFLAGS="-ansi -pedantic -Woverlength-strings -Wno-deprecated-register -g -std=c++0x -fopenmp -I./src $CXXFLAGS"
+CFLAGS="-Woverlength-strings -Wno-deprecated-register -g -std=c99 -fopenmp -I./src $CFLAGS"
+CXXFLAGS="-Woverlength-strings -Wno-deprecated-register -g -std=c++0x -fopenmp -I./src $CXXFLAGS"
 
 # prepare for automake
 AM_INIT_AUTOMAKE([foreign -Wall])

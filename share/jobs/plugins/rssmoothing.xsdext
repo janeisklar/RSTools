@@ -1,0 +1,7 @@
+<xs:complexType name="rssmoothing">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rssmoothing -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>
