@@ -186,7 +186,7 @@ void rsCorrelationRun(rsCorrelationParameters *p)
                 #pragma omp atomic
                 processedSlices += 1;
             
-                if (processedSlices > 0 && processedSlices % (short)(p->input->zDim / 10) == 0) {
+                if (processedSlices > 0 && processedSlices % (short)(p->input->vDim >= 10 ? p->input->vDim / 10 : p->input->vDim) == 0) {
                     fprintf(stdout, "..%.0f%%\n", ceil((float)processedSlices*100.0 / (float)p->input->zDim));
                 }
             }

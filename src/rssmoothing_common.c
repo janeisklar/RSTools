@@ -40,14 +40,14 @@ void rsSmoothingInit(rsSmoothingParameters *p)
         return;
     }
 	
-	p->kernelSizeHWHM = p->kernelSizeFWHM / (2.0*sqrt(2.0*log(2.0)));
+	p->kernelSigma = p->kernelSizeFWHM / (2.0*sqrt(2.0*log(2.0)));
 	
     /* output the most important parameters to the user */
     if ( p->verbose ) {
         fprintf(stdout, "Input file:  %s\n", p->inputpath);
         fprintf(stdout, "Output file: %s\n", p->outputpath);
-        fprintf(stdout, "FWHM sigma:  %.5f\n", p->kernelSizeFWHM);
-        fprintf(stdout, "HWHM sigma:  %.5f\n", p->kernelSizeHWHM);
+        fprintf(stdout, "FWHM kernel size:  %.5f mm\n", p->kernelSizeFWHM);
+        fprintf(stdout, "Sigma: %.5f mm\n", p->kernelSigma);
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
 	
@@ -64,7 +64,7 @@ void rsSmoothingRun(rsSmoothingParameters *p)
 
 	// create gaussian kernel
 	short kerneldim[3];
-	double ***kernel = rsCreateGaussianKernel(p->kernelSizeHWHM, &kerneldim[0], &kerneldim[1], &kerneldim[2], xSpacing, ySpacing, zSpacing);
+	double ***kernel = rsCreateGaussianKernel(p->kernelSigma, &kerneldim[0], &kerneldim[1], &kerneldim[2], xSpacing, ySpacing, zSpacing);
 	double ***xKernel = d3matrix(0,0,kerneldim[0]-1);
 	double ***yKernel = d3matrix(0,kerneldim[1]-1,0);
 	double ***zKernel = d3matrix(kerneldim[2]-1,0,0);
@@ -131,7 +131,7 @@ void rsSmoothingRun(rsSmoothingParameters *p)
                 #pragma omp atomic
                 processedVolumes += 1;
             
-                if (processedVolumes > 0 && processedVolumes % (short)(p->input->vDim / 10) == 0) {
+                if (processedVolumes > 0 && processedVolumes % (short)(p->input->vDim >= 10 ? p->input->vDim / 10 : p->input->vDim) == 0) {
                     fprintf(stdout, "..%.0f%%\n", ceil((float)processedVolumes*100.0 / (float)p->input->vDim));
                 }
             }
@@ -203,7 +203,7 @@ double ***rsCreateGaussianKernel(double sigma, short *xdimkernel, short *ydimker
 	*xdimkernel = 2*sx + 1;
 	*ydimkernel = 2*sy + 1;
 	*zdimkernel = 2*sz + 1;
-	double ***kernel = d3matrix(*xdimkernel-1, *ydimkernel-1, *zdimkernel-1);
+	double ***kernel = d3matrix(*zdimkernel-1, *ydimkernel-1, *xdimkernel-1);
 	
 	for (short z=0; z<*zdimkernel; z++) {
 		for (short y=0; y<*ydimkernel; y++) {

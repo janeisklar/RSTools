@@ -16,7 +16,7 @@ typedef struct {
     char *callString;
 
     double kernelSizeFWHM;
-    double kernelSizeHWHM;
+    double kernelSigma;
 
     BOOL verbose;
     BOOL parametersValid;
