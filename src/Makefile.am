@@ -25,6 +25,7 @@ bin_PROGRAMS =                                \
 lib_LTLIBRARIES =                             \
 	librsbandpass.la                          \
 	librscorrelation.la                       \
+	librsinfo.la                              \
 	librsmotionscrubbing.la                   \
 	librsscrubbing.la                         \
 	librssmoothing.la                         \
@@ -38,6 +39,8 @@ librsbandpass_la_SOURCES = rsbandpass_ui.c rsbandpass_common.c
 librsbandpass_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librscorrelation_la_SOURCES = rscorrelation_ui.c rscorrelation_common.c
 librscorrelation_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsinfo_la_SOURCES = rsinfo_ui.c rsinfo_common.c
+librsinfo_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsmotionscrubbing_la_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c
 librsmotionscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsscrubbing_la_SOURCES = rsscrubbing_ui.c rsscrubbing_common.c
@@ -86,6 +89,8 @@ rstimecourse_SOURCES = rstimecourse.c
 rstimecourse_LDADD = librstimecourse.la @LIBOBJS@ $(rslibraries)
 
 rsinfo_SOURCES = rsinfo.c
+rsinfo_LDADD = librsinfo.la @LIBOBJS@ $(rslibraries)
+
 rsmask_SOURCES = rsmask.c
 rsttest_SOURCES = rsttest.c
 
@@ -95,6 +100,8 @@ nobase_pkginclude_HEADERS =                                   \
 	rscommon.h                                                \
 	rscorrelation_common.h                                    \
 	rscorrelation_ui.h                                        \
+	rsinfo_common.h                                           \
+	rsinfo_ui.h                                               \
 	rsmotionscrubbing_common.h                                \
 	rsmotionscrubbing_ui.h                                    \
 	rsorientation_common.h                                    \
@@ -170,7 +177,7 @@ install-exec-hook:
 	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	
