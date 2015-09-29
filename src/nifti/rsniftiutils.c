@@ -605,6 +605,72 @@ BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, v
     return TRUE;
 }
 
+BOOL rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn) {
+
+    THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)outBuffer;
+    THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)outBuffer;
+    THIS_UINT16  *THIS_UINT16_BUFFER  = (THIS_UINT16*)outBuffer;
+    THIS_INT16   *THIS_INT16_BUFFER   = (THIS_INT16*)outBuffer;
+    THIS_UINT32  *THIS_UINT32_BUFFER  = (THIS_UINT32*)outBuffer;
+    THIS_INT32   *THIS_INT32_BUFFER   = (THIS_INT32*)outBuffer;
+    THIS_UINT64  *THIS_UINT64_BUFFER  = (THIS_UINT64*)outBuffer;
+    THIS_INT64   *THIS_INT64_BUFFER   = (THIS_INT64*)outBuffer;
+    THIS_FLOAT32 *THIS_FLOAT32_BUFFER = (THIS_FLOAT32*)outBuffer;
+    THIS_FLOAT64 *THIS_FLOAT64_BUFFER = (THIS_FLOAT64*)outBuffer;
+
+    const size_t voxelOffsetIn  = rsVoxelOffset(pointIn->x, pointIn->y, pointIn->z, xhIn, yhIn);
+    const size_t voxelOffsetOut = rsVoxelOffset(pointOut->x, pointOut->y, pointOut->z, xhOut, yhOut);
+    const size_t timeOffsetIn   = rsVolumeLength(xhIn, yhIn, zhIn);
+    const size_t timeOffsetOut  = rsVolumeLength(xhOut, yhOut, zhOut);
+
+    for (int t=0; t<th; t=t+1) {
+
+        const size_t inAddress  = ((size_t)t) * timeOffsetIn  + voxelOffsetIn;
+        const size_t outAddress = ((size_t)t) * timeOffsetOut + voxelOffsetOut;
+
+        switch (datatype) {
+            case NIFTI_TYPE_UINT8:
+                THIS_UINT8_BUFFER[outAddress]   = (THIS_UINT8)   *((THIS_UINT8   *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_INT8:
+                THIS_INT8_BUFFER[outAddress]    = (THIS_INT8)    *((THIS_INT8    *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_UINT16:
+                THIS_UINT16_BUFFER[outAddress]  = (THIS_UINT16)  *((THIS_UINT16  *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_INT16:
+                THIS_INT16_BUFFER[outAddress]   = (THIS_INT16)   *((THIS_INT16   *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_UINT64:
+                THIS_UINT64_BUFFER[outAddress]  = (THIS_UINT64)  *((THIS_UINT64  *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_INT64:
+                THIS_INT64_BUFFER[outAddress]   = (THIS_INT64)   *((THIS_INT64   *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_UINT32:
+                THIS_UINT32_BUFFER[outAddress]  = (THIS_UINT32)  *((THIS_UINT32  *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_INT32:
+                THIS_INT32_BUFFER[outAddress]   = (THIS_INT32)   *((THIS_INT32   *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_FLOAT32:
+                THIS_FLOAT32_BUFFER[outAddress] = (THIS_FLOAT32) *((THIS_FLOAT32 *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_FLOAT64:
+                THIS_FLOAT64_BUFFER[outAddress] = (THIS_FLOAT64) *((THIS_FLOAT64 *)(inBuffer)+inAddress);
+                break;
+            case NIFTI_TYPE_FLOAT128:
+            case NIFTI_TYPE_COMPLEX128:
+            case NIFTI_TYPE_COMPLEX256:
+            case NIFTI_TYPE_COMPLEX64:
+            default:
+                return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 // the length of one word(one voxel) in bytes
 size_t rsWordLength(const short datatype) {
     switch (datatype) {

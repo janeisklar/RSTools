@@ -15,6 +15,7 @@ bin_PROGRAMS =                                \
 	rsmotionscrubbing                         \
 	rsscrubbing                               \
 	rssmoothing                               \
+	rsorientation                             \
 	rsregression                              \
 	rsresample                                \
 	rsroi                                     \
@@ -28,6 +29,7 @@ lib_LTLIBRARIES =                             \
 	librsscrubbing.la                         \
 	librssmoothing.la                         \
 	librsregression.la                        \
+	librsorientation.la                       \
 	librsresample.la                          \
 	librsroi.la                               \
 	librstimecourse.la
@@ -42,6 +44,8 @@ librsscrubbing_la_SOURCES = rsscrubbing_ui.c rsscrubbing_common.c
 librsscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librssmoothing_la_SOURCES = rssmoothing_ui.c rssmoothing_common.c
 librssmoothing_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsorientation_la_SOURCES = rsorientation_ui.c rsorientation_common.c
+librsorientation_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsregression_la_SOURCES = rsregression_ui.c rsregression_common.c 
 librsregression_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsresample_la_SOURCES = rsresample_ui.c rsresample_common.c 
@@ -65,6 +69,9 @@ rsscrubbing_LDADD = librsscrubbing.la @LIBOBJS@ $(rslibraries)
 
 rssmoothing_SOURCES = rssmoothing.c
 rssmoothing_LDADD = librssmoothing.la @LIBOBJS@ $(rslibraries)
+
+rsorientation_SOURCES = rsorientation.c
+rsorientation_LDADD = librsorientation.la @LIBOBJS@ $(rslibraries)
 
 rsregression_SOURCES = rsregression.c
 rsregression_LDADD = librsregression.la @LIBOBJS@ $(rslibraries)
@@ -90,6 +97,8 @@ nobase_pkginclude_HEADERS =                                   \
 	rscorrelation_ui.h                                        \
 	rsmotionscrubbing_common.h                                \
 	rsmotionscrubbing_ui.h                                    \
+	rsorientation_common.h                                    \
+	rsorientation_ui.h                                        \
 	rsscrubbing_common.h                                      \
 	rsscrubbing_ui.h                                          \
 	rssmoothing_common.h                                      \
@@ -145,6 +154,7 @@ nobase_pkginclude_HEADERS =                                   \
 	maths/stats.h                                             \
 	maths/utils.h                                             \
 	nifti/rsniftiutils.h                                      \
+	nifti/headerinfo.h                                        \
 	utils/rsio.h                                              \
 	utils/rsmemory.h                                          \
 	utils/rsstring.h                                          \
@@ -160,7 +170,7 @@ install-exec-hook:
 	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrstimecourse -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	
