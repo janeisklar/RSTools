@@ -126,7 +126,7 @@ void rsInfoRun(rsInfoParameters *p)
             return;
         } else {
             const int size = dicomExt->esize;
-            fwrite(dicomExt->edata, sizeof(char), size, p->dicom);
+            fwrite(dicomExt->edata, sizeof(char), size-8, p->dicom);
         }
     }
 

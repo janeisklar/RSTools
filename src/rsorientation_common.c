@@ -1,3 +1,4 @@
+#include <src/nifti/headerinfo.h>
 #include "nifti/rsniftiutils.h"
 #include "nifti/headerinfo.h"
 #include "rsorientation_common.h"
@@ -494,7 +495,7 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
 
         // check if we reached the data field
         if ( currentElement->tagGroup == 0x7fe0 && currentElement->tagElement == 0x10 ) {
-            headerLength = i-offsetData;
+            headerLength = i;
             break;
         }
 
@@ -510,7 +511,67 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
 
     // attach DICOM header to nifti
     if (headerLength > 0) {
-        nifti_add_extension(nifti->fslio->niftiptr, &buffer[0], headerLength, NIFTI_ECODE_DICOM);
+        // add empty data element so AFNI, etc. can later load the dicom file
+        struct DicomPixelDataElement{
+            uint16_t tagGroup;
+            uint16_t tagElement;
+            char valueRepresentation[2];
+            uint16_t filler;
+            uint32_t valueLength;
+            char value[8];
+        };
+        struct DicomPixelDataElement pixelDataElement;
+        pixelDataElement.tagGroup   = 0x7fe0;
+        pixelDataElement.tagElement = 0x0010;
+        pixelDataElement.filler = 0x0;
+        pixelDataElement.valueRepresentation[0] = 'O';
+        pixelDataElement.valueRepresentation[1] = 'B';
+        pixelDataElement.valueLength = 8;
+        for (size_t i=0L; i<8L; i++) {
+            pixelDataElement.value[i] = 'y';
+        }
+        const size_t pixelDataLength = 20L;
+
+        // pad file using last dicom element
+        // +8 for nifti extension header, +10 for adding the last element, +2 minimal padding
+        size_t extensionLength= headerLength+8L+pixelDataLength+12L;
+        size_t effectiveExtensionLength = extensionLength + 2L;
+        if ( extensionLength & 0xf ) { // make length divisible by 16 (0xf)
+            effectiveExtensionLength = (effectiveExtensionLength + 0xf) & ~0xf;
+        }
+        const size_t extensionPadding =  effectiveExtensionLength - extensionLength;
+
+        struct LastDicomElement{
+            uint16_t tagGroup;
+            uint16_t tagElement;
+            char valueRepresentation[2];
+            uint16_t filler;
+            uint32_t valueLength;
+            char value[extensionPadding];
+        };
+
+        // last element translates to (FFFC,FFFC) OB xxxxx with as many 'x' as required
+        // it is necessary for signalling the end of the file and pad it so that the nifti
+        // header extension length becomes divisible by 16 bytes
+        struct LastDicomElement closingElement;
+        closingElement.tagGroup   = 0xFFFC;
+        closingElement.tagElement = 0xFFFC;
+        closingElement.filler     = 0x0;
+        closingElement.valueRepresentation[0] = 'O';
+        closingElement.valueRepresentation[1] = 'B';
+        closingElement.valueLength = extensionPadding;
+        for (size_t i=0L; i<extensionPadding; i++) {
+            closingElement.value[i] = 'x';
+        }
+
+        const size_t closingElementSize = 12L + extensionPadding;
+        size_t effectiveHeaderLength = headerLength+closingElementSize+pixelDataLength;
+        char *header = (char*)rsMalloc(effectiveHeaderLength);
+        memcpy(&header[0], &buffer[0], headerLength);
+        memcpy(&header[headerLength], &pixelDataElement, pixelDataLength);
+        memcpy(&header[headerLength+pixelDataLength], &closingElement, closingElementSize);
+        nifti_add_extension(nifti->fslio->niftiptr, &header[0], effectiveHeaderLength, NIFTI_ECODE_DICOM);
+        rsFree(header);
     }
 
     return info;
