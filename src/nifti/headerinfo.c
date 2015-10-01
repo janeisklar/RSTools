@@ -1,4 +1,7 @@
+#include <src/utils/rsstring.h>
 #include "headerinfo.h"
+
+void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* buffer, const size_t bufferLength, const char* entryTagName, const size_t maxExpectedLength);
 
 rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
 {
@@ -38,6 +41,8 @@ rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
     info->MatrixSize[0]                    = '\0';
     info->FieldOfView[0]                   = '\0';
     info->GrappaFactor[0]                  = '\0';
+    info->BandwidthPerPixelPhaseEncode     = log(-1);
+    info->DwellTime                        = log(-1);
     info->Rows                             = log(-1);
     info->Columns                          = log(-1);
 
@@ -77,11 +82,14 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
     fprintf(stdout, "TransmitCoilName             : %s\n", info->TransmitCoilName);
     fprintf(stdout, "InPlanePhaseEncodingDirection: %s\n", info->InPlanePhaseEncodingDirection);
     fprintf(stdout, "PatientPosition              : %s\n", info->PatientPosition);
+    fprintf(stdout, "BandwidthPerPixelPhaseEncode : %.15f\n", info->BandwidthPerPixelPhaseEncode);
     fprintf(stdout, "SeriesNumber                 : %s\n", info->SeriesNumber);
     fprintf(stdout, "ImageComments                : %s\n", info->ImageComments);
     fprintf(stdout, "MatrixSize                   : %s\n", info->MatrixSize);
     fprintf(stdout, "FieldOfView                  : %s\n", info->FieldOfView);
     fprintf(stdout, "GrappaFactor                 : %s\n", info->GrappaFactor);
+    fprintf(stdout, "PhaseEncodingLines           : %s\n", info->PhaseEncodingLines);
+    fprintf(stdout, "DwellTime                    : %.15f\n", info->DwellTime);
     fprintf(stdout, "Rows                         : %d\n", (int)info->Rows);
     fprintf(stdout, "Columns                      : %d\n", (int)info->Columns);
 
@@ -217,7 +225,10 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             }
             break;
         case 0x0019:
-            if (dicomElement->tagElement == 0x1029) {
+            if (dicomElement->tagElement == 0x1028) {
+                const double* bandwidthPerPixelPhaseEncode = (double*)buffer;
+                info->BandwidthPerPixelPhaseEncode = *bandwidthPerPixelPhaseEncode;
+            } else if (dicomElement->tagElement == 0x1029) {
                 const short maxNumberOfSlices = sizeof(info->MosaicRefAcqTimes) / sizeof(double);
                 const short presentNumberOfSlices = length / sizeof(double);
                 const short applicableSlices = fmin(maxNumberOfSlices, presentNumberOfSlices);
@@ -243,38 +254,8 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             break;
         case 0x0029:
             if (dicomElement->tagElement == 0x1020) {
-                // find the siemens extra info awesomeness
-                const char *startToken = "### ASCCONV BEGIN";
-                const char *endToken = "### ASCCONV END";
-                char *seiStart = memmem(&buffer[0], length, startToken, strlen(startToken));
-                if (!seiStart) break;
-
-                char *seiEnd = memmem(&seiStart[0], length-(buffer-seiStart), endToken, strlen(endToken));
-                if (!seiEnd) break;
-
-                // if we got here we've found a proper siemens extra info definition, so let's search for
-                // the info we're interested in, e.g.
-                // sPat.lAccelFactPE                        = 2
-
-                char *grappaFactorToken = "sPat.lAccelFactPE";
-                char *grappaFactorStart = memmem(&seiStart[0], length-(buffer-seiStart), grappaFactorToken, strlen(grappaFactorToken));
-                if (!grappaFactorStart) break;
-
-                // find '='
-                grappaFactorStart = memmem(&grappaFactorStart[0], length-(buffer-grappaFactorStart), "=", strlen("="));
-                if (!grappaFactorStart) break;
-
-                // forward to the number
-                grappaFactorStart += 2;
-
-                // find the end of it
-                char *grappaFactorEnd = memmem(&grappaFactorStart[0], length-(buffer-grappaFactorStart), "\n", strlen("\n"));
-                if (!grappaFactorEnd) break;
-
-                size_t grappaFactorLength = grappaFactorEnd - grappaFactorStart;
-
-                // copy the result
-                strncat(&info->GrappaFactor[0], grappaFactorStart, fmin(grappaFactorLength, sizeof(info->GrappaFactor)-1));
+                rsNiftiReadTagFromSiemensExtraInformationHeader(&info->GrappaFactor[0], &buffer[0], length, "sPat.lAccelFactPE", sizeof(info->GrappaFactor)-1);
+                rsNiftiReadTagFromSiemensExtraInformationHeader(&info->PhaseEncodingLines[0], &buffer[0], length, "sKSpace.lPhaseEncodingLines", sizeof(info->GrappaFactor)-1);
             }
             break;
         case 0x0051:
@@ -285,4 +266,39 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             }
             break;
     }
+}
+
+void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* buffer, const size_t bufferLength, const char* entryTagName, const size_t maxExpectedLength)
+{
+    // find the siemens extra info awesomeness
+    const char *startToken = "### ASCCONV BEGIN";
+    const char *endToken = "### ASCCONV END";
+    const char *seiStart = memmem(&buffer[0], bufferLength, startToken, strlen(startToken));
+    if (!seiStart) return;
+
+    const char *seiEnd = memmem(&seiStart[0], bufferLength-(buffer-seiStart), endToken, strlen(endToken));
+    if (!seiEnd) return;
+
+    // if we got here we've found a proper siemens extra info definition, so let's search for
+    // the info we're interested in, e.g.
+    // entry.tag.name                        = value
+
+    char *entryStart = memmem(&seiStart[0], bufferLength-(buffer-seiStart), entryTagName, strlen(entryTagName));
+    if (!entryStart) return;
+
+    // find '='
+    entryStart = memmem(&entryStart[0], bufferLength-(buffer- entryStart), "=", strlen("="));
+    if (!entryStart) return;
+
+    // forward to the number/value
+    entryStart += 2;
+
+    // find the end of it
+    const char *entryEnd = memmem(&entryStart[0], bufferLength-(buffer- entryStart), "\n", strlen("\n"));
+    if (!entryEnd) return;
+
+    // copy the result
+    const size_t entryLength = entryEnd - entryStart;
+    const size_t resultLength = fmin(entryLength, maxExpectedLength);
+    strncat(&value[0], entryStart, resultLength);
 }

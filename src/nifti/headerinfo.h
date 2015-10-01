@@ -43,6 +43,9 @@ typedef struct {
     unsigned short Rows;                        // (0028,0010)
     unsigned short Columns;                     // (0028,0011)
     char   GrappaFactor[10+1];                  // (0029,1020)/sPat.lAccelFactPE (siemens extended information)
+    char   PhaseEncodingLines[10+1];            // (0029,1020)/sKSpace.lPhaseEncodingLines (siemens extended information)
+    double DwellTime;                           // = 1/(BandwidthPerPixelPhaseEncode * PhaseEncodingLines)
+    double BandwidthPerPixelPhaseEncode;        // (0019,1028)
     double MosaicRefAcqTimes[1024];             // (0019,1029)
 } rsNiftiExtendedHeaderInformation;
 

@@ -212,6 +212,8 @@ BOOL rsInfoPrintInfoForKey(rsNiftiExtendedHeaderInformation* info, const char* k
         fprintf(stdout, "%s", info->InPlanePhaseEncodingDirection);
     } else if ( ! strcmp(k, "patientposition") ) {
         fprintf(stdout, "%s", info->PatientPosition);
+    } else if ( ! strcmp(k, "bandwidthperpixelphaseencode") ) {
+        fprintf(stdout, "%.15f", info->BandwidthPerPixelPhaseEncode);
     } else if ( ! strcmp(k, "seriesnumber") ) {
         fprintf(stdout, "%s", info->SeriesNumber);
     } else if ( ! strcmp(k, "imagecomments") ) {
@@ -222,6 +224,10 @@ BOOL rsInfoPrintInfoForKey(rsNiftiExtendedHeaderInformation* info, const char* k
         fprintf(stdout, "%s", info->FieldOfView);
     } else if ( ! strcmp(k, "grappafactor") ) {
         fprintf(stdout, "%s", info->GrappaFactor);
+    } else if ( ! strcmp(k, "phaseencodinglines") ) {
+        fprintf(stdout, "%s", info->PhaseEncodingLines);
+    } else if ( ! strcmp(k, "dwelltime") ) {
+        fprintf(stdout, "%.15f", info->DwellTime);
     } else if ( ! strcmp(k, "rows") ) {
         fprintf(stdout, "%d", (int)info->Rows);
     } else if ( ! strcmp(k, "columns") ) {

@@ -506,6 +506,18 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
 
     } while (i<size);
 
+    // compute derived fields
+    BOOL hasPhaseEncodingLines           = info->PhaseEncodingLines[0] != '\0';
+    BOOL hasBandwidthPerPixelPhaseEncode = !isnan(info->BandwidthPerPixelPhaseEncode);
+
+    if (hasPhaseEncodingLines && hasBandwidthPerPixelPhaseEncode) {
+        const double phaseEncodingLines = atoi(info->PhaseEncodingLines);
+        const double bandwidthPerPixelPhaseEncode = info->BandwidthPerPixelPhaseEncode;
+        if (phaseEncodingLines > 0.0 && bandwidthPerPixelPhaseEncode > 0.0) {
+            info->DwellTime = 1 / (phaseEncodingLines * bandwidthPerPixelPhaseEncode);
+        }
+    }
+
     // attach header info to nifti
     nifti_add_extension(nifti->fslio->niftiptr, (char*)info, sizeof(rsNiftiExtendedHeaderInformation), NIFTI_ECODE_JIMDIMINFO);
 
