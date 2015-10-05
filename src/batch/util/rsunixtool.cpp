@@ -3,6 +3,8 @@
 #include "rsunix.hpp"
 #include <omp.h>
 #include <nifti1_io.h>
+#include <sys/types.h> 
+#include <sys/wait.h>
 
 namespace rstools {
 namespace batch {

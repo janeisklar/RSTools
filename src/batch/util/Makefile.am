@@ -18,4 +18,4 @@ librsbatchutils_la_SOURCES =  \
  plugin.cpp \
  pluginmanager.cpp
 librsbatchutils_la_LDFLAGS=-shared
-librsbatchutils_la_LIBADD = @LIBOBJS@ ../../utils/librsutils.la
+librsbatchutils_la_LIBADD = @LIBOBJS@ ../../utils/librsutils.la ../../nifti/librsniftiutils.la
