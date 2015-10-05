@@ -268,33 +268,58 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
     }
 }
 
+void *rsFindSubstring(const void *haystack, size_t hlen, const void *needle, size_t nlen)
+{
+    int needle_first;
+    const void *p = haystack;
+    size_t plen = hlen;
+
+    if (!nlen)
+        return NULL;
+
+    needle_first = *(unsigned char *)needle;
+
+    while (plen >= nlen && (p = memchr(p, needle_first, plen - nlen + 1)))
+    {
+        if (!memcmp(p, needle, nlen))
+            return (void *)p;
+
+        p++;
+        plen = hlen - (p - haystack);
+    }
+
+    return NULL;
+}
+
 void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* buffer, const size_t bufferLength, const char* entryTagName, const size_t maxExpectedLength)
 {
     // find the siemens extra info awesomeness
     const char *startToken = "### ASCCONV BEGIN";
     const char *endToken = "### ASCCONV END";
-    const char *seiStart = memmem(&buffer[0], bufferLength, startToken, strlen(startToken));
+    const char *seiStart = rsFindSubstring(&buffer[0], bufferLength, startToken, strlen(startToken));
     if (!seiStart) return;
 
-    const char *seiEnd = memmem(&seiStart[0], bufferLength-(buffer-seiStart), endToken, strlen(endToken));
+    size_t remainingBytes = bufferLength-(seiStart-buffer);
+    const char *seiEnd = rsFindSubstring(&seiStart[0], remainingBytes, endToken, strlen(endToken));
     if (!seiEnd) return;
 
     // if we got here we've found a proper siemens extra info definition, so let's search for
     // the info we're interested in, e.g.
     // entry.tag.name                        = value
 
-    char *entryStart = memmem(&seiStart[0], bufferLength-(buffer-seiStart), entryTagName, strlen(entryTagName));
+    char *entryStart = rsFindSubstring(&seiStart[0], remainingBytes, entryTagName, strlen(entryTagName));
     if (!entryStart) return;
 
     // find '='
-    entryStart = memmem(&entryStart[0], bufferLength-(buffer- entryStart), "=", strlen("="));
+    remainingBytes = bufferLength-(entryStart-buffer);
+    entryStart = rsFindSubstring(&entryStart[0], remainingBytes, "=", strlen("="));
     if (!entryStart) return;
 
     // forward to the number/value
     entryStart += 2;
 
     // find the end of it
-    const char *entryEnd = memmem(&entryStart[0], bufferLength-(buffer- entryStart), "\n", strlen("\n"));
+    const char *entryEnd = rsFindSubstring(&entryStart[0], remainingBytes, "\n", strlen("\n"));
     if (!entryEnd) return;
 
     // copy the result
