@@ -1,3 +1,4 @@
+#include <externals/fslio/fslio.h>
 #include "rsniftiutils.h"
 
 static unsigned int rsThreadsNum = 1;
@@ -1047,14 +1048,48 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
   if (fslio==NULL)  RSIOERR("FslWriteHeader: Null pointer passed for FSLIO");
 
   if (fslio->niftiptr!=NULL) {
+    rsAddCommentToNiftiHeader(fslio->niftiptr, comment);
 
+    fslio->written_hdr = 1;
+    if (znz_isnull(fslio->fileptr)) RSIOERR("FslWriteHeader: no file opened!");
+    /* modify niftiptr for FSL-specific purposes */
+    strcpy(fslio->niftiptr->descrip, RSTOOLS_VERSION_LABEL);
+
+    /* set qform to equal sform if currently unset (or vice versa) */
+    qform_code = FslGetRigidXform(fslio,&qmat);
+    sform_code = FslGetStdXform(fslio,&smat);
+    if ( (sform_code != NIFTI_XFORM_UNKNOWN) &&
+     (qform_code == NIFTI_XFORM_UNKNOWN) ) {
+      FslSetRigidXform(fslio,sform_code,smat);
+    }
+    if ( (qform_code != NIFTI_XFORM_UNKNOWN) &&
+     (sform_code == NIFTI_XFORM_UNKNOWN) ) {
+      FslSetStdXform(fslio,qform_code,qmat);
+    }
+    if (FslIsSingleFileType(FslGetFileType(fslio))) {
+      /* write header info but don't close the file */
+      nifti_image_write_hdr_img2(fslio->niftiptr,2,"wb",fslio->fileptr,NULL);
+      /* set up pointer at end of iname_offset for single files only */
+      FslSeekVolume(fslio,0);
+    } else {
+      /* open a new hdr file, write it and close it */
+      nifti_image_write_hdr_img(fslio->niftiptr,0,"wb");
+    }
+  }
+
+  if (fslio->mincptr!=NULL) {
+    fprintf(stderr,"Warning:: Minc is not yet supported\n");
+  }
+  return;
+}
+
+void rsAddCommentToNiftiHeader(nifti_image *nim, const char* comment)
+{
     char* oldComment = "";
     BOOL commentExistsAlready = FALSE;
     nifti1_extension *ext;
 
     // check extensions
-    nifti_image *nim = fslio->niftiptr;
-
     if( nim->num_ext > 0 && nim->ext_list != NULL ) {
 
         // find extension
@@ -1091,7 +1126,7 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
     const size_t ext_length       = 8; // additional bytes for the extension code(ecode) and esize
     const size_t datalength       = strlen(oldComment)+strlen(version)+strlen(comment)+strlen(date)+1+ext_length;
     const size_t datalength2      = (size_t)ceil((double)datalength / 16.0) * 16;
-    char data[datalength2];
+    char *data                    = (char*)rsMalloc(sizeof(char)*datalength2);
 
     sprintf(&data[0], "%s%s%s%s", oldComment, version, date, comment);
 
@@ -1099,40 +1134,8 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
         ext->edata = data;
         ext->esize = datalength2;
     } else {
-        nifti_add_extension(fslio->niftiptr, &data[0], datalength2, NIFTI_ECODE_COMMENT);
+        nifti_add_extension(nim, &data[0], datalength2, NIFTI_ECODE_COMMENT);
     }
-
-    fslio->written_hdr = 1;
-    if (znz_isnull(fslio->fileptr)) RSIOERR("FslWriteHeader: no file opened!");
-    /* modify niftiptr for FSL-specific purposes */
-    strcpy(fslio->niftiptr->descrip, RSTOOLS_VERSION_LABEL);
-
-    /* set qform to equal sform if currently unset (or vice versa) */
-    qform_code = FslGetRigidXform(fslio,&qmat);
-    sform_code = FslGetStdXform(fslio,&smat);
-    if ( (sform_code != NIFTI_XFORM_UNKNOWN) &&
-     (qform_code == NIFTI_XFORM_UNKNOWN) ) {
-      FslSetRigidXform(fslio,sform_code,smat);
-    }
-    if ( (qform_code != NIFTI_XFORM_UNKNOWN) &&
-     (sform_code == NIFTI_XFORM_UNKNOWN) ) {
-      FslSetStdXform(fslio,qform_code,qmat);
-    }
-    if (FslIsSingleFileType(FslGetFileType(fslio))) {
-      /* write header info but don't close the file */
-      nifti_image_write_hdr_img2(fslio->niftiptr,2,"wb",fslio->fileptr,NULL);
-      /* set up pointer at end of iname_offset for single files only */
-      FslSeekVolume(fslio,0);
-    } else {
-      /* open a new hdr file, write it and close it */
-      nifti_image_write_hdr_img(fslio->niftiptr,0,"wb");
-    }
-  }
-
-  if (fslio->mincptr!=NULL) {
-    fprintf(stderr,"Warning:: Minc is not yet supported\n");
-  }
-  return;
 }
 
 char *rsMergeStringArray(int argc, char * argv[])

@@ -26,7 +26,7 @@ void Unix::fillInJobArguments(RSJob* job, RSJobParser* parser)
     
         // replace
         setCmd(
-            parser->replaceString(getCmd(), key, arg->value)
+            parser->replaceString(getCmd(false), key, arg->value)
         );
         
         free(key);
@@ -69,7 +69,7 @@ void Unix::setCmd(const char* cmd)
     argument->value = rsString(cmd);
 } 
 
-char* Unix::getCmd() {
+char* Unix::getCmd(bool asExecuted) {
     rsArgument* argument = getArgument("command");
     
     if ( argument == NULL ) {
@@ -85,7 +85,7 @@ char* Unix::toXml()
         "        <", this->code, ">\n",
         "            <description>", this->getDescription(), "</description>\n",
         "            <cmd>\n",
-        this->getCmd(),
+        this->getCmd(false),
         "\n",
         "            </cmd>\n",
         "        </", this->code, ">\n",

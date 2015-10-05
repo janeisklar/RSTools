@@ -12,17 +12,22 @@
 
 using namespace std;
 
-bool rsExecuteUnixCommand(const char *cmd)
+bool rsExecuteUnixCommand(const char *cmd, char *tmpDir)
 {
     bool executionSuccessful = false;
-    
-    // create a temporay directory where we store the script and log messages
-    char* tmpDirNameTpl = (char*)malloc(sizeof(char)*255);
-    sprintf(tmpDirNameTpl, "%s", "/tmp/rsbatch.unix.cmd-XXXXXXX");
-    char* tmpDirName = mkdtemp(tmpDirNameTpl);
+    char *tmpDirName;
 
-    if ( tmpDirName == NULL ) {
-        throw runtime_error("Could not create a temporary directory for the execution of a command line script.");
+    if (tmpDir == NULL) {
+        // create a temporay directory where we store the script and log messages
+        char *tmpDirNameTpl = (char *) malloc(sizeof(char) * 255);
+        sprintf(tmpDirNameTpl, "%s", "/tmp/rsbatch.unix.cmd-XXXXXXX");
+        tmpDirName = mkdtemp(tmpDirNameTpl);
+
+        if (tmpDirName == NULL) {
+            throw runtime_error("Could not create a temporary directory for the execution of a command line script.");
+        }
+    } else {
+        tmpDirName = tmpDir;
     }
     
     // place a bash script containing the command to be executed in the directory

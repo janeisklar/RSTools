@@ -1,5 +1,8 @@
 #include <src/nifti/rsniftiutils.h>
 #include <src/nifti/headerinfo.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/fcntl.h>
 #include "rsinfo_common.h"
 #include "utils/rsio.h"
 #include "rsinfo_ui.h"
@@ -129,8 +132,6 @@ void rsInfoRun(rsInfoParameters *p)
             fwrite(dicomExt->edata, sizeof(char), size-8, p->dicom);
         }
     }
-
-    p->parametersValid = TRUE;
 }
 
 void rsInfoDestroy(rsInfoParameters* p)
@@ -144,6 +145,8 @@ void rsInfoDestroy(rsInfoParameters* p)
         fclose(p->dicom);
         p->input = NULL;
     }
+
+    p->parametersValid = TRUE;
 
     rsInfoFreeParams(p);
 }

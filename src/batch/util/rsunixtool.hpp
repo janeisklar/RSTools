@@ -3,6 +3,7 @@
 
 #include "rstool.hpp"
 #include "rsunixtask.hpp"
+#include <vector>
 
 using namespace std;
 
@@ -18,10 +19,26 @@ class RSUnixTool : public RSTool {
         
     protected:
         virtual void _parseParams(int argc, char * argv[]);
+        virtual bool _setupTempDir();
+        virtual bool _prepareRun();
+        virtual bool _prepareStream();
         virtual void _run();
+        virtual void _moveOutputIfNecessary();
+        virtual void _finalizeRun();
+        virtual bool _createStream(const char* path);
         virtual RSUnixTask* getUnixTask();
-        
+
         bool executionSuccessful;
+        char* streamName;
+        char* streamTarget;
+        char* tmpDirPath;
+        char* executionCmd;
+        char* executionCmdPrint;
+
+        nifti_image *inputNifti;
+
+    private:
+        bool _interceptOutput(FILE *stream);
 };
 
 }}} // namespace rstools::batch::util

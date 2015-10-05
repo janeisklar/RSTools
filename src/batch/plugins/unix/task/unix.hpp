@@ -22,7 +22,7 @@ public:
     char* toXml();
     
     void setCmd(const char* cmd);
-    char* getCmd();
+    char* getCmd(bool asExecuted);
     
 protected:
 };

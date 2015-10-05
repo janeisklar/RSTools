@@ -124,6 +124,7 @@ char *rsRightTrimString(char *s);
 char *rsTrimString(char *s);
 char *rsMergeStringArray(int argc, char * argv[]);
 char *rsReadCommentFile(char *path);
+void rsAddCommentToNiftiHeader(nifti_image *nim, const char* comment);
 
 void rsSetThreadsNum(const unsigned int threads);
 unsigned int rsGetThreadsNum();

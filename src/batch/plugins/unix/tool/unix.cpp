@@ -42,7 +42,7 @@ void Unix::printCallString(FILE *stream)
     char **argv = getCallString(&argc);
 
     fprintf(stream, "Tool:\n %s\n\n", getTask()->getName());
-    fprintf(stream, "Cmd:\n%s\n", getUnixTask()->getCmd());
+    fprintf(stream, "Cmd:\n%s\n", getUnixTask()->getCmd(false));
     fprintf(stream, "\n");
 }
 

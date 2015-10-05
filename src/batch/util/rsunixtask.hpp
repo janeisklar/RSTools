@@ -14,8 +14,8 @@ class RSUnixTask: public RSTask {
     public:
         
         RSUnixTask(const char*, const char*);
-        
-        virtual char* getCmd() = 0;
+
+        virtual char* getCmd(bool asExecuted) = 0;
     
     protected:
         
