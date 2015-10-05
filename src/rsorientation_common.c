@@ -477,12 +477,12 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
         // determine the length of the value length field
         size_t valueLength = rsOrientationGetDicomValueLength(currentElement->valueRepresentation);
 
-        uint32_t length = 0;
+        THIS_UINT32 length = 0;
 
         if ( valueLength == 2 ) {
-            length = *((uint16_t*)(&(currentElement->valueRepresentation[0]) + 2));
+            length = *((THIS_UINT16*)(&(currentElement->valueRepresentation[0]) + 2));
         } else {
-            length = *((uint32_t*)(&(currentElement->valueRepresentation[0]) + 4) );
+            length = *((THIS_UINT32*)(&(currentElement->valueRepresentation[0]) + 4) );
         }
 
         // calculate next tag offset
