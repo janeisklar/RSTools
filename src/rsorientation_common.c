@@ -525,11 +525,11 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
     if (headerLength > 0) {
         // add empty data element so AFNI, etc. can later load the dicom file
         struct DicomPixelDataElement{
-            uint16_t tagGroup;
-            uint16_t tagElement;
+            THIS_UINT16 tagGroup;
+            THIS_UINT16 tagElement;
             char valueRepresentation[2];
-            uint16_t filler;
-            uint32_t valueLength;
+            THIS_UINT16 filler;
+            THIS_UINT32 valueLength;
             char value[8];
         };
         struct DicomPixelDataElement pixelDataElement;
@@ -554,11 +554,11 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
         const size_t extensionPadding =  effectiveExtensionLength - extensionLength;
 
         struct LastDicomElement{
-            uint16_t tagGroup;
-            uint16_t tagElement;
+            THIS_UINT16 tagGroup;
+            THIS_UINT16 tagElement;
             char valueRepresentation[2];
-            uint16_t filler;
-            uint32_t valueLength;
+            THIS_UINT16 filler;
+            THIS_UINT32 valueLength;
             char value[extensionPadding];
         };
 
