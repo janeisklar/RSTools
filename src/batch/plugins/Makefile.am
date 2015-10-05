@@ -18,6 +18,7 @@ lib_LTLIBRARIES = \
 	libRSMotionScrubbingPlugin.la \
 	libRSScrubbingPlugin.la \
 	libRSSmoothingPlugin.la \
+	libRSOrientationPlugin.la \
 	libRSRoiPlugin.la \
 	libRSTimecoursePlugin.la \
 	libUnixPlugin.la
@@ -46,6 +47,10 @@ libRSSmoothingPlugin_la_SOURCES = rssmoothing/rssmoothing.cpp rssmoothing/tool/s
 libRSSmoothingPlugin_la_LIBADD  = $(LDADD) ../../librssmoothing.la  @LIBOBJS@
 libRSSmoothingPlugin_la_LDFLAGS = -module -export-dynamic
 
+libRSOrientationPlugin_la_SOURCES = rsorientation/rsorientation.cpp rsorientation/tool/orientation.cpp
+libRSOrientationPlugin_la_LIBADD  = $(LDADD) ../../librsorientation.la  @LIBOBJS@
+libRSOrientationPlugin_la_LDFLAGS = -module -export-dynamic
+
 libRSRoiPlugin_la_SOURCES = rsroi/rsroi.cpp rsroi/tool/roi.cpp
 libRSRoiPlugin_la_LIBADD  = $(LDADD) ../../librsroi.la  @LIBOBJS@
 libRSRoiPlugin_la_LDFLAGS = -module -export-dynamic
@@ -66,6 +71,7 @@ plugins_DATA = \
 	.libs/libRSMotionScrubbingPlugin.so \
 	.libs/libRSScrubbingPlugin.so \
 	.libs/libRSSmoothingPlugin.so \
+	.libs/libRSOrientationPlugin.so \
 	.libs/libRSRoiPlugin.so \
 	.libs/libRSTimecoursePlugin.so \
 	.libs/libUnixPlugin.so
@@ -78,6 +84,7 @@ jobplugins_DATA = \
 	../../../share/jobs/plugins/rsmotionscrubbing.xsdext \
 	../../../share/jobs/plugins/rsscrubbing.xsdext \
 	../../../share/jobs/plugins/rssmoothing.xsdext \
+	../../../share/jobs/plugins/rsorientation.xsdext \
 	../../../share/jobs/plugins/rsroi.xsdext \
 	../../../share/jobs/plugins/rstimecourse.xsdext \
 	../../../share/jobs/plugins/unix.xsdext

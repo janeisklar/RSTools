@@ -128,6 +128,8 @@ nobase_pkginclude_HEADERS =                                   \
 	batch/plugins/rsscrubbing/tool/scrubbing.hpp              \
 	batch/plugins/rssmoothing/rssmoothing.hpp                 \
 	batch/plugins/rssmoothing/tool/smoothing.hpp              \
+	batch/plugins/rsorientation/rsorientation.hpp             \
+	batch/plugins/rsorientation/tool/orientation.hpp          \
 	batch/plugins/rsregression/rsregression.hpp               \
 	batch/plugins/rsregression/tool/regression.hpp            \
 	batch/plugins/rsroi/rsroi.hpp                             \

@@ -1,0 +1,7 @@
+<xs:complexType name="rsorientation">
+    <xs:complexContent>
+        <xs:extension base="rstask">
+            <!-- no further extensions needed for rsorientation -->
+        </xs:extension>
+    </xs:complexContent>
+</xs:complexType>
