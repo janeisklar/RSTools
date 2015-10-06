@@ -7,6 +7,7 @@ rsOrientationParameters *rsOrientationInitParameters() {
     p->outputpath           = NULL;
     p->dicompath            = NULL;
     p->orientation          = NULL;
+    p->phaseencdir          = NULL;
     p->callString           = NULL;
     p->verbose              = FALSE;
     p->input                = NULL;
@@ -22,6 +23,7 @@ void rsOrientationFreeParams(rsOrientationParameters *p) {
     rsFree(p->outputpath);
     rsFree(p->dicompath);
     rsFree(p->orientation);
+    rsFree(p->phaseencdir);
     rsFree(p->input);
     rsFree(p->dicom);
     rsFree(p->output);
@@ -138,6 +140,15 @@ void rsOrientationBuildInterface(rsOrientationParameters *p)
     o->storage             = &p->orientation;
     o->cli_description     = "the desired orientation of the output as a 3 letter-code, such as LPI. The following letters are possible: R(Right-to-left), L(Left-to-right), A(Anterior-to-posterior), P(Posterior-to-anterior, I(Inferior-to-superior), S(Superior-to-inferior)";
     o->cli_arg_description = "<ori-code>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "phaseencdir";
+    o->shorthand           = 'p';
+    o->type                = G_OPTION_ARG_STRING;
+    o->storage             = &p->phaseencdir;
+    o->cli_description     = "the phase encoding direction of the input volume. If specified, the phase encdoing direction will be written to the resulting nifti output with respect to the new orientation and will be available using rsinfo. The expected format is a two letter string such as: y-, x+, etc.";
+    o->cli_arg_description = "<direction>";
     rsUIAddOption(p->interface, o);
 	
     o = rsUINewOption();

@@ -16,6 +16,7 @@ typedef struct {
     char *outputpath;
     char *orientation;
     char *callString;
+    char *phaseencdir;
 
     BOOL verbose;
     BOOL parametersValid;

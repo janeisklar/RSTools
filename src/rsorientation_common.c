@@ -9,11 +9,12 @@ rsOrientationTransformations* rsOrientationDetermineRequiredTransformations(mat4
 const char rsOrientationPrintTransformationsDim(const short dim);
 const char rsOrientationPrintTransformationsSign(const short dim, const rsOrientationTransformations* t);
 void rsOrientationPrintTransformations(FILE *stream, const rsOrientationTransformations* t);
-gsl_matrix* rsOrientationCreateGSLCameraMatrix(const mat44 in);
+gsl_matrix* rsOrientationCreateGSLWorldMatrix(const mat44 in);
 gsl_matrix* rsOrientationApplyTransformations(const rsOrientationTransformations* t, const gsl_matrix* mat, const short xhIn, const short yhIn, const short zhIn);
-mat44 rsOrientationCameraMatrixToMat44(const gsl_matrix* m);
+void rsOrientationApplyTransformationsToDirection(char newDirection[3], const rsOrientationTransformations* t, const char* direction);
+mat44 rsOrientationWorldMatrixToMat44(const gsl_matrix* m);
 Point3D* rsOrientationTransformDataPoint(const rsOrientationTransformations* t, const rsNiftiFile* file, const Point3D* pointIn);
-rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicompath, rsNiftiFile* nifti);
+rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const rsOrientationParameters *p, const rsOrientationTransformations* t);
 
 void rsOrientationInit(rsOrientationParameters *p)
 {
@@ -50,6 +51,7 @@ void rsOrientationInit(rsOrientationParameters *p)
         fprintf(stdout, "Output file: %s\n", p->outputpath);
         fprintf(stdout, "Output orientation: %s\n", p->orientation);
         fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+        fprintf(stdout, "Input phase encoding direction: %s\n", p->phaseencdir);
     }
 	
     p->parametersValid = TRUE;
@@ -69,12 +71,12 @@ void rsOrientationRun(rsOrientationParameters *p)
     if ( ! p->output->readable ) {
         fprintf(stderr, "\nError: The nifti file containing the output (%s) could not be created.\n", p->outputpath);
         return;
-    }
 
+    }
 	// load sform matrix
     nifti_image* inputNifti = p->input->fslio->niftiptr;
-	gsl_matrix* qform = rsOrientationCreateGSLCameraMatrix(inputNifti->qto_xyz);
-	gsl_matrix* sform = rsOrientationCreateGSLCameraMatrix(inputNifti->sto_xyz);
+	gsl_matrix* qform = rsOrientationCreateGSLWorldMatrix(inputNifti->qto_xyz);
+	gsl_matrix* sform = rsOrientationCreateGSLWorldMatrix(inputNifti->sto_xyz);
 	
 	int qform_i, qform_j, qform_k, sform_i, sform_j, sform_k;
 	nifti_mat44_to_orientation(inputNifti->qto_xyz, &qform_i, &qform_j, &qform_k);
@@ -88,14 +90,14 @@ void rsOrientationRun(rsOrientationParameters *p)
 	rsOrientationTransformations* dataTransformations = sform_code!=NIFTI_XFORM_UNKNOWN ? sformTransformations : qformTransformations;
 	
 	if ( p->verbose ) {
-		fprintf(stdout, "\nqform camera matrix:\n");
+		fprintf(stdout, "\nqform world matrix:\n");
 		rs_gsl_matrix_fprintf(stdout, qform, " %+.6f");
 		fprintf(stdout, "x=%s, y=%s, z=%s\n", nifti_orientation_string(qform_i), nifti_orientation_string(qform_j), nifti_orientation_string(qform_k));
 		fprintf(stdout, "New orientation: ");
 		rsOrientationPrintTransformations(stdout, qformTransformations);
 		fprintf(stdout, "\n");
 
-		fprintf(stdout, "\nsform camera matrix:\n");
+		fprintf(stdout, "\nsform world matrix:\n");
 		rs_gsl_matrix_fprintf(stdout, sform, " %+.6f");
 		fprintf(stdout, "x=%s, y=%s, z=%s\n", nifti_orientation_string(sform_i), nifti_orientation_string(sform_j), nifti_orientation_string(sform_k));
 		fprintf(stdout, "New orientation: ");
@@ -118,20 +120,20 @@ void rsOrientationRun(rsOrientationParameters *p)
     p->output->zDim = dimsOut[2];
     FslSetDim(p->output->fslio, p->output->xDim, p->output->yDim, p->output->zDim, p->output->vDim);
 
-    // transform camera matrices
+    // transform world matrices
     gsl_matrix *qform_transformed = rsOrientationApplyTransformations(qformTransformations, qform, p->input->xDim, p->input->yDim, p->input->zDim);
     gsl_matrix *sform_transformed = rsOrientationApplyTransformations(sformTransformations, sform, p->input->xDim, p->input->yDim, p->input->zDim);
 
     if ( p->verbose ) {
-        fprintf(stdout, "\nnew qform camera matrix:\n");
+        fprintf(stdout, "\nnew qform world matrix:\n");
         rs_gsl_matrix_fprintf(stdout, qform_transformed, " %+.6f");
 
-        fprintf(stdout, "\nnew sform camera matrix:\n");
+        fprintf(stdout, "\nnew sform world matrix:\n");
         rs_gsl_matrix_fprintf(stdout, sform_transformed, " %+.6f");
     }
 
-    mat44 qform_mat = rsOrientationCameraMatrixToMat44(qform_transformed);
-    mat44 sform_mat = rsOrientationCameraMatrixToMat44(qform_transformed);
+    mat44 qform_mat = rsOrientationWorldMatrixToMat44(qform_transformed);
+    mat44 sform_mat = rsOrientationWorldMatrixToMat44(qform_transformed);
     FslSetRigidXform(p->output->fslio, qform_code, qform_mat);
     FslSetStdXform(p->output->fslio, sform_code, sform_mat);
     float voxDimsIn[4];
@@ -141,7 +143,8 @@ void rsOrientationRun(rsOrientationParameters *p)
 
     // attach DICOM header information to the nifti
     if (p->dicompath) {
-        rsNiftiExtendedHeaderInformation *info = rsOrientationAttachDICOMInfo(p->dicompath, p->output);
+        rsNiftiExtendedHeaderInformation *info = rsOrientationAttachDICOMInfo(p, dataTransformations);
+
         if (p->verbose) {
             fprintf(stdout, "Attached the following header information to the nifti file:\n");
             rsNiftiPrintExtendedHeaderInformation(info);
@@ -211,7 +214,7 @@ void rsOrientationDestroy(rsOrientationParameters *p)
 
 #pragma mark helper functions: orientation
 
-gsl_matrix* rsOrientationCreateGSLCameraMatrix(const mat44 in)
+gsl_matrix* rsOrientationCreateGSLWorldMatrix(const mat44 in)
 {
 	gsl_matrix* camera = gsl_matrix_calloc(4, 4);
 	
@@ -224,7 +227,7 @@ gsl_matrix* rsOrientationCreateGSLCameraMatrix(const mat44 in)
 	return camera;
 }
 
-mat44 rsOrientationCameraMatrixToMat44(const gsl_matrix* m)
+mat44 rsOrientationWorldMatrixToMat44(const gsl_matrix* m)
 {
     mat44 mat;
     for (unsigned short i=0; i<4; i++) {
@@ -422,6 +425,54 @@ const char rsOrientationPrintTransformationsSign(const short dim, const rsOrient
     }
 }
 
+void rsOrientationApplyTransformationsToDirection(char newDirection[3], const rsOrientationTransformations* t, const char* direction)
+{
+    // direction is expected to be a two letter string of the format y-, x+, etc.
+    if (strlen(direction) != 2) {
+        return;
+    }
+
+    const char dim = tolower(direction[0]);
+    const char dir = direction[1];
+    short sign;
+
+    if (dir == '-') {
+        sign = -1;
+    } else if (dir == '+') {
+        sign = 1;
+    } else {
+        // invalid input
+        return;
+    }
+
+    // validate dimension
+    short ndim;
+    switch (dim) {
+        case 'x':
+            ndim = t->xDim;
+            break;
+        case 'y':
+            ndim = t->yDim;
+            break;
+        case 'z':
+            ndim = t->zDim;
+            break;
+        default:
+            return;
+    }
+
+    // input valid, apply transformation
+    const char dimMap[3] = {'x', 'y', 'z'};
+    const int flipMap[3] = {t->xFlip, t->yFlip, t->zFlip};
+    short flipSign = flipMap[ndim] ? -1 : 1;
+    short newSign = sign * flipSign;
+
+    // save result
+    newDirection[0] = dimMap[ndim];
+    newDirection[1] = newSign > 0 ? '+' : '-';
+    newDirection[2] = '\0';
+}
+
 #pragma mark helper functions: dicom header
 
 size_t rsOrientationGetDicomValueLength(const char valueRepresentation[2])
@@ -443,8 +494,11 @@ size_t rsOrientationGetDicomValueLength(const char valueRepresentation[2])
     return 2;
 }
 
-rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicompath, rsNiftiFile* nifti)
+rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const rsOrientationParameters *p, const rsOrientationTransformations* dataTransformations)
 {
+    const char* dicompath = p->dicompath;
+    const rsNiftiFile* nifti = p->output;
+
     // open dicom
     FILE *f;
     f = fopen(dicompath, "r");
@@ -516,6 +570,10 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const char* dicom
         if (phaseEncodingLines > 0.0 && bandwidthPerPixelPhaseEncode > 0.0) {
             info->DwellTime = 1 / (phaseEncodingLines * bandwidthPerPixelPhaseEncode);
         }
+    }
+
+    if (p->phaseencdir != NULL) {
+        rsOrientationApplyTransformationsToDirection(info->PhaseEncodingDirection, dataTransformations, p->phaseencdir);
     }
 
     // attach header info to nifti

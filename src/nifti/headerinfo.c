@@ -41,6 +41,7 @@ rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
     info->MatrixSize[0]                    = '\0';
     info->FieldOfView[0]                   = '\0';
     info->GrappaFactor[0]                  = '\0';
+    info->PhaseEncodingDirection[0]        = '\0';
     info->BandwidthPerPixelPhaseEncode     = log(-1);
     info->DwellTime                        = log(-1);
     info->Rows                             = log(-1);
@@ -89,6 +90,7 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
     fprintf(stdout, "FieldOfView                  : %s\n", info->FieldOfView);
     fprintf(stdout, "GrappaFactor                 : %s\n", info->GrappaFactor);
     fprintf(stdout, "PhaseEncodingLines           : %s\n", info->PhaseEncodingLines);
+    fprintf(stdout, "PhaseEncodingDirection       : %s\n", info->PhaseEncodingDirection);
     fprintf(stdout, "DwellTime                    : %.15f\n", info->DwellTime);
     fprintf(stdout, "Rows                         : %d\n", (int)info->Rows);
     fprintf(stdout, "Columns                      : %d\n", (int)info->Columns);
