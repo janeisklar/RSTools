@@ -59,6 +59,7 @@ typedef struct {
 rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation();
 void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info);
 void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info, const rsDicomElement* dicomElement, char* buffer, size_t length);
+rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_image *nim);
 
 #ifdef __cplusplus
 }

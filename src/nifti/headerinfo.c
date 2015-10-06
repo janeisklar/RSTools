@@ -302,3 +302,21 @@ void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* bu
     const size_t resultLength = fmin(entryLength, maxExpectedLength);
     strncat(&value[0], entryStart, resultLength);
 }
+
+rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_image *nim)
+{
+    if( nim->num_ext <= 0 || nim->ext_list == NULL ){
+        return NULL;
+    }
+
+    nifti1_extension *ext = nim->ext_list;
+
+    for ( int c = 0; c < nim->num_ext; c++ ){
+        if ( ext->ecode == NIFTI_ECODE_JIMDIMINFO && ext->edata != NULL ) {
+            return (rsNiftiExtendedHeaderInformation *) ext->edata;
+        }
+        ext++;
+    }
+
+    return NULL;
+}
