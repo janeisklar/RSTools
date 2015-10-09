@@ -129,7 +129,7 @@ void rsOrientationBuildInterface(rsOrientationParameters *p)
     o->shorthand           = 'd';
     o->type                = G_OPTION_ARG_FILENAME;
     o->storage             = &p->dicompath;
-    o->cli_description     = "the DICOM file from which the header information will be taken";
+    o->cli_description     = "Either the path to a DICOM file from which the header information will be taken or a path to a directory that contains DICOM files. In the latter case the DICOM scan sequence with the most DICOM files is automatically detected and one DICOM in the middle selected for copying the header. The first DICOM file in a sequence is always omitted as it contains some wrong information (such as the slice acquisition times).";
     o->cli_arg_description = "<dicom>";
     rsUIAddOption(p->interface, o);
 

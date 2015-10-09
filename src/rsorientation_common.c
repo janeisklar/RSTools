@@ -1,4 +1,5 @@
 #include <src/nifti/headerinfo.h>
+#include <src/nifti/dicomfinder.h>
 #include "nifti/rsniftiutils.h"
 #include "nifti/headerinfo.h"
 #include "rsorientation_common.h"
@@ -73,6 +74,7 @@ void rsOrientationRun(rsOrientationParameters *p)
         return;
 
     }
+
 	// load sform matrix
     nifti_image* inputNifti = p->input->fslio->niftiptr;
 	gsl_matrix* qform = rsOrientationCreateGSLWorldMatrix(inputNifti->qto_xyz);
@@ -88,7 +90,19 @@ void rsOrientationRun(rsOrientationParameters *p)
 	rsOrientationTransformations* qformTransformations = rsOrientationDetermineRequiredTransformations(inputNifti->qto_xyz, p->orientation);
 	rsOrientationTransformations* sformTransformations = rsOrientationDetermineRequiredTransformations(inputNifti->sto_xyz, p->orientation);
 	rsOrientationTransformations* dataTransformations = sform_code!=NIFTI_XFORM_UNKNOWN ? sformTransformations : qformTransformations;
-	
+
+    // attach DICOM header information to the nifti
+    if (p->dicompath) {
+        rsNiftiExtendedHeaderInformation *info = rsOrientationAttachDICOMInfo(p, dataTransformations);
+
+        if (info == NULL) {
+            fprintf(stderr, "Failed to attach additional DICOM header information\n");
+        } else if (p->verbose) {
+            fprintf(stdout, "Attached the following header information to the nifti file:\n");
+            rsNiftiPrintExtendedHeaderInformation(info);
+        }
+    }
+
 	if ( p->verbose ) {
 		fprintf(stdout, "\nqform world matrix:\n");
 		rs_gsl_matrix_fprintf(stdout, qform, " %+.6f");
@@ -140,16 +154,6 @@ void rsOrientationRun(rsOrientationParameters *p)
     FslGetVoxDim(p->input->fslio,  &voxDimsIn[0], &voxDimsIn[1], &voxDimsIn[2], &voxDimsIn[3]);
     float voxDimsOut[4] = {voxDimsIn[dataTransformations->xDim], voxDimsIn[dataTransformations->yDim], voxDimsIn[dataTransformations->zDim], voxDimsIn[3]};
     FslSetVoxDim(p->output->fslio, voxDimsOut[0], voxDimsOut[1], voxDimsOut[2], voxDimsOut[3]);
-
-    // attach DICOM header information to the nifti
-    if (p->dicompath) {
-        rsNiftiExtendedHeaderInformation *info = rsOrientationAttachDICOMInfo(p, dataTransformations);
-
-        if (p->verbose) {
-            fprintf(stdout, "Attached the following header information to the nifti file:\n");
-            rsNiftiPrintExtendedHeaderInformation(info);
-        }
-    }
 
     // write nifti header
 	rsWriteNiftiHeader(p->output->fslio, p->callString);
@@ -475,29 +479,18 @@ void rsOrientationApplyTransformationsToDirection(char newDirection[3], const rs
 
 #pragma mark helper functions: dicom header
 
-size_t rsOrientationGetDicomValueLength(const char valueRepresentation[2])
-{
-    const char longValueRepresentaions[][2] = {
-        "OB", "OW", "OF", "SQ", "UT", "UN"
-    };
-
-    size_t length = 6;
-
-    for ( size_t i=0; i<length; i++ ) {
-        const char* currentRepresentation = longValueRepresentaions[i];
-
-        if ( currentRepresentation[0] == valueRepresentation[0] && currentRepresentation[1] == valueRepresentation[1] ) {
-            return 4;
-        }
-    }
-
-    return 2;
-}
-
 rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const rsOrientationParameters *p, const rsOrientationTransformations* dataTransformations)
 {
-    const char* dicompath = p->dicompath;
+    char* dicompath = rsDicomFinderFindReliableDicomInPath(p->dicompath);
     const rsNiftiFile* nifti = p->output;
+
+    if (dicompath == NULL) {
+        return NULL;
+    }
+
+    if (p->verbose) {
+        fprintf(stdout, "DICOM file used for reading out header information: %s\n", dicompath);
+    }
 
     // open dicom
     FILE *f;
@@ -529,7 +522,7 @@ rsNiftiExtendedHeaderInformation* rsOrientationAttachDICOMInfo(const rsOrientati
         const rsDicomElement* currentElement = (rsDicomElement*)&buffer[i];
 
         // determine the length of the value length field
-        size_t valueLength = rsOrientationGetDicomValueLength(currentElement->valueRepresentation);
+        size_t valueLength = rsNiftiGetDicomValueLength(currentElement->valueRepresentation);
 
         THIS_UINT32 length = 0;
 

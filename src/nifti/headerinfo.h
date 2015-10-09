@@ -61,6 +61,7 @@ rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation();
 void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info);
 void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info, const rsDicomElement* dicomElement, char* buffer, size_t length);
 rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_image *nim);
+size_t rsNiftiGetDicomValueLength(const char *const valueRepresentation);
 
 #ifdef __cplusplus
 }

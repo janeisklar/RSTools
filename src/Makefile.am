@@ -164,6 +164,7 @@ nobase_pkginclude_HEADERS =                                   \
 	maths/utils.h                                             \
 	nifti/rsniftiutils.h                                      \
 	nifti/headerinfo.h                                        \
+	nifti/dicomfinder.h                                       \
 	utils/rsio.h                                              \
 	utils/rsmemory.h                                          \
 	utils/rsstring.h                                          \

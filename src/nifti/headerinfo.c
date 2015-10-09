@@ -98,9 +98,6 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
     short nSlicesTimes = 0;
     for (nSlicesTimes=0; (nSlicesTimes<sizeof(info->MosaicRefAcqTimes)/sizeof(double) && !isnan(info->MosaicRefAcqTimes[nSlicesTimes])); nSlicesTimes++);;
     fprintf(stdout, "MosaicRefAcqTimes            : [%d values]\n", (int)nSlicesTimes);
-    for (short i=0; i<nSlicesTimes; i++) {
-        fprintf(stdout, "    %.1f\n", info->MosaicRefAcqTimes[i]);
-    }
 }
 
 void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info, const rsDicomElement* dicomElement, char* buffer, size_t length) {
@@ -346,4 +343,23 @@ rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_ima
     }
 
     return NULL;
+}
+
+size_t rsNiftiGetDicomValueLength(const char *const valueRepresentation)
+{
+    const char longValueRepresentaions[][2] = {
+            "OB", "OW", "OF", "SQ", "UT", "UN"
+    };
+
+    size_t length = 6;
+
+    for ( size_t i=0; i<length; i++ ) {
+        const char* currentRepresentation = longValueRepresentaions[i];
+
+        if ( currentRepresentation[0] == valueRepresentation[0] && currentRepresentation[1] == valueRepresentation[1] ) {
+            return 4;
+        }
+    }
+
+    return 2;
 }
