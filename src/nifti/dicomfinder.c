@@ -169,7 +169,8 @@ char *rsDicomFinderFindReliableDicomInPath(const char *path) {
 BOOL rsDicomFinderIsDirectory(const char *path)
 {
     struct stat s;
-    return stat(path, &s) == 0 && (s.st_mode & S_IFDIR);
+    return stat(path, &s) == 0 && S_ISDIR(s.st_mode) ;
+    //return stat(path, &s) == 0 && (s.st_mode & S_IFDIR);
 }
 
 char **rsListDicomsInDirectory(const char *path, size_t *nFiles)
@@ -194,7 +195,7 @@ char **rsListDicomsInDirectory(const char *path, size_t *nFiles)
         if (ent->d_name[0] == '.') continue;
 
         // test if dicom
-        char *fullpath = rsStringConcat(dirpath, "/", ent->d_name);
+        char *fullpath = rsStringConcat(dirpath, "/", ent->d_name, NULL);
         if (rsIsDicomFile(fullpath)) {
             *nFiles = *nFiles + 1L;
         }
