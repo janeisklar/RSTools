@@ -67,7 +67,7 @@ void rsOrientationRun(rsOrientationParameters *p)
 	FslGetVoxDim(p->input->fslio, &xSpacing, &ySpacing, &zSpacing, &tr);
 
     // create output file
-    p->output = rsCloneNiftiFile(p->outputpath, p->input, RSNIFTI_OPEN_ALLOC, p->input->vDim);
+    p->output = rsCloneNiftiFile(p->outputpath, p->input, RSNIFTI_OPEN_ALLOC, 0);
 
     if ( ! p->output->readable ) {
         fprintf(stderr, "\nError: The nifti file containing the output (%s) could not be created.\n", p->outputpath);
@@ -122,12 +122,6 @@ void rsOrientationRun(rsOrientationParameters *p)
     // prepare output file
     short dimsIn[3]  = {p->input->xDim, p->input->yDim, p->input->zDim};
     short dimsOut[3] = {dimsIn[dataTransformations->xDim], dimsIn[dataTransformations->yDim], dimsIn[dataTransformations->zDim]};
-    p->output = rsCloneNiftiFile(p->outputpath, p->input, RSNIFTI_OPEN_ALLOC, 0);
-
-    if ( ! p->output->readable ) {
-        fprintf(stderr, "\nError: The nifti file containing the output (%s) could not be created.\n", p->outputpath);
-        return;
-    }
 
     p->output->xDim = dimsOut[0];
     p->output->yDim = dimsOut[1];
