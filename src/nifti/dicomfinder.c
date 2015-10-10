@@ -257,12 +257,12 @@ void rsReadBasicDicomInfo(const char *path, BasicDICOMInfo* info)
 
     // determine size
     fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
+    long size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
     // read into buffer
     char* buffer = (char*)malloc(size * sizeof(char));
-    fread(buffer, sizeof(char), size, f);
+    fread(buffer, sizeof(char), (size_t)size, f);
 
     // close dicom
     fclose(f);
@@ -272,7 +272,6 @@ void rsReadBasicDicomInfo(const char *path, BasicDICOMInfo* info)
     size_t offsetData     = lengthPreamble + lengthPrefix;
 
     size_t i=offsetData;
-    size_t headerLength = 0;
 
     // walk through dicom tags
     do {
@@ -308,33 +307,19 @@ void rsReadBasicDicomInfo(const char *path, BasicDICOMInfo* info)
         switch (currentElement->tagGroup) {
             case 0x0010:
                 if (currentElement->tagElement == 0x0020 && lengthV < sizeof(info->patientId)) {
-                    char *buf = (char*)rsMalloc(sizeof(info->patientId)*sizeof(char));
-                    buf[0] = '\0';
-                    strncat(buf, valueBuffer, lengthV);
-                    sprintf(info->patientId, "%s", rsTrimString(buf));
-                    rsFree(buf);
+                    rsNiftiCopyTrimmedValue(&info->patientId[0], valueBuffer, lengthV);
                 }
                 break;
             case 0x0020:
                 if (currentElement->tagElement == 0x0010 && lengthV < sizeof(info->studyId)) {
-                    char *buf = (char*)rsMalloc(sizeof(info->studyId)*sizeof(char));
-                    buf[0] = '\0';
-                    strncat(buf, valueBuffer, lengthV);
-                    sprintf(&info->studyId[0], "%s", rsTrimString(buf));
-                    rsFree(buf);
+                    rsNiftiCopyTrimmedValue(&info->studyId[0], valueBuffer, lengthV);
                 } else if  (currentElement->tagElement == 0x0011 && lengthV < sizeof(info->seriesNumber)) {
-                    char *buf = (char*)rsMalloc(sizeof(info->seriesNumber)*sizeof(char));
-                    buf[0] = '\0';
-                    strncat(buf, valueBuffer, lengthV);
-                    sprintf(&info->seriesNumber[0], "%s", rsTrimString(buf));
-                    rsFree(buf);
+                    rsNiftiCopyTrimmedValue(&info->seriesNumber[0], valueBuffer, lengthV);
                 } else if  (currentElement->tagElement == 0x0013 && lengthV < sizeof(info->instanceNumber)) {
-                    char *buf = (char*)rsMalloc(sizeof(info->instanceNumber)*sizeof(char));
-                    buf[0] = '\0';
-                    strncat(buf, valueBuffer, lengthV);
-                    sprintf(&info->instanceNumber[0], "%s", rsTrimString(buf));
-                    rsFree(buf);
+                    rsNiftiCopyTrimmedValue(&info->instanceNumber[0], valueBuffer, lengthV);
                 }
+                break;
+            default:
                 break;
         }
 

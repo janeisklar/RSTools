@@ -2,7 +2,6 @@
 #include "headerinfo.h"
 
 void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* buffer, const size_t bufferLength, const char* entryTagName, const size_t maxExpectedLength);
-void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length);
 
 rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
 {
@@ -45,8 +44,8 @@ rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
     info->PhaseEncodingDirection[0]        = '\0';
     info->BandwidthPerPixelPhaseEncode     = log(-1);
     info->DwellTime                        = log(-1);
-    info->Rows                             = log(-1);
-    info->Columns                          = log(-1);
+    info->Rows                             = 0;
+    info->Columns                          = 0;
 
     // initialize slice acquisition times with NaN
     for (short i=0; i<sizeof(info->MosaicRefAcqTimes)/sizeof(double); i++) {
@@ -103,9 +102,14 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
 
 void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length)
 {
+    // copy raw value into a buffer
     char *buf = (char*)rsMalloc(sizeof(length+1)*sizeof(char));
-    buf[0] = '\0';
-    strncat(buf, buffer, length);
+    memcpy(buf, buffer, length);
+
+    // null-terminate it
+    buf[length] = '\0';
+
+    // copy trimmed value to destination
     sprintf(dest, "%s", rsTrimString(buf));
     rsFree(buf);
 }
@@ -147,6 +151,8 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
                     if (length < sizeof(info->ManufacturerModelName))
                         rsNiftiCopyTrimmedValue(&info->ManufacturerModelName[0], buffer, length);
                     break;
+                default:
+                    break;
             }
             break;
         case 0x0010:
@@ -174,6 +180,8 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
                 case 0x1030:
                     if (length < sizeof(info->PatientWeight))
                         rsNiftiCopyTrimmedValue(&info->PatientWeight[0], buffer, length);
+                    break;
+                default:
                     break;
             }
             break;
@@ -231,6 +239,8 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
                     if (length < sizeof(info->PatientPosition))
                         rsNiftiCopyTrimmedValue(&info->PatientPosition[0], buffer, length);
                     break;
+                default:
+                    break;
             }
             break;
         case 0x0019:
@@ -251,7 +261,7 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             if (dicomElement->tagElement == 0x0011 && length < sizeof(info->SeriesNumber)) {
                 rsNiftiCopyTrimmedValue(&info->SeriesNumber[0], buffer, length);
             } else if (dicomElement->tagElement == 0x4000) {
-                rsNiftiCopyTrimmedValue(&info->ImageComments[0], buffer, fmin(length, sizeof(info->ImageComments)-1)); // truncate
+                rsNiftiCopyTrimmedValue(&info->ImageComments[0], buffer, (size_t)fmin(length, sizeof(info->ImageComments)-1)); // truncate
             }
             break;
         case 0x0028:
@@ -273,6 +283,8 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             } else if (dicomElement->tagElement == 0x100c && length < sizeof(info->FieldOfView)) {
                 rsNiftiCopyTrimmedValue(&info->FieldOfView[0], buffer, length);
             }
+            break;
+        default:
             break;
     }
 }
@@ -333,7 +345,7 @@ void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* bu
 
     // copy the result
     const size_t entryLength = entryEnd - entryStart;
-    const size_t resultLength = fmin(entryLength, maxExpectedLength);
+    const size_t resultLength = (size_t)fmin(entryLength, maxExpectedLength);
     rsNiftiCopyTrimmedValue(&value[0], entryStart, resultLength);
 }
 
