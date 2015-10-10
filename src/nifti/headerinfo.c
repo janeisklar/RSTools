@@ -103,7 +103,7 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
 void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length)
 {
     // copy raw value into a buffer
-    char *buf = (char*)rsMalloc(sizeof(length+1)*sizeof(char));
+    char *buf = (char*)rsMalloc((length+1)*sizeof(char));
     memcpy(buf, buffer, length);
 
     // null-terminate it
@@ -111,6 +111,7 @@ void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length)
 
     // copy trimmed value to destination
     sprintf(dest, "%s", rsTrimString(buf));
+
     rsFree(buf);
 }
 
