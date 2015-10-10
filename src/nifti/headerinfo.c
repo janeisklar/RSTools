@@ -2,6 +2,7 @@
 #include "headerinfo.h"
 
 void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* buffer, const size_t bufferLength, const char* entryTagName, const size_t maxExpectedLength);
+void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length);
 
 rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
 {
@@ -100,42 +101,51 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
     fprintf(stdout, "MosaicRefAcqTimes            : [%d values]\n", (int)nSlicesTimes);
 }
 
+void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length)
+{
+    char *buf = (char*)rsMalloc(sizeof(length+1)*sizeof(char));
+    buf[0] = '\0';
+    strncat(buf, buffer, length);
+    sprintf(dest, "%s", rsTrimString(buf));
+    rsFree(buf);
+}
+
 void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info, const rsDicomElement* dicomElement, char* buffer, size_t length) {
     switch (dicomElement->tagGroup) {
         case 0x0002:
             if (dicomElement->tagElement == 0x0013 && length < sizeof(info->ImplementationVersionName)) {
-                strncat(&info->ImplementationVersionName[0], buffer, length);
+                rsNiftiCopyTrimmedValue(&info->ImplementationVersionName[0], buffer, length);
             }
             break;
         case 0x0008:
             switch (dicomElement->tagElement) {
                 case 0x0022:
                     if (length < sizeof(info->AcquisitionDate))
-                        strncat(&info->AcquisitionDate[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->AcquisitionDate[0], buffer, length);
                     break;
                 case 0x0080:
                     if (length < sizeof(info->InstitutionName))
-                        strncat(&info->InstitutionName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->InstitutionName[0], buffer, length);
                     break;
                 case 0x0081:
                     if (length < sizeof(info->InstitutionAddress))
-                        strncat(&info->InstitutionAddress[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->InstitutionAddress[0], buffer, length);
                     break;
                 case 0x1030:
                     if (length < sizeof(info->StudyDescription))
-                        strncat(&info->StudyDescription[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->StudyDescription[0], buffer, length);
                     break;
                 case 0x103e:
                     if (length < sizeof(info->SeriesDescription))
-                        strncat(&info->SeriesDescription[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->SeriesDescription[0], buffer, length);
                     break;
                 case 0x1070:
                     if (length < sizeof(info->OperatorsName))
-                        strncat(&info->OperatorsName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->OperatorsName[0], buffer, length);
                     break;
                 case 0x1090:
                     if (length < sizeof(info->ManufacturerModelName))
-                        strncat(&info->ManufacturerModelName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->ManufacturerModelName[0], buffer, length);
                     break;
             }
             break;
@@ -143,27 +153,27 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             switch (dicomElement->tagElement) {
                 case 0x0010:
                     if (length < sizeof(info->PatientName))
-                        strncat(&info->PatientName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientName[0], buffer, length);
                     break;
                 case 0x0020:
                     if (length < sizeof(info->PatientID))
-                        strncat(&info->PatientID[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientID[0], buffer, length);
                     break;
                 case 0x0030:
                     if (length < sizeof(info->PatientBirthDate))
-                        strncat(&info->PatientBirthDate[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientBirthDate[0], buffer, length);
                     break;
                 case 0x0040:
                     if (length < sizeof(info->PatientSex))
-                        strncat(&info->PatientSex[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientSex[0], buffer, length);
                     break;
                 case 0x1010:
                     if (length < sizeof(info->PatientAge))
-                        strncat(&info->PatientAge[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientAge[0], buffer, length);
                     break;
                 case 0x1030:
                     if (length < sizeof(info->PatientWeight))
-                        strncat(&info->PatientWeight[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientWeight[0], buffer, length);
                     break;
             }
             break;
@@ -171,55 +181,55 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             switch (dicomElement->tagElement) {
                 case 0x0024:
                     if (length < sizeof(info->SequenceName))
-                        strncat(&info->SequenceName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->SequenceName[0], buffer, length);
                     break;
                 case 0x0050:
                     if (length < sizeof(info->SliceThickness))
-                        strncat(&info->SliceThickness[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->SliceThickness[0], buffer, length);
                     break;
                 case 0x0080:
                     if (length < sizeof(info->RepetitionTime))
-                        strncat(&info->RepetitionTime[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->RepetitionTime[0], buffer, length);
                     break;
                 case 0x0081:
                     if (length < sizeof(info->EchoTime))
-                        strncat(&info->EchoTime[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->EchoTime[0], buffer, length);
                     break;
                 case 0x0087:
                     if (length < sizeof(info->MagneticFieldStrength))
-                        strncat(&info->MagneticFieldStrength[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->MagneticFieldStrength[0], buffer, length);
                     break;
                 case 0x0088:
                     if (length < sizeof(info->SpacingBetweenSlices))
-                        strncat(&info->SpacingBetweenSlices[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->SpacingBetweenSlices[0], buffer, length);
                     break;
                 case 0x0089:
                     if (length < sizeof(info->NumberOfPhaseEncodingSteps))
-                        strncat(&info->NumberOfPhaseEncodingSteps[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->NumberOfPhaseEncodingSteps[0], buffer, length);
                     break;
                 case 0x0095:
                     if (length < sizeof(info->PixelBandwidth))
-                        strncat(&info->PixelBandwidth[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PixelBandwidth[0], buffer, length);
                     break;
                 case 0x1020:
                     if (length < sizeof(info->SoftwareVersions))
-                        strncat(&info->SoftwareVersions[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->SoftwareVersions[0], buffer, length);
                     break;
                 case 0x1030:
                     if (length < sizeof(info->ProtocolName))
-                        strncat(&info->ProtocolName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->ProtocolName[0], buffer, length);
                     break;
                 case 0x1251:
                     if (length < sizeof(info->TransmitCoilName))
-                        strncat(&info->TransmitCoilName[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->TransmitCoilName[0], buffer, length);
                     break;
                 case 0x1312:
                     if (length < sizeof(info->InPlanePhaseEncodingDirection))
-                        strncat(&info->InPlanePhaseEncodingDirection[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->InPlanePhaseEncodingDirection[0], buffer, length);
                     break;
                 case 0x5100:
                     if (length < sizeof(info->PatientPosition))
-                        strncat(&info->PatientPosition[0], buffer, length);
+                        rsNiftiCopyTrimmedValue(&info->PatientPosition[0], buffer, length);
                     break;
             }
             break;
@@ -239,9 +249,9 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             break;
         case 0x0020:
             if (dicomElement->tagElement == 0x0011 && length < sizeof(info->SeriesNumber)) {
-                strncat(&info->SeriesNumber[0], buffer, length);
+                rsNiftiCopyTrimmedValue(&info->SeriesNumber[0], buffer, length);
             } else if (dicomElement->tagElement == 0x4000) {
-                strncat(&info->ImageComments[0], buffer, fmin(length, sizeof(info->ImageComments)-1)); // truncate
+                rsNiftiCopyTrimmedValue(&info->ImageComments[0], buffer, fmin(length, sizeof(info->ImageComments)-1)); // truncate
             }
             break;
         case 0x0028:
@@ -259,9 +269,9 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
             break;
         case 0x0051:
             if (dicomElement->tagElement == 0x100b && length < sizeof(info->MatrixSize)) {
-                strncat(&info->MatrixSize[0], buffer, length);
+                rsNiftiCopyTrimmedValue(&info->MatrixSize[0], buffer, length);
             } else if (dicomElement->tagElement == 0x100c && length < sizeof(info->FieldOfView)) {
-                strncat(&info->FieldOfView[0], buffer, length);
+                rsNiftiCopyTrimmedValue(&info->FieldOfView[0], buffer, length);
             }
             break;
     }
@@ -324,7 +334,7 @@ void rsNiftiReadTagFromSiemensExtraInformationHeader(char* value, const char* bu
     // copy the result
     const size_t entryLength = entryEnd - entryStart;
     const size_t resultLength = fmin(entryLength, maxExpectedLength);
-    strncat(&value[0], entryStart, resultLength);
+    rsNiftiCopyTrimmedValue(&value[0], entryStart, resultLength);
 }
 
 rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_image *nim)
