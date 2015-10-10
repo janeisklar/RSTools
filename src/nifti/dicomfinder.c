@@ -214,7 +214,7 @@ char **rsListDicomsInDirectory(const char *path, size_t *nFiles)
         if (ent->d_name[0] == '.') continue;
 
         // test if dicom
-        char *fullpath = rsStringConcat(dirpath, "/", ent->d_name);
+        char *fullpath = rsStringConcat(dirpath, "/", ent->d_name, NULL);
         if (rsIsDicomFile(fullpath)) {
             files[i] = (char*)rsMalloc(sizeof(char)*(strlen(fullpath)+1L));
             sprintf(files[i], "%s", fullpath);
