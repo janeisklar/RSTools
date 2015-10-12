@@ -212,6 +212,8 @@ bool RSUnixTool::_setupTempDir()
         return false;
     }
 
+    getUnixTask()->setTempDirectoryPath(rsString(tmpDirPath));
+
     return true;
 }
 
