@@ -70,8 +70,8 @@ rsBandpassParameters *rsBandpassParseParams(int argc, char * argv[])
         return p;
     }
     
-    if ( p->freqLow < 0 || p->freqHigh < 0 || p->TR < 0 ) {
-        fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2, --TR)!\n");
+    if ( p->freqLow < 0 || p->freqHigh < 0 ) {
+        fprintf(stderr, "Bandpass frequencies and the sampling rate have to be specified!(--f1, --f2)!\n");
         return p;
     }
     

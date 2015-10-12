@@ -1,3 +1,6 @@
+#include <nifti/headerinfo.h>
+#include <nifti/rsniftiutils.h>
+#include <externals/fslio/fslio.h>
 #include "rsbandpass_common.h"
 #include "rsbandpass_ui.h"
 #include "utils/rsio.h"
@@ -32,7 +35,6 @@ void rsBandpassInit(rsBandpassParameters *p)
         fprintf(stdout, "Filtered file: %s\n", p->saveFilteredPath);
         fprintf(stdout, "lower freq.: %.4f\n", p->freqLow);
         fprintf(stdout, "upper freq.: %.4f\n", p->freqHigh);
-        fprintf(stdout, "TR: %.4f\n", p->TR);
     }
 
     rsFFTSetEngine(RSFFTFILTER_ENGINE_GSL);
@@ -46,8 +48,20 @@ void rsBandpassInit(rsBandpassParameters *p)
         fprintf(stderr, "\nError: The nifti file that was supplied as an input (%s) could not be read.\n", p->inputpath);
         return;
     }
+
+    rsNiftiExtendedHeaderInformation *headerInformation = rsNiftiFindExtendedHeaderInformation(p->input->fslio->niftiptr);
+
+    if (headerInformation != NULL && p->TR <= 0.0 && strlen(headerInformation->RepetitionTime) > 0) {
+        p->TR = atof(headerInformation->RepetitionTime) / 1000.0;
+    }
+
+    if (p->TR <= 0) {
+        fprintf(stderr, "\nThe repetition time (--TR, -r) could neither be read from the nifti header nor was it specified!\n");
+        return;
+    }
        
     if ( p->verbose ) {
+        fprintf(stdout, "TR: %.4f\n", p->TR);
         fprintf(stdout, "Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
 
