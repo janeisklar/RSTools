@@ -26,8 +26,8 @@ class RSUnixTask: public RSTask {
         virtual void setTempDirectoryPath(char *path);
 
     protected:
-        rsNiftiExtendedHeaderInformation* inputNiftiHeaderInformation = NULL;
-        char *tempDirectoryPath = NULL;
+        rsNiftiExtendedHeaderInformation* inputNiftiHeaderInformation;
+        char *tempDirectoryPath;
 };
 
 }}} // namespace rstools::batch::util
