@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([RSTools], [0.9.5], [andre.hoffmann@meduniwien.ac.at])
+AC_INIT([RSTools], [1.0.1], [andre.hoffmann@meduniwien.ac.at])
 
 ACLOCAL_AMFLAGS=-I m4
 AC_CONFIG_MACRO_DIR([m4])
