@@ -128,12 +128,13 @@ void rsAddCommentToNiftiHeader(nifti_image *nim, const char* comment);
 
 void rsSetThreadsNum(const unsigned int threads);
 unsigned int rsGetThreadsNum();
-    
+
 rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode);
 rsNiftiFile *rsInitNiftiFile(void);
 void         rsFreeNiftiFile(rsNiftiFile* f);
 void         rsCloseNiftiFileAndFree(rsNiftiFile* f);
 rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsigned int mode, const int vDim);
+rsNiftiFile *rsCloneNiftiFileWithNewDimensions(const char* path, const rsNiftiFile* f, const unsigned int mode, const int xDim, const int yDim, const int zDim, const int vDim);
 void        rsCloseNiftiFile(rsNiftiFile* f, BOOL keepData);
 void        rsWriteNiftiHeader(FSLIO *fslio, char* description);
 

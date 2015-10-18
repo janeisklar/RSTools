@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
-AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
+AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
+AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
 
 rslibraries=../../utils/librsutils.a ../../librstools.a ../../maths/librsmathutils.a ../../nifti/librsniftiutils.a
 

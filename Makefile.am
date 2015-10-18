@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
-AM_CFLAGS = -DDATA_PATH=\"$(datadir)\"
-AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\"
+AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\"
+AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\"
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 EXTRA_DIST = autogen.sh
 

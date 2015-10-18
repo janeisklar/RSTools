@@ -1,5 +1,5 @@
-#ifndef rstools_scrubbing_common_h
-#define rstools_scrubbing_common_h
+#ifndef rstools_orientation_common_h
+#define rstools_orientation_common_h
 
 #include "rsorientation_ui.h"
 

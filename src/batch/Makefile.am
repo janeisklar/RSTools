@@ -1,8 +1,8 @@
 SUBDIRS = util plugins .
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -I$(top_srcdir)/src
-AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -I$(top_srcdir)/src
+AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
+AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
 
 rslibraries=                     \
 	../utils/librsutils.la       \

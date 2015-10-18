@@ -1266,6 +1266,11 @@ rsNiftiFile *rsOpenNiftiFile(const char* path, const unsigned int mode)
 
 rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsigned int mode, const int vDim)
 {
+    return rsCloneNiftiFileWithNewDimensions(path, f, mode, 0, 0, 0, vDim);
+}
+
+rsNiftiFile *rsCloneNiftiFileWithNewDimensions(const char* path, const rsNiftiFile* f, const unsigned int mode, const int xDim, const int yDim, const int zDim, const int vDim)
+{
 
     rsNiftiFile *fClone = rsInitNiftiFile();
     fClone->path  = (char*)rsMalloc(sizeof(char)*((size_t)strlen(path)+1));
@@ -1278,9 +1283,9 @@ rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsi
         return fClone;
     }
 
-    fClone->xDim        = f->xDim;
-    fClone->yDim        = f->yDim;
-    fClone->zDim        = f->zDim;
+    fClone->xDim        = xDim < 1 ? f->xDim : xDim;
+    fClone->yDim        = yDim < 1 ? f->yDim : yDim;
+    fClone->zDim        = zDim < 1 ? f->zDim : zDim;
     fClone->vDim        = vDim < 1 ? f->vDim : vDim;
     fClone->intent_code = f->intent_code;
     fClone->intent_p1   = f->intent_p1;

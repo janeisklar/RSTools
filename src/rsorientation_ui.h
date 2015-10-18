@@ -1,5 +1,5 @@
-#ifndef rstools_smoothing_ui_h
-#define rstools_smoothing_ui_h
+#ifndef rstools_orientation_ui_h
+#define rstools_orientation_ui_h
 
 #include <stdio.h>
 #include "nifti/rsniftiutils.h"
