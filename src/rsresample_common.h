@@ -10,7 +10,6 @@ extern "C" {
 void rsResampleInit(rsResampleParameters *p);
 void rsResampleRun(rsResampleParameters *p);
 void rsResampleDestroy(rsResampleParameters *p);
-void rsResampleLanczosConvolve(double* signalOut, const double* signalIn, const int nVolsIn, const int nVolsOut, const int order, const double scaling);
 
 #ifdef __cplusplus
 }

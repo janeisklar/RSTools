@@ -6,6 +6,7 @@ librsmathutils_la_SOURCES =                \
 	correlation.c                          \
 	filter.c                               \
 	geom.c                                 \
+	interpolation.c                        \
 	linalg.c                               \
 	multivar_analysis.c                    \
 	regression.c                           \

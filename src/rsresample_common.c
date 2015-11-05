@@ -111,7 +111,7 @@ void rsResampleRun(rsResampleParameters *p)
     
             // resample regressor
             for (j=1; j<=nRegressors; j++) {
-                rsResampleLanczosConvolve(resampledRegressor[j-1], regressors[j], nValues, nResampledValues, p->order, scaling);
+                rsInterpolationLanczosConvolve(resampledRegressor[j-1], regressors[j], nValues, nResampledValues, p->order, scaling);
             }
             
             // write to file
@@ -156,7 +156,7 @@ void rsResampleRun(rsResampleParameters *p)
                     
                     // apply filter
                     signalOut = (double*)rsMalloc(p->output->vDim*sizeof(double));
-                    rsResampleLanczosConvolve(signalOut, signalIn, p->input->vDim, p->output->vDim, p->order, scaling);
+                    rsInterpolationLanczosConvolve(signalOut, signalIn, p->input->vDim, p->output->vDim, p->order, scaling);
                     
                     // write out resampled data to buffer
                     rsWriteTimecourseToRSNiftiFileBuffer(p->output, signalOut, point);
@@ -199,32 +199,6 @@ void rsResampleRun(rsResampleParameters *p)
     FslWriteVolumes(p->output->fslio, p->output->data, p->output->vDim);
 
     p->parametersValid = TRUE;
-}
-
-double rsResampleLanczosKernel(const double x, const int order)
-{
-    if (x == 0) {
-        return 1.0;
-    } else if (order > fabs(x) && fabs(x) > 0.0) {
-	    return order * sin(M_PI * x) * sin(M_PI * x / order) / (pow(M_PI, 2.0) * pow(x, 2.0));
-    } else {
-        return 0.0;
-    }
-}
-
-void rsResampleLanczosConvolve(double* signalOut, const double* signalIn, const int nVolsIn, const int nVolsOut, const int order, const double scaling)
-{
-    int j = 0;
-    for (double x=order-1; x<=nVolsIn-order+1; x+=1/scaling) {
-
-        const int xi = (int)floor(x);
-        double S=0;
-        
-        for (int i=xi-order+1; i<xi+order; i++) {
-            S += signalIn[i]*rsResampleLanczosKernel(xi-i, order);
-        }
-        signalOut[j++] = S;
-    }
 }
 
 void rsResampleDestroy(rsResampleParameters *p)

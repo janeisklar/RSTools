@@ -28,6 +28,15 @@ Point3D* rsMakePoint3D(unsigned int x, unsigned int y, unsigned int z)
     return a;
 }
 
+SignedPoint3D* rsMakeSignedPoint3D(int x, int y, int z)
+{
+    SignedPoint3D *a = rsMalloc(sizeof(SignedPoint3D));
+    a->x = x;
+    a->y = y;
+    a->z = z;
+    return a;
+}
+
 FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z)
 {
     FloatPoint3D* a = rsMalloc(sizeof(FloatPoint3D));
@@ -35,6 +44,40 @@ FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z)
     a->y = y;
     a->z = z;
     return a;
+}
+
+BOOL rsFloatPointInVolume(const FloatPoint3D *p, const float xh, const float yh, const float zh)
+{
+    if ( p->x >= xh || p->x < 0 ) {
+        return FALSE;
+    }
+
+    if ( p->y >= yh || p->y < 0 ) {
+        return FALSE;
+    }
+
+    if ( p->z >= zh || p->z < 0 ) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL rsSignedPointInVolume(const SignedPoint3D *p, const int xh, const int yh, const int zh)
+{
+    if ( p->x >= xh || p->x < 0 ) {
+        return FALSE;
+    }
+
+    if ( p->y >= yh || p->y < 0 ) {
+        return FALSE;
+    }
+
+    if ( p->z >= zh || p->z < 0 ) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 BOOL rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh)

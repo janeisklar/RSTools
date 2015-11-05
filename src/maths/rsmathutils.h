@@ -1,6 +1,7 @@
 #include <omp.h>
 #include "correlation.h"
 #include "filter.h"
+#include "interpolation.h"
 #include "geom.h"
 #include "linalg.h"
 #include "multivar_analysis.h"

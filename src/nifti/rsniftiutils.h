@@ -41,6 +41,10 @@ extern "C" {
 typedef struct {
     unsigned int x, y, z;
 } Point3D;
+
+typedef struct {
+    int x, y, z;
+} SignedPoint3D;
     
 typedef struct {
     float x, y, z;
@@ -75,27 +79,30 @@ typedef struct {
     BOOL          readable;
 } rsMask;
 
-Point3D*      rsMakePoint3D(unsigned int x, unsigned int y, unsigned int z);
-FloatPoint3D* rsMakeFloatPoint3D(float x, float y, float z);
-BOOL          rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh);
-Point3D*      rsReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
-rsMask*       rsMaskInit(char *path);
-void          rsMaskLoad(rsMask *mask, rsNiftiFile *resamplingPrototype);
-void          rsMaskFree(rsMask *mask);
-long          rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input);
-double***     rsResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
-size_t        rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
-BOOL          rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
-BOOL          rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D *points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
-BOOL          rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
-BOOL          rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn);
-BOOL          rsResetBufferToValue(const short datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value);
-BOOL          rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
-BOOL          rsExtractVolumeFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
-size_t        rsWordLength(const short datatype);
-size_t        rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
-size_t        rsVolumeLength(const int xh, const int yh, const int zh);
-size_t        rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype);
+Point3D*       rsMakePoint3D(unsigned int x, unsigned int y, unsigned int z);
+SignedPoint3D* rsMakeSignedPoint3D(int x, int y, int z);
+FloatPoint3D*  rsMakeFloatPoint3D(float x, float y, float z);
+BOOL           rsPointInVolume(const Point3D *p, const int xh, const int yh, const int zh);
+BOOL           rsFloatPointInVolume(const FloatPoint3D *p, const float xh, const float yh, const float zh);
+BOOL           rsSignedPointInVolume(const SignedPoint3D *p, const int xh, const int yh, const int zh);
+Point3D*       rsReadMask(char *path, unsigned short newX, unsigned short newY, unsigned short newZ, unsigned long *nPoints, char *resampledMaskPath, FSLIO *maskPrototype, double ***resampledMaskReturn);
+rsMask*        rsMaskInit(char *path);
+void           rsMaskLoad(rsMask *mask, rsNiftiFile *resamplingPrototype);
+void           rsMaskFree(rsMask *mask);
+long           rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input);
+double***      rsResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
+size_t         rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
+BOOL           rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
+BOOL           rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D *points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
+BOOL           rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
+BOOL           rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn);
+BOOL           rsResetBufferToValue(const short datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value);
+BOOL           rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+BOOL           rsExtractVolumeFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+size_t         rsWordLength(const short datatype);
+size_t         rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
+size_t         rsVolumeLength(const int xh, const int yh, const int zh);
+size_t         rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype);
 
 // the offset of a voxel within a volume(in words)
 inline size_t rsVoxelOffset(const size_t x, const size_t y, const size_t z, const size_t xh, const size_t yh) {

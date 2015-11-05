@@ -10,6 +10,7 @@ LDADD=$(rslibraries)
 bin_PROGRAMS =                                \
 	rsbandpass                                \
 	rscorrelation                             \
+	rsdeoblique                               \
 	rsinfo                                    \
 	rsmask                                    \
 	rsmotionscrubbing                         \
@@ -26,6 +27,7 @@ bin_PROGRAMS =                                \
 lib_LTLIBRARIES =                             \
 	librsbandpass.la                          \
 	librscorrelation.la                       \
+	librsdeoblique.la                         \
 	librsinfo.la                              \
 	librsmotionscrubbing.la                   \
 	librsscrubbing.la                         \
@@ -41,6 +43,8 @@ librsbandpass_la_SOURCES = rsbandpass_ui.c rsbandpass_common.c
 librsbandpass_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librscorrelation_la_SOURCES = rscorrelation_ui.c rscorrelation_common.c
 librscorrelation_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsdeoblique_la_SOURCES = rsdeoblique_ui.c rsdeoblique_common.c
+librsdeoblique_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsinfo_la_SOURCES = rsinfo_ui.c rsinfo_common.c
 librsinfo_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsmotionscrubbing_la_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c
@@ -67,6 +71,9 @@ rsbandpass_LDADD = librsbandpass.la @LIBOBJS@ $(rslibraries)
 
 rscorrelation_SOURCES = rscorrelation.c
 rscorrelation_LDADD = librscorrelation.la @LIBOBJS@ $(rslibraries)
+
+rsdeoblique_SOURCES = rsdeoblique.c
+rsdeoblique_LDADD = librsdeoblique.la @LIBOBJS@ $(rslibraries)
 
 rsmotionscrubbing_SOURCES = rsmotionscrubbing.c
 rsmotionscrubbing_LDADD = librsmotionscrubbing.la @LIBOBJS@ $(rslibraries)
@@ -107,6 +114,8 @@ nobase_pkginclude_HEADERS =                                   \
 	rscommon.h                                                \
 	rscorrelation_common.h                                    \
 	rscorrelation_ui.h                                        \
+	rsdeoblique_common.h                                      \
+	rsdeoblique_ui.h                                          \
 	rsinfo_common.h                                           \
 	rsinfo_ui.h                                               \
 	rsmotionscrubbing_common.h                                \
@@ -165,6 +174,7 @@ nobase_pkginclude_HEADERS =                                   \
 	maths/correlation.h                                       \
 	maths/filter.h                                            \
 	maths/geom.h                                              \
+	maths/interpolation.h                                     \
 	maths/linalg.h                                            \
 	maths/multivar_analysis.h                                 \
 	maths/regression.h                                        \
@@ -189,7 +199,7 @@ install-exec-hook:
 	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	

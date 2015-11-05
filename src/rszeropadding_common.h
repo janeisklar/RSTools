@@ -1,5 +1,5 @@
-#ifndef rstools_scrubbing_common_h
-#define rstools_scrubbing_common_h
+#ifndef rstools_zeropadding_common_h
+#define rstools_zeropadding_common_h
 
 #include "rszeropadding_ui.h"
 
