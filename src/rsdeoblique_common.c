@@ -160,22 +160,18 @@ void rsDeobliqueRun(rsDeobliqueParameters *p)
                     FslGetMMCoord(outputWorldMatrix, x, y, z, &outputPointInMM->x, &outputPointInMM->y, &outputPointInMM->z);
 
                     // get input coordinate in vx
-                    // Note: as we use the  inverted world matrix the result will therefore
+                    // Note: as we use the inverted world matrix the result will therefore
                     // be in voxels rather than mm as the method name suggests
                     FloatPoint3D *inputPointInVX = rsMakeFloatPoint3D(0, 0, 0);
                     FslGetMMCoord(invInputWorldMatrix, outputPointInMM->x, outputPointInMM->y, outputPointInMM->z, &inputPointInVX->x, &inputPointInVX->y, &inputPointInVX->z);
 
-                    // find nearest neighbours
-                    FloatPoint3D *nnClosestToOrigin    = rsMakeFloatPoint3D(floor(inputPointInVX->x),  floor(inputPointInVX->y),  floor(inputPointInVX->z));
-                    FloatPoint3D *nnFarthestFromOrigin = rsMakeFloatPoint3D(nnClosestToOrigin->x+1.0f, nnClosestToOrigin->y+1.0f, nnClosestToOrigin->z+1.0f);
-
                     // interpolate current voxel
-                    data_out[z][y][x] = rsTriLinearDistInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, inputPointInVX);
+                    //data_out[z][y][x] = rsTriLinearDistInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, p->pixDimIn, inputPointInVX);
+                    data_out[z][y][x] = rsInterpolation3DLanczosInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, p->pixDimIn, inputPointInVX);
+                    //data_out[z][y][x] = rsInterpolationTriLinearInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, p->pixDimIn, inputPointInVX);
 
                     rsFree(outputPointInMM);
                     rsFree(inputPointInVX);
-                    rsFree(nnClosestToOrigin);
-                    rsFree(nnFarthestFromOrigin);
                 }
             }
         }

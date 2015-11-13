@@ -54,20 +54,101 @@ double rsInterpolationTriLinear(double x, double y, double z, double q000, doubl
     return rsInterpolationLinear(z, z1, z2, r0, r1);
 }
 
-double rsTriLinearDistInterpolation(double***data, short xh, short yh, short zh, FloatPoint3D *point) {
+double rsInterpolationTriLinearInterpolation(double***data, short xh, short yh, short zh, double voxSize[3], FloatPoint3D *point) {
     SignedPoint3D *a = rsMakeSignedPoint3D(floor(point->x), floor(point->y), floor(point->z));
     SignedPoint3D *b = rsMakeSignedPoint3D(a->x+1, a->y+1, a->z+1);
 
     // construct 8 points surrounding the point to be interpolated
     SignedPoint3D* points[8] = {
-            rsMakeSignedPoint3D(a->x, a->y, a->z), // q000
-            rsMakeSignedPoint3D(b->x, a->y, a->z), // q001
-            rsMakeSignedPoint3D(a->x, b->y, a->z), // q010
-            rsMakeSignedPoint3D(b->x, b->y, a->z), // q011
-            rsMakeSignedPoint3D(a->x, a->y, b->z), // q100
-            rsMakeSignedPoint3D(b->x, a->y, b->z), // q101
-            rsMakeSignedPoint3D(a->x, b->y, b->z), // q110
-            rsMakeSignedPoint3D(b->x, b->y, b->z)  // q111
+        rsMakeSignedPoint3D(a->x, a->y, a->z), // q000
+        rsMakeSignedPoint3D(b->x, a->y, a->z), // q001
+        rsMakeSignedPoint3D(a->x, b->y, a->z), // q010
+        rsMakeSignedPoint3D(b->x, b->y, a->z), // q011
+        rsMakeSignedPoint3D(a->x, a->y, b->z), // q100
+        rsMakeSignedPoint3D(b->x, a->y, b->z), // q101
+        rsMakeSignedPoint3D(a->x, b->y, b->z), // q110
+        rsMakeSignedPoint3D(b->x, b->y, b->z)  // q111
+    };
+
+    // return NaN if point exceeds the volume
+    for (short i=0; i<8; i++) {
+        if (!rsSignedPointInVolume(points[i], xh, yh, zh)) {
+            return log(-1.0);
+        }
+    }
+
+    // compute interpolation between the specified points
+    return rsInterpolationTriLinear(
+        point->x,
+        point->y,
+        point->z,
+        data[points[0]->z][points[0]->y][points[0]->x], // q000
+        data[points[1]->z][points[1]->y][points[1]->x], // q001
+        data[points[2]->z][points[2]->y][points[2]->x], // q010
+        data[points[3]->z][points[3]->y][points[3]->x], // q011
+        data[points[4]->z][points[4]->y][points[4]->x], // q100
+        data[points[5]->z][points[5]->y][points[5]->x], // q101
+        data[points[6]->z][points[6]->y][points[6]->x], // q110
+        data[points[7]->z][points[7]->y][points[7]->x], // q111
+        a->x,
+        b->x,
+        a->y,
+        b->y,
+        a->z,
+        b->z
+    );
+}
+
+double rsInterpolation3DLanczosInterpolation(double***data, short xh, short yh, short zh, double voxSize[3], FloatPoint3D *point) {
+    const int order = 3;
+
+    SignedPoint3D *convStart = rsMakeSignedPoint3D(
+        floor(point->x)-order+1,
+        floor(point->y)-order+1,
+        floor(point->z)-order+1
+    );
+    SignedPoint3D *convEnd = rsMakeSignedPoint3D(
+        floor(point->x)+order,
+        floor(point->y)+order,
+        floor(point->z)+order
+    );
+
+    double result = 0.0;
+
+    // return a linear interpolated value if we exceed the bounds of this interpolation method
+    if (!rsSignedPointInVolume(convStart, xh, yh, zh) || !rsSignedPointInVolume(convEnd, xh, yh, zh)) {
+        return rsTriLinearDistInterpolation(data, xh, yh, zh, voxSize, point);
+    }
+
+    for (short i=convStart->x; i <= convEnd->x; i++) {
+        for (short j=convStart->y; j <= convEnd->y; j++) {
+            for (short k=convStart->z; k <= convEnd->z; k++) {
+                const double S = data[k][j][i];
+                const double Li = rsInterpolationLanczosKernel(point->x-i, order);
+                const double Lj = rsInterpolationLanczosKernel(point->y-j, order);
+                const double Lk = rsInterpolationLanczosKernel(point->z-k, order);
+                result += S * Li * Lj * Lk;
+            }
+        }
+    }
+
+    return result;
+}
+
+double rsTriLinearDistInterpolation(double***data, short xh, short yh, short zh, double voxSize[3], FloatPoint3D *point) {
+    SignedPoint3D *a = rsMakeSignedPoint3D(floor(point->x), floor(point->y), floor(point->z));
+    SignedPoint3D *b = rsMakeSignedPoint3D(a->x+1, a->y+1, a->z+1);
+
+    // construct 8 points surrounding the point to be interpolated
+    SignedPoint3D* points[8] = {
+        rsMakeSignedPoint3D(a->x, a->y, a->z), // q000
+        rsMakeSignedPoint3D(b->x, a->y, a->z), // q001
+        rsMakeSignedPoint3D(a->x, b->y, a->z), // q010
+        rsMakeSignedPoint3D(b->x, b->y, a->z), // q011
+        rsMakeSignedPoint3D(a->x, a->y, b->z), // q100
+        rsMakeSignedPoint3D(b->x, a->y, b->z), // q101
+        rsMakeSignedPoint3D(a->x, b->y, b->z), // q110
+        rsMakeSignedPoint3D(b->x, b->y, b->z)  // q111
     };
 
     // determine which points lie within the volume and compute their distances
@@ -78,14 +159,26 @@ double rsTriLinearDistInterpolation(double***data, short xh, short yh, short zh,
         BOOL validPoint = rsSignedPointInVolume(points[i], xh, yh, zh);
         if (validPoint) {
 
-            // sqrt((1-dx)^2 + (1-dy)^2 + (1-dz)^2)
+            // inv dist in each direction
+            float invDist[3] = {
+                1.0 / fabs(point->x - points[i]->x),
+                1.0 / fabs(point->y - points[i]->y),
+                1.0 / fabs(point->z - points[i]->z)
+            };
+
+            // scale by the corresponding voxel size
+            for (short d=0; d<3; d++) {
+                invDist[d] = invDist[d] / voxSize[d];
+            }
+
+            // euclidean dist sqrt((1-dx)^2 + (1-dy)^2 + (1-dz)^2)
             const double invDistance = pow(
-                    (
-                            pow(1.0 - fabs(point->x - points[i]->x), 2.0) +
-                            pow(1.0 - fabs(point->y - points[i]->y), 2.0) +
-                            pow(1.0 - fabs(point->z - points[i]->z), 2.0)
-                    ),
-                    0.5
+                (
+                    pow(invDist[0], 2.0) +
+                    pow(invDist[1], 2.0) +
+                    pow(invDist[2], 2.0)
+                ),
+                0.5
             );
             summedInvDistance += invDistance;
             weightedInvSum += invDistance * data[points[i]->z][points[i]->y][points[i]->x];
