@@ -124,9 +124,16 @@ double rsInterpolation3DLanczosInterpolation(double***data, short xh, short yh, 
         for (short j=convStart->y; j <= convEnd->y; j++) {
             for (short k=convStart->z; k <= convEnd->z; k++) {
                 const double S = data[k][j][i];
+
+                // use linear interpolation when dealing with NaN/Inf values
+                if(!isfinite(S)) {
+                    return rsTriLinearDistInterpolation(data, xh, yh, zh, voxSize, point);
+                }
+
                 const double Li = rsInterpolationLanczosKernel(point->x-i, order);
                 const double Lj = rsInterpolationLanczosKernel(point->y-j, order);
                 const double Lk = rsInterpolationLanczosKernel(point->z-k, order);
+
                 result += S * Li * Lj * Lk;
             }
         }
@@ -159,11 +166,18 @@ double rsTriLinearDistInterpolation(double***data, short xh, short yh, short zh,
         BOOL validPoint = rsSignedPointInVolume(points[i], xh, yh, zh);
         if (validPoint) {
 
+            const double S = data[points[i]->z][points[i]->y][points[i]->x];
+
+            // ignore NaN and Inf values
+            if (!isfinite(S)) {
+                continue;
+            }
+
             // inv dist in each direction
             float invDist[3] = {
-                1.0 / fabs(point->x - points[i]->x),
-                1.0 / fabs(point->y - points[i]->y),
-                1.0 / fabs(point->z - points[i]->z)
+                1.0 - fabs(point->x - points[i]->x),
+                1.0 - fabs(point->y - points[i]->y),
+                1.0 - fabs(point->z - points[i]->z)
             };
 
             // scale by the corresponding voxel size
@@ -180,8 +194,9 @@ double rsTriLinearDistInterpolation(double***data, short xh, short yh, short zh,
                 ),
                 0.5
             );
+
             summedInvDistance += invDistance;
-            weightedInvSum += invDistance * data[points[i]->z][points[i]->y][points[i]->x];
+            weightedInvSum += invDistance * S;
 
             nValidPoints++;
         }
