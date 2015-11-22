@@ -19,6 +19,7 @@ typedef struct {
 
     BOOL verbose;
     BOOL parametersValid;
+    BOOL retainVoxelSizes;
 
     rsNiftiFile *input;
     rsNiftiFile *output;
@@ -26,7 +27,7 @@ typedef struct {
 
     short dimsOut[3];
     double pixDimIn[3];
-    double pixDimOut;
+    double pixDimOut[3];
     float TR;
     short padding;
 

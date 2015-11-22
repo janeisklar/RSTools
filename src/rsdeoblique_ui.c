@@ -81,6 +81,12 @@ void rsDeobliqueBuildInterface(rsDeobliqueParameters *p)
     o->cli_description     = "the volume in which the result will be saved";
     o->cli_arg_description = "<volume>";
     rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "retainVoxelSizes";
+    o->storage             = &p->retainVoxelSizes;
+    o->cli_description     = "only orthogonalize matrix, but switch to an isotropic resolution";
+    rsUIAddOption(p->interface, o);
 	
     o = rsUINewOption();
     o->name                = "transformation";

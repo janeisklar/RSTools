@@ -44,24 +44,33 @@ void rsDeobliqueInit(rsDeobliqueParameters *p)
     p->pixDimIn[0] = pixDims[0];
     p->pixDimIn[1] = pixDims[1];
     p->pixDimIn[2] = pixDims[2];
-    p->pixDimOut = fmin(fmin(p->pixDimIn[0], p->pixDimIn[1]), p->pixDimIn[2]);
+    if (p->retainVoxelSizes) {
+        p->pixDimOut[0] = p->pixDimIn[0];
+        p->pixDimOut[1] = p->pixDimIn[1];
+        p->pixDimOut[2] = p->pixDimIn[2];
+    } else {
+        double pixDimOut = fmin(fmin(p->pixDimIn[0], p->pixDimIn[1]), p->pixDimIn[2]);
+        p->pixDimOut[0] = pixDimOut;
+        p->pixDimOut[1] = pixDimOut;
+        p->pixDimOut[2] = pixDimOut;
+    }
 
-    if (p->pixDimOut <= 0.001) {
+    if (p->pixDimOut[0] <= 0.001 || p->pixDimOut[1] <= 0.001 || p->pixDimOut[2] <= 0.001) {
         fprintf(stderr, "\nError: The voxel size of the input nifti must not be 0mm in any direction (x,y,z)!\n");
         return;
     }
 
     // determine dim sizes of the output
-    p->dimsOut[0] = (short)ceil(((float)p->input->xDim) * (p->pixDimIn[0] / p->pixDimOut)); // new x width
-    p->dimsOut[1] = (short)ceil(((float)p->input->yDim) * (p->pixDimIn[1] / p->pixDimOut)); // new y width
-    p->dimsOut[2] = (short)ceil(((float)p->input->zDim) * (p->pixDimIn[2] / p->pixDimOut)); // new z width
-    
+    p->dimsOut[0] = (short)ceil(((float)p->input->xDim) * (p->pixDimIn[0] / p->pixDimOut[0])); // new x width
+    p->dimsOut[1] = (short)ceil(((float)p->input->yDim) * (p->pixDimIn[1] / p->pixDimOut[1])); // new y width
+    p->dimsOut[2] = (short)ceil(((float)p->input->zDim) * (p->pixDimIn[2] / p->pixDimOut[2])); // new z width
+
     /* output the most important parameters to the user */
     if ( p->verbose ) {
         fprintf(stdout, "Input file: %s\n", p->inputpath);
         fprintf(stdout, "Output file: %s\n", p->outputpath);
         fprintf(stdout, "Input voxel size: %.2f %.2f %.2f\n", p->pixDimIn[0], p->pixDimIn[1], p->pixDimIn[2]);
-        fprintf(stdout, "Output voxel size: %.2f %.2f %.2f\n", p->pixDimOut, p->pixDimOut, p->pixDimOut);
+        fprintf(stdout, "Output voxel size: %.2f %.2f %.2f\n", p->pixDimOut[0], p->pixDimOut[1], p->pixDimOut[2]);
         fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
     }
 	
@@ -109,7 +118,7 @@ void rsDeobliqueRun(rsDeobliqueParameters *p)
         return;
     }
 
-    FslSetVoxDim(p->output->fslio, p->pixDimOut, p->pixDimOut, p->pixDimOut, p->TR);
+    FslSetVoxDim(p->output->fslio, p->pixDimOut[0], p->pixDimOut[1], p->pixDimOut[2], p->TR);
     FslSetRigidXform(p->output->fslio, outputNifti->qform_code, outputWorldMatrix);
     FslSetStdXform(p->output->fslio, outputNifti->sform_code, outputWorldMatrix);
 
@@ -133,10 +142,10 @@ void rsDeobliqueRun(rsDeobliqueParameters *p)
         fprintf(p->transform, "#Transform 0\n");
         fprintf(p->transform, "Transform: AffineTransform_double_3_3\n");
         fprintf(p->transform, "Parameters:");
-        for (short i=0; i<4; i++) {
+        for (short i=0; i<3; i++) {
             fprintf(p->transform, " %.14f %.14f %.14f", transformMatrix.m[i][0], transformMatrix.m[i][1], transformMatrix.m[i][2]);
         }
-        for (short i=0; i<4; i++) {
+        for (short i=0; i<3; i++) {
             fprintf(p->transform, " %.14f", transformMatrix.m[i][3]);
         }
         fprintf(p->transform, "\n");
@@ -321,17 +330,17 @@ void rsDeobliqueWorldMatrix(mat44 *output, mat44 *transform, short newDims[3], c
 
     // fix voxel scaling
     mat44 scalingMatrix;
-    scalingMatrix.m[0][0] = p->pixDimOut / p->pixDimIn[0];
+    scalingMatrix.m[0][0] = p->pixDimOut[0] / p->pixDimIn[0];
     scalingMatrix.m[0][1] = 0;
     scalingMatrix.m[0][2] = 0;
     scalingMatrix.m[0][3] = 0;
     scalingMatrix.m[1][0] = 0;
-    scalingMatrix.m[1][1] = p->pixDimOut / p->pixDimIn[1];
+    scalingMatrix.m[1][1] = p->pixDimOut[1] / p->pixDimIn[1];
     scalingMatrix.m[1][2] = 0;
     scalingMatrix.m[1][3] = 0;
     scalingMatrix.m[2][0] = 0;
     scalingMatrix.m[2][1] = 0;
-    scalingMatrix.m[2][2] = p->pixDimOut / p->pixDimIn[2];
+    scalingMatrix.m[2][2] = p->pixDimOut[2] / p->pixDimIn[2];
     scalingMatrix.m[2][3] = 0;
     scalingMatrix.m[3][0] = 0;
     scalingMatrix.m[3][1] = 0;
