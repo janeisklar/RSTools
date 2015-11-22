@@ -1,7 +1,7 @@
 SUBDIRS = utils nifti maths . batch
 
-AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
-AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
+AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
+AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -DCONFIG_PATH=\"$(sysconfdir)\" -I$(top_srcdir)/src
 
 rslibraries=utils/librsutils.la maths/librsmathutils.la nifti/librsniftiutils.la ../externals/librsfslio.la
 
@@ -22,7 +22,8 @@ bin_PROGRAMS =                                \
 	rsroi                                     \
 	rstimecourse                              \
 	rsttest                                   \
-	rszeropadding
+	rszeropadding                             \
+	rsapplytransformation
 	
 lib_LTLIBRARIES =                             \
 	librsbandpass.la                          \
@@ -37,7 +38,8 @@ lib_LTLIBRARIES =                             \
 	librsresample.la                          \
 	librsroi.la                               \
 	librstimecourse.la                        \
-	librszeropadding.la
+	librszeropadding.la                       \
+	librsapplytransformation.la
 
 librsbandpass_la_SOURCES = rsbandpass_ui.c rsbandpass_common.c
 librsbandpass_la_LIBADD = @LIBOBJS@ $(rslibraries)
@@ -65,6 +67,8 @@ librstimecourse_la_SOURCES = rstimecourse_ui.c rstimecourse_common.c
 librstimecourse_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 librszeropadding_la_SOURCES = rszeropadding_ui.c rszeropadding_common.c
 librszeropadding_la_LIBADD = @LIBOBJS@ $(rslibraries) 
+librsapplytransformation_la_SOURCES = rsapplytransformation_ui.c rsapplytransformation_common.c
+librsapplytransformation_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 
 rsbandpass_SOURCES = rsbandpass.c
 rsbandpass_LDADD = librsbandpass.la @LIBOBJS@ $(rslibraries)
@@ -108,6 +112,9 @@ rsttest_SOURCES = rsttest.c
 rszeropadding_SOURCES = rszeropadding.c
 rszeropadding_LDADD = librszeropadding.la @LIBOBJS@ $(rslibraries)
 
+rsapplytransformation_SOURCES = rsapplytransformation.c
+rsapplytransformation_LDADD = librsapplytransformation.la @LIBOBJS@ $(rslibraries)
+
 nobase_pkginclude_HEADERS =                                   \
 	rsbandpass_common.h                                       \
 	rsbandpass_ui.h                                           \
@@ -130,6 +137,8 @@ nobase_pkginclude_HEADERS =                                   \
 	rsregression_ui.h                                         \
 	rsresample_common.h                                       \
 	rsresample_ui.h                                           \
+	rsapplytransformation_common.h                            \
+	rsapplytransformation_ui.h                                \
 	rsroi_common.h                                            \
 	rsroi_ui.h                                                \
 	rstimecourse_common.h                                     \
@@ -199,7 +208,7 @@ install-exec-hook:
 	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	

@@ -195,3 +195,8 @@ BOOL rsStringEndsWith(const char *str, const char *end)
     
     return 0 == strncmp( str + str_length - end_length, end, end_length);
 }
+
+void rsStringAppend(char *str, const char *suffix)
+{
+    sprintf(&str[strlen(str)], "%s", suffix);
+}

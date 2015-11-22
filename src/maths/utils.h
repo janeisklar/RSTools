@@ -26,6 +26,7 @@ double **rsLoadRegressors(const char *path, long *nRegressors, long *nValues, do
 BOOL rsReadline(FILE *f, char *line, int *length);
 double *rsParseRegressorLine(char *line, long *nRegressors);
 double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues);
+double **rsLoadMatrixFromTxt(const char *path, long *nColumns, long *nRows);
 
 #ifdef __cplusplus
 }

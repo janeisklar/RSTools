@@ -219,26 +219,6 @@ void rsDeobliqueDestroy(rsDeobliqueParameters *p)
     rsDeobliqueFreeParams(p);
 }
 
-void rsMat44MatrixMult(mat44 *C, const mat44 *A, const mat44 *B)
-{
-    mat44 tmp;
-    for(int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            tmp.m[i][j] = A->m[i][0] * B->m[0][j]
-                        + A->m[i][1] * B->m[1][j]
-                        + A->m[i][2] * B->m[2][j]
-                        + A->m[i][3] * B->m[3][j];
-        }
-    }
-
-    // copy result
-    for(int i=0; i<4; i++) {
-        for (int j = 0; j < 4; j++) {
-            C->m[i][j] = tmp.m[i][j];
-        }
-    }
-}
-
 void rsDeobliqueWorldMatrix(mat44 *output, mat44 *transform, short newDims[3], const mat44 *input, const rsDeobliqueParameters *p)
 {
     // set initial transformation to the identity matrix

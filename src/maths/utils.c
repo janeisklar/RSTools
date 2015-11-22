@@ -232,3 +232,66 @@ double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues)
     
     return regressor;
 }
+
+/*
+ * Loads a 2D matrix file
+ */
+double **rsLoadMatrixFromTxt(const char *path, long *nColumns, long *nRows)
+{
+    FILE *f = fopen(path, "r");
+
+    if (f == NULL) {
+        fprintf(stderr, "Error: Matrix could not be read from %s.\n", path);
+        return NULL;
+    }
+
+    /* Read file to get the number of columns and rows */
+    char *line = malloc(sizeof(char)*10000);
+    int length = 0;
+    *nColumns = 0L;
+    *nRows = 0L;
+
+    rewind(f);
+
+    double *columns = NULL;
+    while( rsReadline(f, line, &length) ) {
+        if ( length < 1 ) {
+            continue;
+        }
+
+        columns = rsParseRegressorLine(line, nColumns);
+
+        if (columns != NULL) {
+            free(columns);
+        }
+        *nRows = *nRows+1L;
+    }
+
+    /* Initialize result matrix */
+    rewind(f);
+    double **result = d2matrix(*nColumns-1, *nRows-1);
+
+    /* Save columns in result matrix */
+    long v=0L;
+    while( rsReadline(f, line, &length) ) {
+        if ( length < 1 ) {
+            continue;
+        }
+
+        columns = rsParseRegressorLine(line, nColumns);
+
+        for( long l=0L; l<*nColumns; l=l+1L ) {
+            result[l][v] = columns[l];
+        }
+
+        if (columns != NULL) {
+            free(columns);
+        }
+        v=v+1L;
+    };
+
+    free(line);
+    fclose(f);
+
+    return result;
+}

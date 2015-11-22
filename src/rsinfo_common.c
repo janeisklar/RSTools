@@ -213,6 +213,8 @@ BOOL rsInfoPrintInfoForKey(rsNiftiExtendedHeaderInformation* info, const char* k
         fprintf(stdout, "%s", info->TransmitCoilName);
     } else if ( ! strcmp(k, "inplanephaseencodingdirection") ) {
         fprintf(stdout, "%s", info->InPlanePhaseEncodingDirection);
+    } else if ( ! strcmp(k, "phaseencodingdirection") ) {
+        fprintf(stdout, "%s", info->PhaseEncodingDirection);
     } else if ( ! strcmp(k, "patientposition") ) {
         fprintf(stdout, "%s", info->PatientPosition);
     } else if ( ! strcmp(k, "bandwidthperpixelphaseencode") ) {

@@ -9,22 +9,22 @@
 #include "rscommon.h"
 #include "utils/rsmemory.h"
 
-#if !defined(__NIFTIUTILS_H)
-#define __NIFTIUTILS_H
+#ifndef rstools_niftiutils_h
+#define rstools_niftiutils_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
     
-#if !defined(BOOL)
+#ifndef BOOL
 #define BOOL    int
 #endif
 
-#if !defined(FALSE)
+#ifndef FALSE
 #define FALSE   0
 #endif
 
-#if !defined(TRUE)
+#ifndef TRUE
 #define TRUE    1
 #endif
     
@@ -92,14 +92,14 @@ void           rsMaskFree(rsMask *mask);
 long           rsCleanMaskFromNaNs(rsMask *mask, rsNiftiFile *input);
 double***      rsResampleVolume(double ***oldVolume, int oldX, int oldY, int oldZ, int newX, int newY, int newZ);
 size_t         rsWriteTimeSeries(FSLIO *fslio, const void *buffer, short xVox, short yVox, short zVox, int nvols);
-BOOL           rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
-BOOL           rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D *points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
-BOOL           rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
-BOOL           rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn);
-BOOL           rsResetBufferToValue(const short datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value);
-BOOL           rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
-BOOL           rsExtractVolumeFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
-size_t         rsWordLength(const short datatype);
+BOOL           rsExtractVolumeFromBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+BOOL           rsExtractTimecourseFromBuffer(int datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
+BOOL           rsExtractPointsFromBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D *points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th);
+BOOL           rsWriteTimecourseToBuffer(int datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th);
+BOOL           rsCopyTimecourseFromInBufferToOutBuffer(int datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn);
+BOOL           rsResetBufferToValue(int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value);
+BOOL           rsWriteVolumeToBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh);
+size_t         rsWordLength(int datatype);
 size_t         rsVolumeOffset(const int xh, const int yh, const int zh, const int t);
 size_t         rsVolumeLength(const int xh, const int yh, const int zh);
 size_t         rsGetBufferSize(const int xh, const int yh, const int zh, const int th, const int nifti_datatype);
@@ -114,7 +114,7 @@ inline size_t rsOverallVoxelOffset(const size_t x, const size_t y, const size_t 
     return t * (xh * yh * zh) + z * (xh * yh) + (y * xh) + x;
 }
     
-BOOL convertScaledDoubleToBuffer(const short datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh);
+BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_UINT8(  THIS_UINT8 *outbuf,   double *inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_INT8(   THIS_INT8 *outbuf,    double *inbuf, float slope, float inter, int xh, int yh, int zh);
 void convertScaledDoubleToBuffer_UINT16( THIS_UINT16 *outbuf,  double *inbuf, float slope, float inter, int xh, int yh, int zh);
@@ -144,6 +144,7 @@ rsNiftiFile *rsCloneNiftiFile(const char* path, const rsNiftiFile* f, const unsi
 rsNiftiFile *rsCloneNiftiFileWithNewDimensions(const char* path, const rsNiftiFile* f, const unsigned int mode, const int xDim, const int yDim, const int zDim, const int vDim);
 void        rsCloseNiftiFile(rsNiftiFile* f, BOOL keepData);
 void        rsWriteNiftiHeader(FSLIO *fslio, char* description);
+void        rsMat44MatrixMult(mat44 *C, const mat44 *A, const mat44 *B);
 
 #define rsWriteTimecourseToRSNiftiFileBuffer(nifti,convdata,point);                 rsWriteTimecourseToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
 #define rsExtractTimecourseFromRSNiftiFileBuffer(nifti,convdata,point);             rsExtractTimecourseFromBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, point, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim);
@@ -151,7 +152,6 @@ void        rsWriteNiftiHeader(FSLIO *fslio, char* description);
 #define rsWriteVolumeToRSNiftiFileBuffer(nifti,convdata,t);                         rsWriteVolumeToBuffer(nifti->dt, convdata, nifti->data, nifti->slope, nifti->inter, t, nifti->xDim, nifti->yDim, nifti->zDim);
 #define rsResetRSNiftiFileBufferToValue(nifti,value);                               rsResetBufferToValue(nifti->dt, nifti->data, nifti->slope, nifti->inter, nifti->xDim, nifti->yDim, nifti->zDim, nifti->vDim, value);
 #define rsExtractPointsFromRSNiftiFileBuffer(Tnifti,Tconvdata,Tpoints,TnPoints,Tt); rsExtractPointsFromBuffer(Tnifti->dt, Tconvdata, Tnifti->data, Tnifti->slope, Tnifti->inter, Tpoints, TnPoints, Tt, Tnifti->xDim, Tnifti->yDim, Tnifti->zDim, Tnifti->vDim);
-
 
 #ifdef __cplusplus
 }

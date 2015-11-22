@@ -454,7 +454,7 @@ void rsScaleValues(double *timecourse, const int th, const double slope, const d
  * to the dimensions of the nifti file.
  *
  */
-BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
+BOOL rsExtractTimecourseFromBuffer(int datatype, double *timecourse, const void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
 
     const size_t voxelOffset = rsVoxelOffset(p->x, p->y, p->z, xh, yh);
     const size_t timeOffset  = rsVolumeLength(xh, yh, zh);
@@ -517,7 +517,7 @@ BOOL rsExtractTimecourseFromBuffer(const short datatype, double *timecourse, con
  * to the dimensions of the nifti file.
  *
  */
-BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th) {
+BOOL rsExtractPointsFromBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const Point3D* points, const unsigned long nPoints, const int t, const int xh, const int yh, const int zh, const int th) {
 
     if ( t >= th ) {
         fprintf(stderr, "Access to volume #%d failed as the nifti contains only %d volumes.\n", t, th);
@@ -589,7 +589,7 @@ BOOL rsExtractPointsFromBuffer(const short datatype, double *data, const void *b
  * xh, yh, zh, and th correspond to the dimensions of
  * the nifti file.
  */
-BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
+BOOL rsWriteTimecourseToBuffer(int datatype, const double *timecourse, void *buffer, const float slope, const float inter, const Point3D *p, const int xh, const int yh, const int zh, const int th) {
 
     THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)buffer;
     THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)buffer;
@@ -649,7 +649,7 @@ BOOL rsWriteTimecourseToBuffer(const short datatype, const double *timecourse, v
     return TRUE;
 }
 
-BOOL rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn) {
+BOOL rsCopyTimecourseFromInBufferToOutBuffer(int datatype, void *outBuffer, const Point3D *pointOut, const int xhOut, const int yhOut, const int zhOut, const int th, const void *inBuffer, const Point3D *pointIn, const int xhIn, const int yhIn, const int zhIn) {
 
     THIS_UINT8   *THIS_UINT8_BUFFER   = (THIS_UINT8*)outBuffer;
     THIS_INT8    *THIS_INT8_BUFFER    = (THIS_INT8*)outBuffer;
@@ -716,7 +716,7 @@ BOOL rsCopyTimecourseFromInBufferToOutBuffer(const short datatype, void *outBuff
 }
 
 // the length of one word(one voxel) in bytes
-size_t rsWordLength(const short datatype) {
+size_t rsWordLength(int datatype) {
     switch (datatype) {
         case NIFTI_TYPE_UINT8:
             return sizeof(THIS_UINT8);
@@ -768,7 +768,7 @@ size_t rsGetBufferSize(const int xh, const int yh, const int zh, const int th, c
  * out the values for one volume.
  *
  */
-BOOL rsExtractVolumeFromBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+BOOL rsExtractVolumeFromBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
 
     const size_t wordlength   = rsWordLength(datatype);
     const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
@@ -784,7 +784,7 @@ BOOL rsExtractVolumeFromBuffer(const short datatype, double *data, const void *b
  * out the values for one volume.
  *
  */
-BOOL rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
+BOOL rsWriteVolumeToBuffer(int datatype, double *data, const void *buffer, const float slope, const float inter, const int t, const int xh, const int yh, const int zh) {
 
     const size_t wordlength   = rsWordLength(datatype);
     const size_t volumeOffset = rsVolumeOffset(xh, yh, zh, t);
@@ -803,7 +803,7 @@ BOOL rsWriteVolumeToBuffer(const short datatype, double *data, const void *buffe
  * It is the counterpart to the method convertBufferToScaledDouble that
  * is included in FslIO.
  */
-BOOL convertScaledDoubleToBuffer(const short datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh) {
+BOOL convertScaledDoubleToBuffer(int datatype, void *outbuf, double *inbuf, float slope, float inter, int xh, int yh, int zh) {
     switch ( datatype ) {
         case NIFTI_TYPE_UINT8:
             convertScaledDoubleToBuffer_UINT8(outbuf, inbuf, slope, inter, xh, yh, zh);
@@ -848,7 +848,7 @@ BOOL convertScaledDoubleToBuffer(const short datatype, void *outbuf, double *inb
     return TRUE;
 }
 
-BOOL rsResetBufferToValue(const short datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value) {
+BOOL rsResetBufferToValue(int datatype, void *buffer, const float slope, const float inter, const int xh, const int yh, const int zh, const int th, const double value) {
 
     switch (datatype) {
         case NIFTI_TYPE_UINT8:
@@ -1388,4 +1388,24 @@ void rsCloseNiftiFileAndFree(rsNiftiFile* f)
 {
     rsCloseNiftiFile(f, FALSE);
     rsFreeNiftiFile(f);
+}
+
+void rsMat44MatrixMult(mat44 *C, const mat44 *A, const mat44 *B)
+{
+    mat44 tmp;
+    for(int i=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
+            tmp.m[i][j] = A->m[i][0] * B->m[0][j]
+                          + A->m[i][1] * B->m[1][j]
+                          + A->m[i][2] * B->m[2][j]
+                          + A->m[i][3] * B->m[3][j];
+        }
+    }
+
+    // copy result
+    for(int i=0; i<4; i++) {
+        for (int j = 0; j < 4; j++) {
+            C->m[i][j] = tmp.m[i][j];
+        }
+    }
 }

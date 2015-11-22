@@ -20,6 +20,7 @@ char* rsRightTrimString(char *s);
 char* rsString(const char *s);
 BOOL rsStringStartsWith(const char *str, const char *start);
 BOOL rsStringEndsWith(const char *str, const char *end);
+void rsStringAppend(char *str, const char *suffix);
 
 #ifdef __cplusplus
 }
