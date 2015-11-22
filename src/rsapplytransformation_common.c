@@ -6,6 +6,8 @@
 #include "rsapplytransformation_common.h"
 #include "utils/rsio.h"
 #include "rsapplytransformation_ui.h"
+#include "rszeropadding_ui.h"
+#include "rszeropadding_common.h"
 #include "math.h"
 #include <sys/stat.h>
 #include <unistd.h>
@@ -21,7 +23,11 @@ typedef struct {
     short volumeIndex;
     BOOL verbose;
     char *inputSuffix;
+    char *inputMaskSuffix;
+    char *paddedInputSuffix;
     char *outputSuffix;
+    char *outputMaskSuffix;
+    char *paddedOutputSuffix;
     BOOL resourceTransformation;
     BOOL keepFiles;
     char *antsPath;
@@ -34,7 +40,8 @@ void rsApplyTransformationConvertMcFlirtTransformMatrixToAntsTransformMatrix(mat
 BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params);
 char *rsApplyTransformationGetMcFlirtTransformationPath(const char *tmpDirPath, const int volumeIndex, const int transformationId);
 char *rsApplyTransformationGetANTsPath();
-BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath);
+BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, BOOL highQuality);
+BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath, BOOL verbose);
 
 void rsApplyTransformationInit(rsApplyTransformationParameters *p)
 {
@@ -175,7 +182,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             spec->transIn = rsOpenNiftiFile(spec->file, RSNIFTI_OPEN_READ);
             spec->transOutPath = rsMalloc(sizeof(char) * (strlen(tmpDirPath) + 60));
             sprintf(spec->transOutPath, "%s/xxx_%d_fugue_out.nii", tmpDirPath, (int) t);
-            if (!rsApplyTransformationConvertFugueShiftToANTsWarp(p->input, spec->transIn, spec->transOutPath)) {
+            if (!rsApplyTransformationConvertFugueShiftToANTsWarp(p->input, spec->transIn, spec->transOutPath, p->verbose)) {
                 return;
             }
             rsCloseNiftiFileAndFree(spec->transIn);
@@ -210,13 +217,17 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
                     params->specs = &p->specs[t];
                     params->inputSuffix = rsMalloc(sizeof(char) * 15);
                     params->outputSuffix = rsMalloc(sizeof(char) * 15);
-                    if (spec->type == TRANS_DIVISION) {
-                        sprintf(params->inputSuffix, "%d_div_in", (int)t);
-                        sprintf(params->outputSuffix, "%d_div_out", (int)t);
-                    } else {
-                        sprintf(params->inputSuffix, "%d_mult_in", (int)t);
-                        sprintf(params->outputSuffix, "%d_mult_out", (int)t);
-                    }
+                    params->inputMaskSuffix = rsMalloc(sizeof(char) * 15);
+                    params->outputMaskSuffix = rsMalloc(sizeof(char) * 15);
+                    params->paddedInputSuffix= rsMalloc(sizeof(char) * 25);
+                    params->paddedOutputSuffix = rsMalloc(sizeof(char) * 25);
+                    const char *prefix = spec->type == TRANS_DIVISION ? "div" : "mult";
+                    sprintf(params->inputSuffix, "%d_%s_in", (int)t, prefix);
+                    sprintf(params->outputSuffix, "%d_%s_out", (int)t, prefix);
+                    sprintf(params->inputMaskSuffix, "%d_%s_mask_in", (int)t, prefix);
+                    sprintf(params->outputMaskSuffix, "%d_%s_mask_out", (int)t, prefix);
+                    sprintf(params->paddedInputSuffix, "%d_%s_in_padded", (int)t, prefix);
+                    sprintf(params->paddedOutputSuffix, "%d_%s_out_padded", (int)t, prefix);
                     rsApplyTransformationApplyToVolume(params);
                 }
             }
@@ -257,6 +268,10 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             params->verbose = p->verbose && p->threads < 2;
             params->inputSuffix = "input";
             params->outputSuffix = "output";
+            params->inputMaskSuffix = "input_mask";
+            params->outputMaskSuffix = "output_mask";
+            params->paddedInputSuffix = "input_padded";
+            params->paddedOutputSuffix = "output_padded";
             params->resourceTransformation = FALSE;
             params->keepFiles = p->keepFiles;
             params->antsPath = p->antsPath;
@@ -326,37 +341,21 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
     p->parametersValid = TRUE;
 }
 
-BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params)
+BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, BOOL highQuality)
 {
-    // create tmp file for the input nifti
-    char *inputName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->inputSuffix)+20));
-    sprintf(inputName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->inputSuffix);
-    char *outputName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->outputSuffix)+20));
-    sprintf(outputName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->outputSuffix);
-    rsNiftiFile *input = rsCloneNiftiFile(inputName, params->source, RSNIFTI_OPEN_ALLOC, 1);
-
-    // write input nifti (single volume)
-    double ***tmp = d3matrix(input->zDim-1, input->yDim-1, input->xDim-1);
-    short indexToRead = params->volumeIndex;
-    if (params->resourceTransformation && params->source->vDim == 1) {
-        indexToRead = 0;
-    }
-    rsExtractVolumeFromRSNiftiFileBuffer(params->source, tmp[0][0], indexToRead);
-    rsWriteVolumeToRSNiftiFileBuffer(input, tmp[0][0], 0);
-    rsWriteNiftiHeader(input->fslio, "");
-    FslWriteVolumes(input->fslio, input->data, input->vDim);
-    rsCloseNiftiFileAndFree(input);
-
-    // assemble call string
     char *callString = rsMalloc(sizeof(char)*30000);
     sprintf(
         callString,
-        "%santsApplyTransforms -e 3 -d 3 -i %s -o %s -r %s --interpolation LanczosWindowedSinc",
+        "%santsApplyTransforms -e 3 -d 3 -i %s -o %s -r %s",
         params->antsPath,
-        inputName,
-        outputName,
+        input,
+        output,
         params->referencepath
     );
+
+    if (highQuality) {
+        rsStringAppend(callString, " --interpolation LanczosWindowedSinc");
+    }
 
     // append transformations to the call string
     // NOTE: iterate in the reverse order as ANTs expects the transformations to be specified in that manner
@@ -397,17 +396,107 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
         return FALSE;
     }
 
-    // open resulting nifti file
-    rsNiftiFile *output = rsOpenNiftiFile(outputName, RSNIFTI_OPEN_READ);
+    rsFree(callString);
 
-    if (!output->readable) {
+    return TRUE;
+}
+
+BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params)
+{
+    // create tmp file for the input nifti
+    char *inputName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->inputSuffix)+20));
+    sprintf(inputName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->inputSuffix);
+    char *outputName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->outputSuffix)+20));
+    sprintf(outputName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->outputSuffix);
+    char *inputMaskName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->inputMaskSuffix)+20));
+    sprintf(inputMaskName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->inputMaskSuffix);
+    char *outputMaskName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->outputMaskSuffix)+20));
+    sprintf(outputMaskName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->outputMaskSuffix);
+    char *paddedInputName = rsMalloc(sizeof(char)*(strlen(params->tmpDirPath)+strlen(params->paddedInputSuffix)+20));
+    sprintf(paddedInputName, "%s/%03d_%s.nii", params->tmpDirPath, params->volumeIndex, params->paddedInputSuffix);
+    rsNiftiFile *input = rsCloneNiftiFile(inputName, params->source, RSNIFTI_OPEN_ALLOC, 1);
+
+    // write input nifti (single volume)
+    double ***tmp = d3matrix(input->zDim-1, input->yDim-1, input->xDim-1);
+    short indexToRead = params->volumeIndex;
+    if (params->resourceTransformation && params->source->vDim == 1) {
+        indexToRead = 0;
+    }
+    rsExtractVolumeFromRSNiftiFileBuffer(params->source, tmp[0][0], indexToRead);
+    rsWriteVolumeToRSNiftiFileBuffer(input, tmp[0][0], 0);
+    rsWriteNiftiHeader(input->fslio, "");
+    FslWriteVolumes(input->fslio, input->data, input->vDim);
+    rsCloseNiftiFileAndFree(input);
+    rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
+
+    // pad input as parts of it will be removed by the lanczos-filter otherwise
+    int nPaddingArguments = 9;
+    char *paddingArguments[] = {
+        "rszeropadding",
+        rsStringConcat("--input=", inputName, NULL),
+        rsStringConcat("--output=", paddedInputName, NULL),
+        "--lx=5",
+        "--ux=5",
+        "--ly=5",
+        "--uy=5",
+        "--lz=5",
+        "--uz=5"
+    };
+    rsZeropaddingParameters * paddingParams = rsZeropaddingParseParams(nPaddingArguments, paddingArguments);
+    if (!paddingParams->parametersValid)
+        return FALSE;
+    rsZeropaddingInit(paddingParams);
+    if (!paddingParams->parametersValid)
+        return FALSE;
+    rsZeropaddingRun(paddingParams);
+    rsZeropaddingDestroy(paddingParams);
+
+    // create a mask based on the padded input that will be used to remove the padding later
+    rsNiftiFile *paddedInput = rsOpenNiftiFile(paddedInputName, RSNIFTI_OPEN_NONE);
+    rsNiftiFile *inputMask = rsCloneNiftiFile(inputMaskName, paddedInput, RSNIFTI_OPEN_ALLOC, 1);
+    tmp = d3matrix(inputMask->zDim-1, inputMask->yDim-1, inputMask->xDim-1);
+    for (short x=0; x < inputMask->xDim; x++) {
+        for (short y=0; y < inputMask->yDim; y++) {
+            for (short z = 0; z < inputMask->zDim; z++) {
+                if (x<5 || y<5 || z<5 || x>inputMask->xDim-6 || y>inputMask->yDim-6 || z>inputMask->zDim-6) {
+                    tmp[z][y][x] = 0.0;
+                } else {
+                    tmp[z][y][x] = 1.0;
+                }
+            }
+        }
+    }
+    rsWriteVolumeToRSNiftiFileBuffer(inputMask, tmp[0][0], 0);
+    rsWriteNiftiHeader(inputMask->fslio, "");
+    FslWriteVolumes(inputMask->fslio, inputMask->data, inputMask->vDim);
+    rsCloseNiftiFileAndFree(inputMask);
+    rsCloseNiftiFileAndFree(paddedInput);
+    rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
+
+    // warp padded input
+    if (!rsApplyTransformationRunANTs(params, paddedInputName, outputName, TRUE)) {
+        return FALSE;
+    }
+
+    // warp padding mask
+    if (!rsApplyTransformationRunANTs(params, inputMaskName, outputMaskName, FALSE)) {
+        return FALSE;
+    }
+
+    // open resulting output nifti file and the warped mask
+    rsNiftiFile *output = rsOpenNiftiFile(outputName, RSNIFTI_OPEN_READ);
+    rsNiftiFile *outputMask = rsOpenNiftiFile(outputMaskName, RSNIFTI_OPEN_READ);
+
+    if (!output->readable || !outputMask->readable) {
         fprintf(stderr, "Error: There was an error while executing antsApplyTransforms\n");
         return FALSE;
     }
 
     // read the single volume we got from ants
     double ***result = d3matrix(output->zDim-1, output->yDim-1, output->xDim-1);
+    double ***resultMask = d3matrix(outputMask->zDim-1, outputMask->yDim-1, outputMask->xDim-1);
     rsExtractVolumeFromRSNiftiFileBuffer(output, result[0][0], 0);
+    rsExtractVolumeFromRSNiftiFileBuffer(outputMask, resultMask[0][0], 0);
 
     // apply additional transformations that were already warped to the target space
     if (!params->resourceTransformation) {
@@ -437,21 +526,38 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
         }
     }
 
+    // apply padded mask to the output nifti
+    for (short x=0; x < output->xDim; x++) {
+        for (short y=0; y < output->yDim; y++) {
+            for (short z = 0; z < output->zDim; z++) {
+                if (resultMask[z][y][x] < 0.5) {
+                    result[z][y][x] *= log(-1.0);
+                }
+            }
+        }
+    }
+
     // copy resulting volume to the appropriate index in the output volume
     rsWriteVolumeToRSNiftiFileBuffer(params->target, result[0][0], params->volumeIndex);
     rsCloseNiftiFileAndFree(output);
+    rsCloseNiftiFileAndFree(outputMask);
 
     // cleanup
     if (!params->keepFiles) {
         unlink(inputName);
         unlink(outputName);
+        unlink(paddedInputName);
+        unlink(inputMaskName);
+        unlink(outputMaskName);
     }
 
     rsFree(inputName);
     rsFree(outputName);
-    rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
+    rsFree(inputMaskName);
+    rsFree(outputMaskName);
+    rsFree(paddedInputName);
     rsFree(result[0][0]); rsFree(result[0]); rsFree(result);
-    rsFree(callString);
+    rsFree(resultMask[0][0]); rsFree(resultMask[0]); rsFree(resultMask);
 }
 
 void rsApplyTransformationDestroy(rsApplyTransformationParameters *p)
@@ -663,7 +769,7 @@ void rsApplyTransformationConvertMcFlirtTransformMatrixToAntsTransformMatrix(mat
     gsl_matrix_free(antsTrans);
 }
 
-BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath)
+BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath, BOOL verbose)
 {
     rsNiftiFile *warp = rsCloneNiftiFile(warpPath, shift, RSNIFTI_OPEN_ALLOC, 3);
     nifti_image *warpImage = warp->fslio->niftiptr;
@@ -699,8 +805,6 @@ BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, 
 
     double phaseEncSign = phaseEncDir[1] == '-' ? -1.0 : +1.0;
 
-    fprintf(stdout, "Phase enc dir: %c, multiplying shift with: %.0f\n", phaseEncDir[1], phaseEncSign);
-
     // Convert world matrix from RAS to LPI
     mat44 worldMatrix = warpImage->sform_code == NIFTI_XFORM_UNKNOWN
                         ? warpImage->qto_xyz
@@ -725,6 +829,19 @@ BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, 
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, ras2lpi, R, 0.0, antsR); // antsR = <- ras2lpi * R
     gsl_matrix_free(R);
     gsl_matrix_free(ras2lpi);
+
+    if (verbose) {
+        fprintf(stdout, "Phase encoding direction: %s\n", phaseEncDir);
+        fprintf(stdout, "Multiplying shift with: %.0f\n", phaseEncSign);
+        fprintf(stdout, "World matrix of the supplied fugue voxel shift:\n");
+        for (short i = 0; i < 4; i++) {
+            fprintf(stdout, " %+.6f  %+.6f  %+.6f  %+.6f\n", worldMatrix.m[i][0], worldMatrix.m[i][1], worldMatrix.m[i][2], worldMatrix.m[i][3]);
+        }
+        fprintf(stdout, "World matrix used for converting %s shifts to ANTs warp vectors:\n", phaseEncDir);
+        for (short i = 0; i < 4; i++) {
+            fprintf(stdout, " %+.6f  %+.6f  %+.6f  %+.6f\n", gsl_matrix_get(antsR, i, 0), gsl_matrix_get(antsR, i, 1), gsl_matrix_get(antsR, i, 2), gsl_matrix_get(antsR, i, 3));
+        }
+    }
 
     // Create ANTs warp from FSL's voxel shift map
     double ***shiftData = d3matrix(shift->zDim-1, shift->yDim-1, shift->xDim-1);

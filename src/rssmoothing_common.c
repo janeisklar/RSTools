@@ -167,6 +167,7 @@ void rsConvolveWithKernel(double ***result, double ***input, double ***kernel, s
     for (short z=0; z<zdim; z++) {
 		for (short y=0; y<ydim; y++) {
 			for (short x=0; x<xdim; x++) {
+				size_t nValues = 0;
 				double val=0.0, 
 				       norm= 0.0;
 				const short x3=x-midx, 
@@ -179,13 +180,22 @@ void rsConvolveWithKernel(double ***result, double ***input, double ***kernel, s
 							            y2=y3+my,
 								        z2=z3+mz;
 							if (x2>=0 && x2<xdim && y2>=0 && y2<ydim && z2>=0 && z2<zdim) {
+								if (!isnormal(input[z2][y2][x2])) {
+									continue;
+								}
 								val+=input[z2][y2][x2] * kernel[mz][my][mx];
 								norm+=kernel[mz][my][mx];
+								nValues += 1;
 	    					}
 	  				  	}
 					}
 				}
-				result[z][y][x] = fabs(norm)>1e-12 ? val/norm : val;
+				if (nValues > 0) {
+					result[z][y][x] = fabs(norm) > 1e-12 ? val / norm : val;
+				} else {
+					// fill with NaN if we excluded all values in the kernel
+					result[z][y][x] = log(-1.0);
+				}
 			}
 		}
     }

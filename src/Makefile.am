@@ -68,7 +68,7 @@ librstimecourse_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librszeropadding_la_SOURCES = rszeropadding_ui.c rszeropadding_common.c
 librszeropadding_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 librsapplytransformation_la_SOURCES = rsapplytransformation_ui.c rsapplytransformation_common.c
-librsapplytransformation_la_LIBADD = @LIBOBJS@ $(rslibraries) 
+librsapplytransformation_la_LIBADD = librszeropadding.la @LIBOBJS@ $(rslibraries) 
 
 rsbandpass_SOURCES = rsbandpass.c
 rsbandpass_LDADD = librsbandpass.la @LIBOBJS@ $(rslibraries)
