@@ -19,5 +19,5 @@ int main(int argc, char * argv[])
     // Free memory
     rsScrubbingDestroy(p);
 
-    return 0;
+    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
 }
