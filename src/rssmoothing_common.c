@@ -36,7 +36,7 @@ void rsSmoothingInit(rsSmoothingParameters *p)
     rsSetThreadsNum(p->threads);
     
     if ( p->kernelSizeFWHM < 0.00001 ) {
-        fprintf(stderr, "\nError: The FWHM kernel size must be a positive floating point number!\n", p->kernelSizeFWHM);
+        fprintf(stderr, "\nError: The FWHM kernel size must be a positive floating point number! (got %.2f)\n", p->kernelSizeFWHM); 
         return;
     }
 	

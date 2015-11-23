@@ -1,3 +1,6 @@
+// get access to getline() on linux
+#define _POSIX_C_SOURCE 200809L
+
 #include "rsio.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -66,4 +69,27 @@ BOOL rsCheckOutputs(const char **paths)
         i++;
     }
     return writable;
+}
+
+/*
+ * Reads in a single line from a file and returns it.
+ */
+BOOL rsReadline(FILE *f, char *line, int *length) {
+    *length = 0;
+    int c;
+
+    while(TRUE) {
+        c = fgetc(f);
+
+        if (c == '\n' || c == '\r' || c == EOF) {
+            break;
+        }
+
+        line[*length] = (char)c;
+        *length = *length+1;
+    }
+
+    line[*length] = '\0';
+
+    return c!=EOF;
 }

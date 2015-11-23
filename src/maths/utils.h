@@ -5,6 +5,7 @@
 #include <gsl/gsl_randist.h>
 
 #include "nifti/rsniftiutils.h"
+#include "utils/rsio.h"
 
 #if !defined(__UTILS_MATHUTILS_H)
 #define __UTILS_MATHUTILS_H
@@ -23,7 +24,6 @@ gsl_rng *rsGetRandomNumberGenerator();
 void rsDestroyRandomNumberGenerator();
 
 double **rsLoadRegressors(const char *path, long *nRegressors, long *nValues, double constantFactor);
-BOOL rsReadline(FILE *f, char *line, int *length);
 double *rsParseRegressorLine(char *line, long *nRegressors);
 double *rsReadRegressorFromStream(FILE *stream, unsigned int *nValues);
 double **rsLoadMatrixFromTxt(const char *path, long *nColumns, long *nRows);

@@ -15,6 +15,7 @@
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_cdf.h>
 
 #if !defined(__STATS_MATHUTILS_H)
 #define __STATS_MATHUTILS_H

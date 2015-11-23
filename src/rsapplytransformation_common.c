@@ -1,3 +1,7 @@
+// get access to mkdtemp on linux
+#define _POSIX_C_SOURCE 200809L
+
+#include "config.h"
 #include <src/nifti/headerinfo.h>
 #include <src/nifti/rsniftiutils.h>
 #include <nifti1_io.h>
@@ -9,8 +13,12 @@
 #include "rsapplytransformation_ui.h"
 #include "math.h"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <gsl/gsl_vector_double.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef struct {
     char *tmpDirPath;
@@ -627,7 +635,7 @@ BOOL rsApplyTransformationConvertMcFlirtTransformations(rsNiftiFile* input, char
         }
 
         if (nColumns != 4 || nRows != 4) {
-            fprintf(stderr, "Matrix format of file %s should have been 4x4, but was %dx%d!\n", path, nColumns, nRows);
+            fprintf(stderr, "Matrix format of file %s should have been 4x4, but was %ldx%ld!\n", path, nColumns, nRows);
             return FALSE;
         }
 

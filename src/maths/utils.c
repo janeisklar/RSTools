@@ -120,30 +120,6 @@ double **rsLoadRegressors(const char *path, long *nRegressors, long *nValues, do
     return result;
 }
 
-
-/*
- * Reads in a single line from a file and returns it.
- */
-BOOL rsReadline(FILE *f, char *line, int *length) {
-    *length = 0;
-    int c;
-    
-    while(TRUE) {
-        c = fgetc(f);
-        
-        if (c == '\n' || c == '\r' || c == EOF) {
-            break;
-        }
-        
-        line[*length] = (char)c;
-        *length = *length+1;
-    }
-    
-    line[*length] = '\0';
-    
-    return c!=EOF;
-}
-
 /*
  * Reads in a line from the regressor file and returns the
  * tab- or space-separated values as an ar array of doubles.

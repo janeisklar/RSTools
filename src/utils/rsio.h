@@ -14,6 +14,7 @@ BOOL rsFileIsReadable(const char *path);
 BOOL rsFileIsWritable(const char *path);
 BOOL rsCheckInputs(const char **paths);
 BOOL rsCheckOutputs(const char **paths);
+BOOL rsReadline(FILE *f, char *line, int *length);
 
 #ifdef __cplusplus
 }
