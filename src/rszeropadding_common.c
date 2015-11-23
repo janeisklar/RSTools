@@ -62,7 +62,11 @@ void rsZeropaddingInit(rsZeropaddingParameters *p)
         fprintf(stdout, "Output file: %s\n", p->outputpath);
         fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
         fprintf(stdout, "Output Dim: %d %d %d (%d Volumes)\n", p->newDim[0], p->newDim[1], p->newDim[2], p->input->vDim);
-        fprintf(stdout, "Value used for padding: %.2f\n", p->paddingValue);
+        if (p->mirroredPadding) {
+            fprintf(stdout, "Padding will be performed by mirroring the edges\n");
+        } else {
+            fprintf(stdout, "Value used for padding: %.2f\n", p->paddingValue);
+        }
     }
 	
     p->parametersValid = TRUE;
@@ -108,6 +112,7 @@ void rsZeropaddingRun(rsZeropaddingParameters *p)
     unsigned short x,y,z;
     Point3D *pointIn;
     Point3D *pointOut;
+    SignedPoint3D *signedPointIn;
 
     for (z=0; z<p->output->zDim; z++) {
         for (y = 0; y < p->output->yDim; y++) {
@@ -116,23 +121,52 @@ void rsZeropaddingRun(rsZeropaddingParameters *p)
                 pointOut = rsMakePoint3D(x, y, z);
 
                 if (rsZeropaddingIsPaddedPoint(p, pointOut)) {
-                    // fill with padding values
-                    pointIn = rsMakePoint3D(0, 0, 0);
-                    rsCopyTimecourseFromInBufferToOutBuffer(
-                        p->input->dt,     // datatype
-                        p->output->data,  // output specification
-                        pointOut,
-                        p->output->xDim,
-                        p->output->yDim,
-                        p->output->zDim,
-                        p->output->vDim,
-                        paddingBuffer,    // input specification (the padding buffer)
-                        pointIn,
-                        1,
-                        1,
-                        1
-                    );
-
+                    if (p->mirroredPadding) {
+                        // fill with mirrored version of the input
+                        signedPointIn = rsMakeSignedPoint3D(x-p->padding[0], y-p->padding[2], z-p->padding[4]);
+                        if (signedPointIn->x < 0 || signedPointIn->x >= (p->input->xDim - 1)) {
+                            signedPointIn->x = signedPointIn->x < 0 ? -1 - signedPointIn->x : 2*p->input->xDim - signedPointIn->x - 1;
+                        }
+                        if (signedPointIn->y < 0 || signedPointIn->y >= (p->input->yDim - 1)) {
+                            signedPointIn->y = signedPointIn->y < 0 ? -1 - signedPointIn->y : 2*p->input->yDim - signedPointIn->y - 1;
+                        }
+                        if (signedPointIn->z < 0 || signedPointIn->z >= (p->input->zDim - 1)) {
+                            signedPointIn->z = signedPointIn->z < 0 ? -1 - signedPointIn->z : 2*p->input->zDim - signedPointIn->z - 1;
+                        }
+                        pointIn = rsMakePoint3D(signedPointIn->x, signedPointIn->y, signedPointIn->z);
+                        rsCopyTimecourseFromInBufferToOutBuffer(
+                            p->input->dt,     // datatype
+                            p->output->data,  // output specification
+                            pointOut,
+                            p->output->xDim,
+                            p->output->yDim,
+                            p->output->zDim,
+                            p->output->vDim,
+                            p->input->data,   // input specification
+                            pointIn,
+                            p->input->xDim,
+                            p->input->yDim,
+                            p->input->zDim
+                        );
+                        rsFree(signedPointIn);
+                    } else {
+                        // fill with padding values
+                        pointIn = rsMakePoint3D(0, 0, 0);
+                        rsCopyTimecourseFromInBufferToOutBuffer(
+                            p->input->dt,     // datatype
+                            p->output->data,  // output specification
+                            pointOut,
+                            p->output->xDim,
+                            p->output->yDim,
+                            p->output->zDim,
+                            p->output->vDim,
+                            paddingBuffer,    // input specification (the padding buffer)
+                            pointIn,
+                            1,
+                            1,
+                            1
+                        );
+                    }
                 } else {
                     // fill with timecourse from the corresponding point in the input volume
                     pointIn = rsMakePoint3D(x-p->padding[0], y-p->padding[2], z-p->padding[4]);

@@ -94,7 +94,6 @@ void rsRoiBuildInterface(rsRoiParameters *p)
     
     o = rsUINewOption();
     o->name                = "cube";
-    o->shorthand           = 'c';
     o->type                = G_OPTION_ARG_CALLBACK;
     o->storage             = cbPoint;
     o->cli_description     = "use this option if the ROI that is to be added is a cube. The height/weight/depth should be given in mm unless when used with --useImageSpace.";
@@ -114,7 +113,6 @@ void rsRoiBuildInterface(rsRoiParameters *p)
         
     o = rsUINewOption();
     o->name                = "center";
-    o->shorthand           = 'C';
     o->type                = G_OPTION_ARG_CALLBACK;
     o->storage             = cbPoint;
     o->cli_description     = "this option specifies the center of the sphere/cube in MNI space(mm) unless when used with --useImageSpace.";

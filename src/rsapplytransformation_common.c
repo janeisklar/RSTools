@@ -430,7 +430,7 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
     rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
 
     // pad input as parts of it will be removed by the lanczos-filter otherwise
-    int nPaddingArguments = 9;
+    int nPaddingArguments = 10;
     char *paddingArguments[] = {
         "rszeropadding",
         rsStringConcat("--input=", inputName, NULL),
@@ -440,7 +440,8 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
         "--ly=5",
         "--uy=5",
         "--lz=5",
-        "--uz=5"
+        "--uz=5",
+        "--mirroredPadding"
     };
     rsZeropaddingParameters * paddingParams = rsZeropaddingParseParams(nPaddingArguments, paddingArguments);
     if (!paddingParams->parametersValid)

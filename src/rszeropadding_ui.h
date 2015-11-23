@@ -15,6 +15,7 @@ typedef struct {
     char *outputpath;
     int padding[6];
     double paddingValue;
+    BOOL mirroredPadding;
 
     char *callString;
 

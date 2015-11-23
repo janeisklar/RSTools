@@ -12,6 +12,7 @@ rsZeropaddingParameters *rsZeropaddingInitParameters() {
     p->padding[4]           = 0;
     p->padding[5]           = 0;
     p->paddingValue         = 0.0;
+    p->mirroredPadding      = FALSE;
     p->callString           = NULL;
     p->verbose              = FALSE;
     p->input                = NULL;
@@ -144,8 +145,16 @@ void rsZeropaddingBuildInterface(rsZeropaddingParameters *p)
     o->shorthand           = 'p';
     o->type                = G_OPTION_ARG_DOUBLE;
     o->storage             = &p->paddingValue;
-    o->cli_description     = "the value that padded is used for the padded space";
+    o->cli_description     = "the value that padded is used for the padded space (defaults to 0)";
     o->cli_arg_description = "<double>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "mirroredPadding";
+    o->shorthand           = 'm';
+    o->storage             = &p->mirroredPadding;
+    o->cli_description     = "instead of padding a constant value the volume is mirrored on the edges. (overwrites --value, -p)";
+    o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
