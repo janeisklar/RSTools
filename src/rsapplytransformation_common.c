@@ -5,9 +5,8 @@
 #include "nifti/rsniftiutils.h"
 #include "rsapplytransformation_common.h"
 #include "utils/rsio.h"
+#include "utils/rsconfig.h"
 #include "rsapplytransformation_ui.h"
-#include "rszeropadding_ui.h"
-#include "rszeropadding_common.h"
 #include "math.h"
 #include <sys/stat.h>
 #include <unistd.h>
@@ -39,7 +38,6 @@ BOOL rsApplyTransformationConvertMcFlirtTransformations(rsNiftiFile* input, char
 void rsApplyTransformationConvertMcFlirtTransformMatrixToAntsTransformMatrix(mat44 *antsTransform, const rsNiftiFile* input, const mat44 *M);
 BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params);
 char *rsApplyTransformationGetMcFlirtTransformationPath(const char *tmpDirPath, const int volumeIndex, const int transformationId);
-char *rsApplyTransformationGetANTsPath();
 BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, BOOL highQuality);
 BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath, BOOL verbose);
 
@@ -47,7 +45,7 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
 {
     p->parametersValid = FALSE;
 
-    p->antsPath = rsApplyTransformationGetANTsPath();
+    p->antsPath = rsConfigGetANTsPath();
 
     if (p->antsPath == NULL) {
         return;
@@ -58,6 +56,7 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
         (const char*)p->inputpath,
         (const char*)p->transformationpath,
         (const char*)p->referencepath,
+        (const char*)p->headerReferencePath,
         RSIO_LASTFILE
     });
     
@@ -140,8 +139,21 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
         }
     }
 
+    // prepare prototypical volume that contains the appropriate headers used for all output files
+    rsNiftiFile *dimReference = rsOpenNiftiFile(p->referencepath, RSNIFTI_OPEN_NONE);
+    rsNiftiFile *reference = p->headerReferencePath == NULL ? p->input : rsOpenNiftiFile(p->headerReferencePath, RSNIFTI_OPEN_NONE);
+    reference->xDim = dimReference->xDim;
+    reference->yDim = dimReference->yDim;
+    reference->zDim = dimReference->zDim;
+    reference->vDim = dimReference->vDim;
+    FslSetDim(reference->fslio, reference->xDim, reference->yDim, reference->zDim, reference->vDim);
+    FslSetDimensionality(reference->fslio, 4);
+    float refVoxDim[4];
+    FslGetVoxDim(dimReference->fslio, &refVoxDim[0], &refVoxDim[1], &refVoxDim[2], &refVoxDim[3]);
+    FslSetVoxDim(reference->fslio, refVoxDim[0], refVoxDim[1], refVoxDim[2], refVoxDim[3]);
+    rsCloseNiftiFileAndFree(dimReference);
+
     // create ouput volume
-    rsNiftiFile *reference = rsOpenNiftiFile(p->referencepath, RSNIFTI_OPEN_NONE);
     p->output = rsCloneNiftiFile(p->outputpath, reference, RSNIFTI_OPEN_ALLOC, p->input->vDim);
 
     // create temporary directory
@@ -430,27 +442,26 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
     rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
 
     // pad input as parts of it will be removed by the lanczos-filter otherwise
-    int nPaddingArguments = 10;
-    char *paddingArguments[] = {
-        "rszeropadding",
-        rsStringConcat("--input=", inputName, NULL),
-        rsStringConcat("--output=", paddedInputName, NULL),
-        "--lx=5",
-        "--ux=5",
-        "--ly=5",
-        "--uy=5",
-        "--lz=5",
-        "--uz=5",
-        "--mirroredPadding"
-    };
-    rsZeropaddingParameters * paddingParams = rsZeropaddingParseParams(nPaddingArguments, paddingArguments);
-    if (!paddingParams->parametersValid)
+    char *paddingCall = rsStringConcat(
+        rsConfigGetRSToolsExecutablesPath(), "/rszeropadding",
+        " --input=", inputName,
+        " --output=", paddedInputName,
+        " --lx=5",
+        " --ux=5",
+        " --ly=5",
+        " --uy=5",
+        " --lz=5",
+        " --uz=5",
+        " --mirroredPadding",
+        NULL
+    );
+
+    if (system(paddingCall) != 0) {
+        fprintf(stderr, "Error while padding input volume %03d using:\n%s\n", (int)params->volumeIndex, paddingCall);
         return FALSE;
-    rsZeropaddingInit(paddingParams);
-    if (!paddingParams->parametersValid)
-        return FALSE;
-    rsZeropaddingRun(paddingParams);
-    rsZeropaddingDestroy(paddingParams);
+    }
+
+    rsFree(paddingCall);
 
     // create a mask based on the padded input that will be used to remove the padding later
     rsNiftiFile *paddedInput = rsOpenNiftiFile(paddedInputName, RSNIFTI_OPEN_NONE);
@@ -812,21 +823,35 @@ BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, 
                         : warpImage->sto_xyz;
 
     // R - the world coordinate matrix of the input nifti
-    gsl_matrix *R = gsl_matrix_calloc(4, 4);
-    for (int i =0; i < 4; i++) {
-        for (int j =0; j < 4; j++) {
+    gsl_matrix *R = gsl_matrix_calloc(3, 3);
+    for (int i =0; i < 3; i++) {
+        for (int j =0; j < 3; j++) {
             gsl_matrix_set(R, i, j, worldMatrix.m[i][j]);
         }
     }
 
+    // compute determinant of R
+    gsl_matrix *tmp = gsl_matrix_alloc(3, 3);
+    int signum;
+    gsl_permutation *p = gsl_permutation_calloc(3);
+    gsl_matrix_memcpy(tmp , R);
+    gsl_linalg_LU_decomp(tmp, p ,&signum);
+    const double det = gsl_linalg_LU_det(tmp , signum);
+    gsl_permutation_free(p);
+    gsl_matrix_free(tmp);
+
     // ras2lpi - RAS to LPI transformation (flip x and y)
-    gsl_matrix *ras2lpi = gsl_matrix_alloc(4, 4); // -1  0  0  0
-    gsl_matrix_set_identity(ras2lpi);             //  0 -1  0  0
-    gsl_matrix_set(ras2lpi, 0, 0, -1.0);          //  0  0  1  0
-    gsl_matrix_set(ras2lpi, 1, 1, -1.0);          //  0  0  0  1
+    gsl_matrix *ras2lpi = gsl_matrix_alloc(3, 3); //  1  0  0
+    gsl_matrix_set_identity(ras2lpi);             //  0  1  0
+    gsl_matrix_set(ras2lpi, 2, 2, -1.0);          //  0  0 -1
+
+    // if determinant < 0 or phase enc dir != x: multiply ras2lpi by -1
+    if (det < 0 || phaseEncDim != 0) {
+        gsl_matrix_scale(ras2lpi, -1.0);
+    }
 
     // antsR = ras2lpi * R
-    gsl_matrix *antsR = gsl_matrix_alloc(4, 4);
+    gsl_matrix *antsR = gsl_matrix_alloc(3, 3);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, ras2lpi, R, 0.0, antsR); // antsR = <- ras2lpi * R
     gsl_matrix_free(R);
     gsl_matrix_free(ras2lpi);
@@ -835,12 +860,12 @@ BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, 
         fprintf(stdout, "Phase encoding direction: %s\n", phaseEncDir);
         fprintf(stdout, "Multiplying shift with: %.0f\n", phaseEncSign);
         fprintf(stdout, "World matrix of the supplied fugue voxel shift:\n");
-        for (short i = 0; i < 4; i++) {
-            fprintf(stdout, " %+.6f  %+.6f  %+.6f  %+.6f\n", worldMatrix.m[i][0], worldMatrix.m[i][1], worldMatrix.m[i][2], worldMatrix.m[i][3]);
+        for (short i = 0; i < 3; i++) {
+            fprintf(stdout, " %+.6f  %+.6f  %+.6f\n", worldMatrix.m[i][0], worldMatrix.m[i][1], worldMatrix.m[i][2]);
         }
         fprintf(stdout, "World matrix used for converting %s shifts to ANTs warp vectors:\n", phaseEncDir);
-        for (short i = 0; i < 4; i++) {
-            fprintf(stdout, " %+.6f  %+.6f  %+.6f  %+.6f\n", gsl_matrix_get(antsR, i, 0), gsl_matrix_get(antsR, i, 1), gsl_matrix_get(antsR, i, 2), gsl_matrix_get(antsR, i, 3));
+        for (short i = 0; i < 3; i++) {
+            fprintf(stdout, " %+.6f  %+.6f  %+.6f\n", gsl_matrix_get(antsR, i, 0), gsl_matrix_get(antsR, i, 1), gsl_matrix_get(antsR, i, 2));
         }
     }
 
@@ -980,37 +1005,4 @@ BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpec
     }
 
     return TRUE;
-}
-
-char *rsApplyTransformationGetANTsPath()
-{
-    const char *confPath = CONFIG_PATH"/rstools.conf";
-    FILE *config = fopen(confPath, "r");
-
-    if (config == NULL) {
-        fprintf(stderr, "Could not read rstools config file to retrieve the path to ANTs (%s)\n", confPath);
-        return NULL;
-    }
-
-    int length;
-    char *line = rsMalloc(sizeof(char)*1000);
-    const char* pathPreamble = "ANTSPATH=";
-    char *antsPath = NULL;
-
-    while (rsReadline(config, line, &length)) {
-        if (!rsStringStartsWith(line, pathPreamble)) {
-            continue;
-        }
-        antsPath = rsString(&line[strlen(pathPreamble)]);
-    }
-
-    fclose(config);
-    rsFree(line);
-
-    if (antsPath == NULL) {
-        fprintf(stderr, "The rstools config file did not contain the path to ANTs (%s)\n", confPath);
-        return NULL;
-    }
-
-    return antsPath;
 }

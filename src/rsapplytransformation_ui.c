@@ -7,6 +7,7 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     p->outputpath           = NULL;
     p->transformationpath   = NULL;
     p->referencepath        = NULL;
+    p->headerReferencePath  = NULL;
     p->antsPath             = NULL;
     p->callString           = NULL;
     p->verbose              = FALSE;
@@ -100,6 +101,14 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->type                = G_OPTION_ARG_FILENAME;
     o->storage             = &p->referencepath;
     o->cli_description     = "a reference volume that has the desired orientation/scaling";
+    o->cli_arg_description = "<volume>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "headerReference";
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->headerReferencePath;
+    o->cli_description     = "a volume from which the extended header information will be copied (world matrices, voxel sizes and dim lengths will be taken from the volume supplied with --reference/-r)";
     o->cli_arg_description = "<volume>";
     rsUIAddOption(p->interface, o);
 	

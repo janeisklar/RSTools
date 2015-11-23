@@ -34,6 +34,7 @@ typedef struct {
     char *outputpath;
     char *transformationpath;
     char *referencepath;
+    char *headerReferencePath;
     char *antsPath;
 
     char *callString;

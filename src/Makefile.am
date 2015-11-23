@@ -68,7 +68,7 @@ librstimecourse_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librszeropadding_la_SOURCES = rszeropadding_ui.c rszeropadding_common.c
 librszeropadding_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 librsapplytransformation_la_SOURCES = rsapplytransformation_ui.c rsapplytransformation_common.c
-librsapplytransformation_la_LIBADD = librszeropadding.la @LIBOBJS@ $(rslibraries) 
+librsapplytransformation_la_LIBADD = @LIBOBJS@ $(rslibraries) 
 
 rsbandpass_SOURCES = rsbandpass.c
 rsbandpass_LDADD = librsbandpass.la @LIBOBJS@ $(rslibraries)
@@ -193,6 +193,7 @@ nobase_pkginclude_HEADERS =                                   \
 	nifti/rsniftiutils.h                                      \
 	nifti/headerinfo.h                                        \
 	nifti/dicomfinder.h                                       \
+	utils/rsconfig.h                                          \
 	utils/rsio.h                                              \
 	utils/rsmemory.h                                          \
 	utils/rsstring.h                                          \
@@ -205,7 +206,7 @@ install-exec-hook:
 	echo 'includedir='$(DESTDIR)$(includedir) >> $(srcdir)/rstools.pc
 	echo '' >> $(srcdir)/rstools.pc
 	echo 'Name: RSTools' >> $(srcdir)/rstools.pc
-	echo 'Description: Resting-state toolbox' >> $(srcdir)/rstools.pc
+	echo 'Description: Resting-state pre-processing tools / pipeline' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
 	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
