@@ -1373,7 +1373,15 @@ void rsCloseNiftiFile(rsNiftiFile* f, BOOL keepData)
     if ( ! keepData ) {
         free(f->data);
     }
-    FslClose(f->fslio);
+
+    // FSL sometimes starts to write to the file we're closing
+    // and updates the description. Since we most of the time
+    // don't want to touch the file, we'll be closing it ourselves
+    // instead of calling: FslClose(f->fslio);
+    if (!znz_isnull(f->fslio->fileptr)){
+        znzclose(f->fslio->fileptr);
+    }
+
     f->readable = FALSE;
 }
 
