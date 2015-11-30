@@ -40,8 +40,7 @@ typedef struct {
     char *antsPath;
 } rsApplyTransformationApplyParams;
 
-void rsApplyTransformationLoadTransformationFile(char ***output, size_t *nTransformations, FILE *file);
-BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpecification*** transformations, char **transformationFile, const size_t nTransformations);
+BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpecification*** transformations, char **transformationArgs, const size_t nTransformations);
 BOOL rsApplyTransformationConvertMcFlirtTransformations(rsNiftiFile* input, char ***transformations, size_t nVolumes, const char* transformationPath);
 void rsApplyTransformationConvertMcFlirtTransformMatrixToAntsTransformMatrix(mat44 *antsTransform, const rsNiftiFile* input, const mat44 *M);
 BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params);
@@ -62,7 +61,6 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
     /* verify accessibility of inputs/outputs */
     BOOL inputsReadable = rsCheckInputs((const char*[]){
         (const char*)p->inputpath,
-        (const char*)p->transformationpath,
         (const char*)p->referencepath,
         (const char*)p->headerReferencePath,
         RSIO_LASTFILE
@@ -87,34 +85,9 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
         return;
     }
 
-    p->transform = fopen(p->transformationpath, "r");
-
-    if ( p->transform == NULL ) {
-        fprintf(stderr, "\nError: The transformation file that was supplied as an input (%s) could not be read.\n", p->transformationpath);
-        return;
-    }
-
-    /* output the most important parameters to the user */
-    if ( p->verbose ) {
-        fprintf(stdout, "Input file: %s\n", p->inputpath);
-        fprintf(stdout, "Output file: %s\n", p->outputpath);
-        fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
-    }
-	
-    p->parametersValid = TRUE;
-}
-
-void rsApplyTransformationRun(rsApplyTransformationParameters *p)
-{
-    p->parametersValid = FALSE;
-
-    // load transformations
-    char **transformations = NULL;
-    rsApplyTransformationLoadTransformationFile(&transformations, &p->nTransformations, p->transform);
-
     // parse transformations
-    if (!rsApplyTransformationParseTransformationFile(&p->specs, transformations, p->nTransformations)) {
-        fprintf(stderr, "\nError: The transformation file that was supplied as an input (%s) could not be parsed!\n", p->transformationpath);
+    if (!rsApplyTransformationParseTransformationFile(&p->specs, p->transformations, p->nTransformations)) {
+        fprintf(stderr, "\nError: The supplied transformations could not be parsed!\n");
         return;
     }
 
@@ -137,6 +110,19 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
         }
         fprintf(stdout, "\n");
     }
+
+    // output the most important parameters to the user
+    if ( p->verbose ) {
+        fprintf(stdout, "Input file: %s\n", p->inputpath);
+        fprintf(stdout, "Output file: %s\n", p->outputpath);
+        fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+    }
+    p->parametersValid = TRUE;
+}
+
+void rsApplyTransformationRun(rsApplyTransformationParameters *p)
+{
+    p->parametersValid = FALSE;
 
     // convert transformations if necessary
     for (short t=0; t<p->nTransformations; t++) {
@@ -215,6 +201,9 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
     rsApplyTransformationApplyParams *params;
     short i, t, processedVolumes = 0;
     rsApplyTransformationTransSpecification *spec;
+    omp_lock_t updateProgressLock;
+    omp_init_lock(&updateProgressLock);
+
     #pragma omp parallel num_threads(rsGetThreadsNum()) private(i,t,params,spec) shared(processedVolumes)
     {
         #pragma omp for schedule(guided)
@@ -253,7 +242,19 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             }
             rsFree(params);
 
-            if (p->verbose) {
+            // show progress
+            if (p->progressCallback != NULL) {
+                omp_set_lock(&updateProgressLock);
+                rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+                event->run = processedVolumes;
+                processedVolumes += 1;
+                event->percentage = (double)processedVolumes*50.0 / (double)p->input->vDim;
+                rsReportProgressCallback_t cb = p->progressCallback->cb;
+                void *data = p->progressCallback->data;
+                cb(event, data);
+                rsFree(event);
+                omp_unset_lock(&updateProgressLock);
+            } else if (p->verbose) {
                 #pragma omp atomic
                 processedVolumes += 1;
 
@@ -298,7 +299,19 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             rsApplyTransformationApplyToVolume(params);
             rsFree(params);
 
-            if (p->verbose) {
+            // show progress
+            if (p->progressCallback != NULL) {
+                omp_set_lock(&updateProgressLock);
+                rsReportProgressEvent *event = (rsReportProgressEvent*)rsMalloc(sizeof(rsReportProgressEvent));
+                event->run = processedVolumes;
+                processedVolumes += 1;
+                event->percentage = (double)processedVolumes*50.0 / (double)p->input->vDim;
+                rsReportProgressCallback_t cb = p->progressCallback->cb;
+                void *data = p->progressCallback->data;
+                cb(event, data);
+                rsFree(event);
+                omp_unset_lock(&updateProgressLock);
+            } else if (p->verbose) {
                 #pragma omp atomic
                 processedVolumes += 1;
 
@@ -308,6 +321,8 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             }
         }
     }
+
+    omp_destroy_lock(&updateProgressLock);
 
     // close resource files that aren't needed anymore
     for (short t=0; t<p->nTransformations; t++) {
@@ -937,44 +952,7 @@ BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, 
     return TRUE;
 }
 
-void rsApplyTransformationLoadTransformationFile(char ***output, size_t *nTransformations, FILE *file)
-{
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    *nTransformations = 0;
-
-    // determine number of transformations
-    while ((read = getline(&line, &len, file)) != -1) {
-        *nTransformations = *nTransformations + 1;
-    }
-
-    *output = (char**)rsMalloc(sizeof(char*) * *nTransformations);
-    fseek(file, 0, SEEK_SET);
-
-    // determine length of indidvidual transformations
-    short i = 0;
-    while ((read = getline(&line, &len, file)) != -1) {
-        (*output)[i] = (char*)rsMalloc(sizeof(char)*(len+1));
-        i++;
-    }
-
-    fseek(file, 0, SEEK_SET);
-
-    // read in transformations
-    i = 0;
-    while ((read = getline(&line, &len, file)) != -1) {
-        sprintf((*output)[i], "%s", line);
-        const size_t lastCharPos = strlen(line)-1;
-        const char lastChar = (*output)[i][lastCharPos];
-        if (lastChar == '\n' || lastChar == '\r') {
-            (*output)[i][lastCharPos] = '\0';
-        }
-        i++;
-    }
-}
-
-BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpecification*** transformations, char **transformationFile, const size_t nTransformations)
+BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpecification*** transformations, char **transformationArgs, const size_t nTransformations)
 {
     *transformations = (rsApplyTransformationTransSpecification**)rsMalloc(sizeof(rsApplyTransformationTransSpecification*)*nTransformations);
 
@@ -982,34 +960,34 @@ BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpec
         (*transformations)[i] = (rsApplyTransformationTransSpecification*)rsMalloc(sizeof(rsApplyTransformationTransSpecification));
         size_t preamble;
 
-        if (rsStringStartsWith(transformationFile[i], "-mcflirt ")) {
+        if (rsStringStartsWith(transformationArgs[i], "mcflirt,")) {
             (*transformations)[i]->type = TRANS_MCFLIRT;
-            preamble = strlen("-mcflirt ");
+            preamble = strlen("mcflirt,");
             (*transformations)[i]->isAppliedInTargetSpace = FALSE;
-        } else if (rsStringStartsWith(transformationFile[i], "-ants ")) {
+        } else if (rsStringStartsWith(transformationArgs[i], "ants,")) {
             (*transformations)[i]->type = TRANS_ANTS;
             (*transformations)[i]->isAppliedInTargetSpace = FALSE;
-            preamble = strlen("-ants ");
-        } else if (rsStringStartsWith(transformationFile[i], "-mult ")) {
+            preamble = strlen("ants,");
+        } else if (rsStringStartsWith(transformationArgs[i], "mult,")) {
             (*transformations)[i]->type = TRANS_MULTIPLICATION;
             (*transformations)[i]->isAppliedInTargetSpace = TRUE;
-            preamble = strlen("-mult ");
-        } else if (rsStringStartsWith(transformationFile[i], "-div ")) {
+            preamble = strlen("mult,");
+        } else if (rsStringStartsWith(transformationArgs[i], "div,")) {
             (*transformations)[i]->type = TRANS_DIVISION;
             (*transformations)[i]->isAppliedInTargetSpace = TRUE;
-            preamble = strlen("-div ");
-        } else if (rsStringStartsWith(transformationFile[i], "-fugue ")) {
+            preamble = strlen("div,");
+        } else if (rsStringStartsWith(transformationArgs[i], "fugue,")) {
             (*transformations)[i]->type = TRANS_FUGUE;
             (*transformations)[i]->isAppliedInTargetSpace = FALSE;
-            preamble = strlen("-fugue ");
+            preamble = strlen("fugue,");
         } else {
-            fprintf(stderr, "Could not parse the following transformation: \"%s\"\n", transformationFile[i]);
+            fprintf(stderr, "Could not parse the following transformation: \"%s\"\n", transformationArgs[i]);
             return FALSE;
         }
         (*transformations)[i]->transformationId = i;
-        const size_t fileNameSize = strlen(&transformationFile[i][preamble]);
+        const size_t fileNameSize = strlen(&transformationArgs[i][preamble]);
         (*transformations)[i]->file = (char*)rsMalloc(sizeof(char)*(fileNameSize+1));
-        sprintf((*transformations)[i]->file, "%s", &transformationFile[i][preamble]);
+        sprintf((*transformations)[i]->file, "%s", &transformationArgs[i][preamble]);
     }
 
     return TRUE;

@@ -1,6 +1,7 @@
 #include "rstask.hpp"
 #include "rstool.hpp"
 #include "batch/util/rsconfig.hpp"
+#include <algorithm>
 
 namespace rstools {
 namespace batch {
@@ -129,27 +130,62 @@ RSTask* RSTask::taskFactory(const char *code)
 char** RSTask::getCallString(int *argc)
 {
     vector<rsArgument*> arguments = this->getArguments();
-    char **argv = (char**)malloc(sizeof(char*)*(arguments.size()+1));
-    *argc = (int)arguments.size()+1;
-    
-    const char* taskName = this->getCode();
-    argv[0] = (char*)malloc((strlen(taskName)+1)*sizeof(char));
-    sprintf(argv[0], "%s", taskName);
-    
+
+    // determine the numnber of arguments we'll end up with
+    size_t nArgs = 0;
     for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
         rsArgument *arg = arguments[i];
-        
+
         if ( arg->value == NULL ) { // --key
-            size_t length = strlen(arg->key) + 3;
-            argv[i+1] = (char*)malloc(length*sizeof(char));
-            sprintf(argv[i+1], "--%s", arg->key);
+            nArgs++;
+        } else if (strstr(arg->value, "\n") != NULL) { // --key=value1 --key=value2 ...
+            string values = arg->value;
+            nArgs += std::count(values.begin(), values.end(), '\n') + 1;
         } else { // --key=value
-            size_t length = strlen(arg->key) + strlen(arg->value) + 4;
-            argv[i+1] = (char*)malloc(length*sizeof(char));
-            sprintf(argv[i+1], "--%s=%s", arg->key, arg->value);
+            nArgs++;
         }
     }
-    
+
+    *argc = nArgs+1;
+    char **argv = (char**)rsMalloc(sizeof(char*)*(*argc));
+
+    const char* taskName = this->getCode();
+    argv[0] = (char*)rsMalloc((strlen(taskName)+1)*sizeof(char));
+    sprintf(argv[0], "%s", taskName);
+
+    size_t j = 0;
+    for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
+        rsArgument *arg = arguments[i];
+
+        if ( arg->value == NULL ) { // --key
+            const size_t length = strlen(arg->key) + 3;
+            argv[j+1] = (char*)rsMalloc(length*sizeof(char));
+            sprintf(argv[j+1], "--%s", arg->key);
+            j++;
+        } else if (strstr(arg->value, "\n") != NULL) { // --key=value1 --key=value2 ...
+            string values = arg->value;
+            int start = 0, end = 0;
+            while ((end = values.find("\n", start)) != std::string::npos) {
+                const char *value = values.substr(start, end - start).c_str();
+                const size_t length = strlen(arg->key) + strlen(value) + 4;
+                argv[j+1] = (char*)rsMalloc(length*sizeof(char));
+                sprintf(argv[j+1], "--%s=%s", arg->key, value);
+                j++;
+                start = end + 1;
+            }
+            const char *value = values.substr(start).c_str();
+            const size_t length = strlen(arg->key) + strlen(value) + 4;
+            argv[j+1] = (char*)rsMalloc(length*sizeof(char));
+            sprintf(argv[j+1], "--%s=%s", arg->key, value);
+            j++;
+        } else { // --key=value
+            const size_t length = strlen(arg->key) + strlen(arg->value) + 4;
+            argv[j+1] = (char*)rsMalloc(length*sizeof(char));
+            sprintf(argv[j+1], "--%s=%s", arg->key, arg->value);
+            j++;
+        }
+    }
+
     return argv;
 }
 

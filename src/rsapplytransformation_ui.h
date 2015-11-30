@@ -32,10 +32,10 @@ typedef struct {
 typedef struct {
     char *inputpath;
     char *outputpath;
-    char *transformationpath;
     char *referencepath;
     char *headerReferencePath;
     char *antsPath;
+    char **transformations;
 
     char *callString;
 
@@ -52,6 +52,8 @@ typedef struct {
     size_t nTransformations;
 
     rsUIInterface *interface;
+
+    rsReportProgressCallback *progressCallback;
 
 } rsApplyTransformationParameters;
 

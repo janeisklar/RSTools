@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
 AM_CPPFLAGS = -DDATA_PATH=\"$(datadir)\" -DEXECUTABLES_PATH=\"$(bindir)\" -I$(top_srcdir)/src
 
-rslibraries=                     \
+rslibraries=                            \
         ../../utils/librsutils.la       \
         ../../maths/librsmathutils.la   \
         ../../nifti/librsniftiutils.la  \
@@ -11,16 +11,17 @@ rslibraries=                     \
 
 LDADD=$(rslibraries)
 
-lib_LTLIBRARIES = \
-	libRSBandpassPlugin.la \
-	libRSRegressionPlugin.la \
-	libRSCorrelationPlugin.la \
-	libRSMotionScrubbingPlugin.la \
-	libRSScrubbingPlugin.la \
-	libRSSmoothingPlugin.la \
-	libRSOrientationPlugin.la \
-	libRSRoiPlugin.la \
-	libRSTimecoursePlugin.la \
+lib_LTLIBRARIES =                     \
+	libRSBandpassPlugin.la            \
+	libRSRegressionPlugin.la          \
+	libRSCorrelationPlugin.la         \
+	libRSMotionScrubbingPlugin.la     \
+	libRSScrubbingPlugin.la           \
+	libRSSmoothingPlugin.la           \
+	libRSOrientationPlugin.la         \
+	libRSRoiPlugin.la                 \
+	libRSTimecoursePlugin.la          \
+	libRSApplyTransformationPlugin.la \
 	libUnixPlugin.la
 
 libRSBandpassPlugin_la_SOURCES = rsbandpass/rsbandpass.cpp rsbandpass/tool/bandpass.cpp
@@ -59,32 +60,38 @@ libRSTimecoursePlugin_la_SOURCES = rstimecourse/rstimecourse.cpp rstimecourse/to
 libRSTimecoursePlugin_la_LIBADD  = $(LDADD) ../../librstimecourse.la  @LIBOBJS@
 libRSTimecoursePlugin_la_LDFLAGS = -module -export-dynamic
 
+libRSApplyTransformationPlugin_la_SOURCES = rsapplytransformation/rsapplytransformation.cpp rsapplytransformation/tool/applytransformation.cpp
+libRSApplyTransformationPlugin_la_LIBADD  = $(LDADD) ../../librsapplytransformation.la  @LIBOBJS@
+libRSApplyTransformationPlugin_la_LDFLAGS = -module -export-dynamic
+
 libUnixPlugin_la_SOURCES = unix/unix.cpp unix/tool/unix.cpp unix/task/unix.cpp
 libUnixPlugin_la_LIBADD  = $(LDADD) ../util/librsbatchutils.la @LIBOBJS@
 libUnixPlugin_la_LDFLAGS = -module -export-dynamic
 
 pluginsdir = $(datadir)/$(PACKAGE)/plugins
-plugins_DATA = \
-	.libs/libRSBandpassPlugin.so \
-	.libs/libRSRegressionPlugin.so \
-	.libs/libRSCorrelationPlugin.so \
-	.libs/libRSMotionScrubbingPlugin.so \
-	.libs/libRSScrubbingPlugin.so \
-	.libs/libRSSmoothingPlugin.so \
-	.libs/libRSOrientationPlugin.so \
-	.libs/libRSRoiPlugin.so \
-	.libs/libRSTimecoursePlugin.so \
+plugins_DATA =                              \
+	.libs/libRSBandpassPlugin.so            \
+	.libs/libRSRegressionPlugin.so          \
+	.libs/libRSCorrelationPlugin.so         \
+	.libs/libRSMotionScrubbingPlugin.so     \
+	.libs/libRSScrubbingPlugin.so           \
+	.libs/libRSSmoothingPlugin.so           \
+	.libs/libRSOrientationPlugin.so         \
+	.libs/libRSRoiPlugin.so                 \
+	.libs/libRSTimecoursePlugin.so          \
+	.libs/libRSApplyTransformationPlugin.so \
 	.libs/libUnixPlugin.so
 
 jobpluginsdir = $(datadir)/$(PACKAGE)/jobs/plugins
-jobplugins_DATA = \
-	../../../share/jobs/plugins/rsbandpass.xsdext \
-	../../../share/jobs/plugins/rsregression.xsdext \
-	../../../share/jobs/plugins/rscorrelation.xsdext \
-	../../../share/jobs/plugins/rsmotionscrubbing.xsdext \
-	../../../share/jobs/plugins/rsscrubbing.xsdext \
-	../../../share/jobs/plugins/rssmoothing.xsdext \
-	../../../share/jobs/plugins/rsorientation.xsdext \
-	../../../share/jobs/plugins/rsroi.xsdext \
-	../../../share/jobs/plugins/rstimecourse.xsdext \
+jobplugins_DATA =                                            \
+	../../../share/jobs/plugins/rsbandpass.xsdext            \
+	../../../share/jobs/plugins/rsregression.xsdext          \
+	../../../share/jobs/plugins/rscorrelation.xsdext         \
+	../../../share/jobs/plugins/rsmotionscrubbing.xsdext     \
+	../../../share/jobs/plugins/rsscrubbing.xsdext           \
+	../../../share/jobs/plugins/rssmoothing.xsdext           \
+	../../../share/jobs/plugins/rsorientation.xsdext         \
+	../../../share/jobs/plugins/rsroi.xsdext                 \
+	../../../share/jobs/plugins/rstimecourse.xsdext          \
+	../../../share/jobs/plugins/rsapplytransformation.xsdext \
 	../../../share/jobs/plugins/unix.xsdext

@@ -1,3 +1,4 @@
+#include <src/utils/rsui.h>
 #include "rsapplytransformation_ui.h"
 
 rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
@@ -5,7 +6,6 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     
     p->inputpath            = NULL;
     p->outputpath           = NULL;
-    p->transformationpath   = NULL;
     p->referencepath        = NULL;
     p->headerReferencePath  = NULL;
     p->antsPath             = NULL;
@@ -19,6 +19,7 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     p->nTransformations     = 0;
     p->specs                = NULL;
     p->parametersValid      = FALSE;
+    p->progressCallback     = NULL;
     
     return p;
 }
@@ -26,7 +27,6 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
 void rsApplyTransformationFreeParams(rsApplyTransformationParameters *p) {
     rsFree(p->inputpath);
     rsFree(p->outputpath);
-    rsFree(p->transformationpath);
     rsFree(p->referencepath);
     rsFree(p->input);
     rsFree(p->output);
@@ -66,6 +66,12 @@ rsApplyTransformationParameters *rsApplyTransformationParseParams(int argc, char
         return p;
     }
 
+    if (p->transformations == NULL || g_strv_length(p->transformations) < 1) {
+        fprintf(stderr, "At least one transformation needs to be specified!\n");
+        return p;
+    }
+    p->nTransformations = g_strv_length(p->transformations);
+
     p->parametersValid = parsingSuccessful;
     return p;
 }
@@ -75,7 +81,7 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     // initialize the most common options
     rsUIOption *o;
     p->interface = rsUINewInterface();
-    p->interface->description   = "Applies a complex sequence of various transformations using ANTs as speecified in the supplied transformation file.";
+    p->interface->description   = "Applies a complex sequence of various transformations using ANTs as speecified by the --trans/-T parameter.";
 
     o = rsUINewOption();
     o->name                = "input";
@@ -111,14 +117,16 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->cli_description     = "a volume from which the extended header information will be copied (world matrices, voxel sizes and dim lengths will be taken from the volume supplied with --reference/-r)";
     o->cli_arg_description = "<volume>";
     rsUIAddOption(p->interface, o);
-	
+
     o = rsUINewOption();
-    o->name                = "transformation";
-    o->shorthand           = 's';
-    o->type                = G_OPTION_ARG_FILENAME;
-    o->storage             = &p->transformationpath;
-    o->cli_description     = "a text file containing one transformation on each line which is going to applied using antsApplyTransforms. Each line should have the following format: \"-x y\", where x is the transformation type (ants, mcflirt, fugue, mult, div) and y the path to a transformation file or folder. In the case of mcflirt y is assumed to be a folder with rotation matrices. -mult and -div can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation option '-fugue' can be used to specify a voxel shift map for distortion correction.";
-    o->cli_arg_description = "<*.txt>";
+    o->name                = "trans";
+    o->shorthand           = 'T';
+    o->type                = G_OPTION_ARG_STRING_ARRAY;
+    o->nLines              = 10;
+    o->storage             = &p->transformations;
+    o->cli_description     = "Specifies one transformation which is applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"-T type,path\" or \"--trans=type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
+    o->gui_description     = "Specify one transformation per line which will be applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
+    o->cli_arg_description = "<type,param>";
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
