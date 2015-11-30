@@ -174,7 +174,8 @@ char** RSTask::getCallString(int *argc)
                 j++;
                 start = end + 1;
             }
-            const char *value = values.substr(start).c_str();
+            string valueStr = values.substr(start);
+            const char *value = valueStr.c_str();
             const size_t length = strlen(arg->key) + strlen(value) + 4;
             argv[j+1] = (char*)rsMalloc(length*sizeof(char));
             sprintf(argv[j+1], "--%s=%s", arg->key, value);
