@@ -124,13 +124,13 @@ void rsZeropaddingRun(rsZeropaddingParameters *p)
                     if (p->mirroredPadding) {
                         // fill with mirrored version of the input
                         signedPointIn = rsMakeSignedPoint3D(x-p->padding[0], y-p->padding[2], z-p->padding[4]);
-                        if (signedPointIn->x < 0 || signedPointIn->x >= (p->input->xDim - 1)) {
+                        if (signedPointIn->x < 0 || signedPointIn->x >= p->input->xDim) {
                             signedPointIn->x = signedPointIn->x < 0 ? -1 - signedPointIn->x : 2*p->input->xDim - signedPointIn->x - 1;
                         }
-                        if (signedPointIn->y < 0 || signedPointIn->y >= (p->input->yDim - 1)) {
+                        if (signedPointIn->y < 0 || signedPointIn->y >= p->input->yDim) {
                             signedPointIn->y = signedPointIn->y < 0 ? -1 - signedPointIn->y : 2*p->input->yDim - signedPointIn->y - 1;
                         }
-                        if (signedPointIn->z < 0 || signedPointIn->z >= (p->input->zDim - 1)) {
+                        if (signedPointIn->z < 0 || signedPointIn->z >= p->input->zDim) {
                             signedPointIn->z = signedPointIn->z < 0 ? -1 - signedPointIn->z : 2*p->input->zDim - signedPointIn->z - 1;
                         }
                         pointIn = rsMakePoint3D(signedPointIn->x, signedPointIn->y, signedPointIn->z);
