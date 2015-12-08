@@ -85,6 +85,11 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
         return;
     }
 
+    // if necessary copy coordinate space type
+    if (p->coordinateSpaceType == -1) {
+        p->coordinateSpaceType = p->input->fslio->niftiptr->sform_code;
+    }
+
     // parse transformations
     if (!rsApplyTransformationParseTransformationFile(&p->specs, p->transformations, p->nTransformations)) {
         fprintf(stderr, "\nError: The supplied transformations could not be parsed!\n");
@@ -116,6 +121,7 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
         fprintf(stdout, "Input file: %s\n", p->inputpath);
         fprintf(stdout, "Output file: %s\n", p->outputpath);
         fprintf(stdout, "Input Dim: %d %d %d (%d Volumes)\n", p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+        fprintf(stdout, "Resulting coordinate space: %s\n", nifti_xform_string(p->coordinateSpaceType));
     }
     p->parametersValid = TRUE;
 }
@@ -370,6 +376,8 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
     rsFree(tmpDirPath);
 
     // write output
+    p->output->fslio->niftiptr->sform_code = p->coordinateSpaceType;
+    p->output->fslio->niftiptr->qform_code = p->coordinateSpaceType;
     rsWriteNiftiHeader(p->output->fslio, p->callString);
     FslWriteVolumes(p->output->fslio, p->output->data, p->output->vDim);
 

@@ -4,22 +4,24 @@
 rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     rsApplyTransformationParameters *p = (rsApplyTransformationParameters*)rsMalloc(sizeof(rsApplyTransformationParameters));
     
-    p->inputpath            = NULL;
-    p->outputpath           = NULL;
-    p->referencepath        = NULL;
-    p->headerReferencePath  = NULL;
-    p->antsPath             = NULL;
-    p->callString           = NULL;
-    p->verbose              = FALSE;
-    p->keepFiles            = FALSE;
-    p->input                = NULL;
-    p->output               = NULL;
-    p->threads              = 1;
-    p->transform            = NULL;
-    p->nTransformations     = 0;
-    p->specs                = NULL;
-    p->parametersValid      = FALSE;
-    p->progressCallback     = NULL;
+    p->inputpath                = NULL;
+    p->outputpath               = NULL;
+    p->referencepath            = NULL;
+    p->headerReferencePath      = NULL;
+    p->antsPath                 = NULL;
+    p->callString               = NULL;
+    p->verbose                  = FALSE;
+    p->keepFiles                = FALSE;
+    p->input                    = NULL;
+    p->output                   = NULL;
+    p->threads                  = 1;
+    p->transform                = NULL;
+    p->nTransformations         = 0;
+    p->specs                    = NULL;
+    p->parametersValid          = FALSE;
+    p->progressCallback         = NULL;
+    p->coordinateSpaceTypeInput = NULL;
+    p->coordinateSpaceType      = -1;
     
     return p;
 }
@@ -32,6 +34,7 @@ void rsApplyTransformationFreeParams(rsApplyTransformationParameters *p) {
     rsFree(p->output);
     rsFree(p->transform);
     rsFree(p->callString);
+    rsFree(p->coordinateSpaceTypeInput);
     rsUIDestroyInterface(p->interface);
     rsFree(p);
 }
@@ -70,6 +73,24 @@ rsApplyTransformationParameters *rsApplyTransformationParseParams(int argc, char
         fprintf(stderr, "At least one transformation needs to be specified!\n");
         return p;
     }
+
+    if (p->coordinateSpaceTypeInput == NULL || strstr(p->coordinateSpaceTypeInput, "input") != NULL) {
+        p->coordinateSpaceType = -1;
+    } else if (strstr(p->coordinateSpaceTypeInput, "unknown") != NULL) {
+        p->coordinateSpaceType = NIFTI_XFORM_UNKNOWN;
+    } else if (strstr(p->coordinateSpaceTypeInput, "scanner") != NULL) {
+        p->coordinateSpaceType = NIFTI_XFORM_SCANNER_ANAT;
+    } else if (strstr(p->coordinateSpaceTypeInput, "aligned") != NULL) {
+        p->coordinateSpaceType = NIFTI_XFORM_ALIGNED_ANAT;
+    } else if (strstr(p->coordinateSpaceTypeInput, "talairach") != NULL) {
+        p->coordinateSpaceType = NIFTI_XFORM_TALAIRACH;
+    } else if (strstr(p->coordinateSpaceTypeInput, "mni") != NULL) {
+        p->coordinateSpaceType = NIFTI_XFORM_MNI_152;
+    } else {
+        fprintf(stderr, "'%s' is not a valid value for the coordinate space\n");
+        return p;
+    }
+
     p->nTransformations = g_strv_length(p->transformations);
 
     p->parametersValid = parsingSuccessful;
@@ -127,6 +148,26 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->cli_description     = "Specifies one transformation which is applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"-T type,path\" or \"--trans=type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
     o->gui_description     = "Specify one transformation per line which will be applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
     o->cli_arg_description = "<type,param>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "space";
+    o->shorthand           = 's';
+    o->type                = G_OPTION_ARG_STRING;
+    o->storage             = &p->coordinateSpaceTypeInput;
+    o->cli_description     = "Specifies the coordinate space of the output and can take the following values: 'input' (same as input), 'scanner', 'aligned' (aligned to an anatomical image), 'talairach' and 'mni'. This information is stored in the nifti header only, it does not affect the result of the transformation in any way. The hopes are though, that a viewing program might pick up on the specified value chooses the appropriate atlas or similar.";
+    o->cli_arg_description = "<space>";
+    o->defaultValue        = rsString("input");
+    rsUIOptionValue allowedValues[] = {
+        {rsString("input"),     rsString("copy from input")},
+        {rsString("unknown"),   rsString("coordinate space unknown")},
+        {rsString("scanner"),   rsString("scanner orientation")},
+        {rsString("aligned"),   rsString("aligned to a second image such as the subject's T1 scan")},
+        {rsString("talairach"), rsString("aligned to the Talairach space")},
+        {rsString("mni"),       rsString("aligned to the MNI 152 space")},
+        NULL
+    };
+    rsUISetOptionValues(o, allowedValues);
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
