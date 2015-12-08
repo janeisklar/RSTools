@@ -41,17 +41,48 @@ void RSUnixTool::_run()
         executionSuccessful = returnStatus == 0;
     } else {
 
+        // tokenize command
+        const size_t argCount = 100;
+        size_t i=1;
+        char *args[argCount];
+        char *cmd = rsString(executionCmd);
+        if (!(args[0] = strtok(cmd, " \t"))) {
+            fprintf(stderr, "Command could not be executed (invalid)\n");
+            return;
+        }
+        while ((args[i] = strtok(NULL, " \t")) && i < argCount) {
+            ++i;
+        }
+        args[i] = NULL;
+
+        // create stream for intercepting the program's output
         FILE *stream = NULL;
         stream = fopen(streamName, "r+");
 
-        pid_t pid;
-        pid = fork();
+        // create thread that monitors the executing thread
+        pid_t monitoringThreadPid;
+        monitoringThreadPid = fork();
 
-        if (pid == 0) {
-            // child thread:
-            const int returnStatus = system(executionCmd);
+        if (monitoringThreadPid == 0) {
 
-            // ensure that the other thread finishes in the case of an error in the execution
+            // create execution thread
+            pid_t executionThreadPid;
+            executionThreadPid = fork();
+
+            if (executionThreadPid == 0) {
+                // child thread: execute the command
+                execvp(args[0], args);
+                fprintf(stderr, "Error while executing the command\n");
+                exit(EXIT_FAILURE);
+            }
+
+            // monitoring thread: wait till the execution thread finishes
+            int executionThreadStatus;
+            waitpid(executionThreadPid, &executionThreadStatus, WUNTRACED);
+
+            // ensure that the  main thread finishes in the case of an error in the execution
+            // to do so, simply open and close the stream once more, so that the main thread
+            // who's waiting for input on the stream receives a EOF
             if (stream != NULL) {
                 FILE *writeStream = fopen(streamName, "w");
                 if (writeStream) {
@@ -60,24 +91,32 @@ void RSUnixTool::_run()
             }
 
             // TODO: handle status properly
-            bool executionFailed = returnStatus < 0; // || WEXITSTATUS(returnStatus) != 0;
-            exit(executionFailed ? EXIT_FAILURE : EXIT_SUCCESS);
-        } else {
-            // main thread
-            if (stream != NULL) {
-                executionSuccessful = this->_interceptOutput(stream);
+            const int executionThreadStatusCode = WEXITSTATUS(executionThreadStatus);
+            if (WIFEXITED(executionThreadStatus) && executionThreadStatusCode == EXIT_SUCCESS) {
+                exit(EXIT_SUCCESS);
+            } else {
+                exit(EXIT_FAILURE);
             }
         }
 
-        int childStatus;
-        waitpid(pid, &childStatus, WUNTRACED);
-        int childStatusCode = WEXITSTATUS(childStatus);
-        executionSuccessful &= WIFEXITED(childStatus) && childStatusCode == EXIT_SUCCESS;
+        // main thread: handle stream input
+        if (stream != NULL) {
+            executionSuccessful = this->_interceptOutput(stream);
+        }
 
+        int monitoringChildStatus;
+        waitpid(monitoringThreadPid, &monitoringChildStatus, WUNTRACED);
+        const int monitoringChildStatusCode = WEXITSTATUS(monitoringChildStatus);
+        executionSuccessful &= WIFEXITED(monitoringChildStatus);
+        executionSuccessful &= monitoringChildStatusCode == EXIT_SUCCESS;
+
+        // close stream
         fclose(stream);
     }
 
-    this->_moveOutputIfNecessary();
+    if (executionSuccessful) {
+        this->_moveOutputIfNecessary();
+    }
     this->_finalizeRun();
 }
 

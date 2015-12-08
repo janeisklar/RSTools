@@ -1,4 +1,5 @@
 #include "rsbatch_common.hpp"
+#include "rsbatch_ui.hpp"
 
 #include <cstdlib>
 #include <unistd.h>
@@ -47,12 +48,15 @@ void rsBatchInit(rsBatchParameters* p)
 }
 
 void rsBatchRun(rsBatchParameters *p)
-{   
+{
+    p->parametersValid = FALSE;
+
     // Check if all that needs to be done is to print a specified parameter
     if ( p->viewArgument != NULL ) {
-        return rsBatchPrintParameter(p);
+        p->parametersValid = rsBatchPrintParameter(p);
+        return;
     }
-    
+
     // Parse the runtime arguments
     vector<RSTask*> tasks = p->job->getTasks();
     RSTool** tools = (RSTool**)rsMalloc(tasks.size()*sizeof(RSTool*));
@@ -88,6 +92,7 @@ void rsBatchRun(rsBatchParameters *p)
     
     // Check if instead of executing only an overview over all tasks should be given
     if ( p->showOverview ) {
+        p->parametersValid = TRUE;
         return rsBatchShowJobOverview(p, tools);
     }
     
@@ -137,6 +142,8 @@ void rsBatchRun(rsBatchParameters *p)
             fprintf(stdout, "\n\n");
         }
     }
+
+    p->parametersValid = TRUE;
 }
 
 void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
@@ -149,18 +156,19 @@ void rsBatchPrintExecutionError(RSTool *tool, int taskNum, char const * state)
     }
 }
 
-void rsBatchPrintParameter(rsBatchParameters *p)
+BOOL rsBatchPrintParameter(rsBatchParameters *p)
 {
     vector<rsArgument*> arguments = p->job->getArguments();
     for ( vector<rsArgument*>::size_type i = 0; i != arguments.size(); i++ ) {
         rsArgument *arg = arguments[i];
         if ( ! strcmp(p->viewArgument, arg->key) ) {
             fprintf(stdout, "%s", arg->value);
-            return;
+            return true;
         }
     }
     
-    fprintf(stdout, "Parameter '%s' is not contained within jobfile '%s'!\n", p->viewArgument, p->jobpath);
+    fprintf(stderr, "Parameter '%s' is not contained within jobfile '%s'!\n", p->viewArgument, p->jobpath);
+    return false;
 }
 
 void rsBatchDestroy(rsBatchParameters* p)
