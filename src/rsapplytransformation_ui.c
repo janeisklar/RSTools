@@ -22,6 +22,7 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     p->progressCallback         = NULL;
     p->coordinateSpaceTypeInput = NULL;
     p->coordinateSpaceType      = -1;
+    p->defaultValue             = log(-1.0); // NaN
     
     return p;
 }
@@ -148,6 +149,15 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->cli_description     = "Specifies one transformation which is applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"-T type,path\" or \"--trans=type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
     o->gui_description     = "Specify one transformation per line which will be applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
     o->cli_arg_description = "<type,param>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "defaultValue";
+    o->shorthand           = 'd';
+    o->type                = G_OPTION_ARG_DOUBLE;
+    o->storage             = &p->defaultValue;
+    o->cli_description     = "Default value to be used for points that occur in the output volume, but are not part of the input volume. Defaults to NaN.";
+    o->cli_arg_description = "<float>";
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();

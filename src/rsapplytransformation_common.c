@@ -37,6 +37,7 @@ typedef struct {
     char *paddedOutputSuffix;
     BOOL resourceTransformation;
     BOOL keepFiles;
+    double defaultValue;
     char *antsPath;
 } rsApplyTransformationApplyParams;
 
@@ -222,6 +223,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             params->resourceTransformation = TRUE;
             params->keepFiles = p->keepFiles;
             params->antsPath = p->antsPath;
+            params->defaultValue = p->defaultValue;
 
             for (t=0; t<p->nTransformations; t++) {
                 spec = p->specs[t];
@@ -302,6 +304,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             params->resourceTransformation = FALSE;
             params->keepFiles = p->keepFiles;
             params->antsPath = p->antsPath;
+            params->defaultValue = p->defaultValue;
             rsApplyTransformationApplyToVolume(params);
             rsFree(params);
 
@@ -574,7 +577,7 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
         for (short y=0; y < output->yDim; y++) {
             for (short z = 0; z < output->zDim; z++) {
                 if (resultMask[z][y][x] < 0.5) {
-                    result[z][y][x] *= log(-1.0);
+                    result[z][y][x] *= params->defaultValue;
                 }
             }
         }

@@ -36,6 +36,7 @@ typedef struct {
     char *headerReferencePath;
     char *antsPath;
     char **transformations;
+    double defaultValue;
     char *coordinateSpaceTypeInput;
     int coordinateSpaceType;
 
