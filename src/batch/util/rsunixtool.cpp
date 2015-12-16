@@ -258,17 +258,32 @@ bool RSUnixTool::_setupTempDir()
 
 bool RSUnixTool::_prepareRun()
 {
+    // place a wrapper script that calls the command to be executed and redirects its output
+    char* wrapperScriptName = rsStringConcat(tmpDirPath, "/cmdWrapper.sh", NULL);
+    ofstream wrapperScript;
+    wrapperScript.open(wrapperScriptName);
+    wrapperScript << "#!/bin/bash" << std::endl;
+    wrapperScript << tmpDirPath << "/cmd.sh 2> " << tmpDirPath <<  "/error.log 1> " << tmpDirPath <<  "/output.log" << std::endl;
+    wrapperScript << "returnCode=\"${PIPESTATUS[0]}\"" << std::endl;
+    wrapperScript << "cat " << tmpDirPath <<  "/error.log >&2" << std::endl;
+    wrapperScript << "exit $returnCode" << std::endl;
+    wrapperScript.close();
+
     // place a bash script containing the command to be executed in the directory
     char* scriptName = rsStringConcat(tmpDirPath, "/cmd.sh", NULL);
     ofstream script;
     script.open(scriptName);
+    script << "#!/bin/bash" << std::endl;
     script << this->getUnixTask()->getCmd(true) << std::endl;
     script << "exit 0" << std::endl;
-
     script.close();
 
+    // fix permissions
+    chmod(wrapperScriptName, S_IXUSR | S_IWUSR | S_IRUSR | S_IRGRP);
+    chmod(scriptName, S_IXUSR | S_IWUSR | S_IRUSR | S_IRGRP);
+
     // prepare statement to call it with
-    executionCmd = rsStringConcat("/bin/bash ", scriptName, " > ", tmpDirPath, "/output.log", NULL);
+    executionCmd = wrapperScriptName;
     rsFree(scriptName);
 
     executionCmdPrint = this->getUnixTask()->getCmd(false);
