@@ -197,7 +197,6 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->cli_description     = "this parameter allows to set the filter that is used for interpolation. As this value is directly passed onto antsApplyTransform, please refer to its help description to see all possible values. Default value: LanczosWindowedSinc";
     o->cli_arg_description = "<method>";
     o->defaultValue        = "LanczosWindowedSinc";
-    o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
