@@ -153,6 +153,9 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
     float refVoxDim[4];
     FslGetVoxDim(dimReference->fslio, &refVoxDim[0], &refVoxDim[1], &refVoxDim[2], &refVoxDim[3]);
     FslSetVoxDim(reference->fslio, refVoxDim[0], refVoxDim[1], refVoxDim[2], refVoxDim[3]);
+    nifti_image *dimReferenceImage = dimReference->fslio->niftiptr;
+    FslSetRigidXform(reference->fslio, dimReferenceImage->qform_code, dimReferenceImage->qto_xyz);
+    FslSetStdXform(reference->fslio, dimReferenceImage->sform_code, dimReferenceImage->sto_xyz);
     rsCloseNiftiFileAndFree(dimReference);
 
     // create ouput volume
