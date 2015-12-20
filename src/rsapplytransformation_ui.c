@@ -23,6 +23,7 @@ rsApplyTransformationParameters *rsApplyTransformationInitParameters() {
     p->coordinateSpaceTypeInput = NULL;
     p->coordinateSpaceType      = -1;
     p->defaultValue             = log(-1.0); // NaN
+    p->interpolationMethod      = "LanczosWindowedSinc";
     
     return p;
 }
@@ -146,8 +147,8 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->type                = G_OPTION_ARG_STRING_ARRAY;
     o->nLines              = 10;
     o->storage             = &p->transformations;
-    o->cli_description     = "Specifies one transformation which is applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"-T type,path\" or \"--trans=type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
-    o->gui_description     = "Specify one transformation per line which will be applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANT's notation). Transformations should be given in the following format \"type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
+    o->cli_description     = "Specifies one transformation which is applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANTs' notation). Transformations should be given in the following format \"-T type,path\" or \"--trans=type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
+    o->gui_description     = "Specify one transformation per line which will be applied using antsApplyTransforms in the reversed order of occurrence, therefore the first transformation that is specified is also the first one that is applied to the data (which corresponds to the last transformation in ANTs' notation). Transformations should be given in the following format \"type,path\", where 'type' is the type of the transformation (i.e. ants, mcflirt, fugue, mult, div) and 'path' the path to a transformation file or folder. In the case of 'mcflirt', the 'path' is assumed to be a folder with rotation matrices. The types 'mult' and 'div' can be used to specify a multiplication/division with a constant 3D or 4D nifti such as the estimated bias field, which will be warped as well and applied after interpolating the input nifti in the same space. The transformation type 'fugue' can be used to specify a voxel shift map for distortion correction.";
     o->cli_arg_description = "<type,param>";
     rsUIAddOption(p->interface, o);
 
@@ -185,6 +186,17 @@ void rsApplyTransformationBuildInterface(rsApplyTransformationParameters *p)
     o->shorthand           = 'v';
     o->storage             = &p->verbose;
     o->cli_description     = "show debug information";
+    o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "interpolation";
+    o->shorthand           = 'n';
+    o->type                = G_OPTION_ARG_STRING;
+    o->storage             = &p->interpolationMethod;
+    o->cli_description     = "this parameter allows to set the filter that is used for interpolation. As this value is directly passed onto antsApplyTransform, please refer to its help description to see all possible values. Default value: LanczosWindowedSinc";
+    o->cli_arg_description = "<method>";
+    o->defaultValue        = "LanczosWindowedSinc";
     o->showInGUI           = FALSE;
     rsUIAddOption(p->interface, o);
 

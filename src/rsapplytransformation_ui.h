@@ -39,6 +39,7 @@ typedef struct {
     double defaultValue;
     char *coordinateSpaceTypeInput;
     int coordinateSpaceType;
+    char *interpolationMethod;
 
     char *callString;
 

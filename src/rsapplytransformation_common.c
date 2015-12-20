@@ -39,6 +39,7 @@ typedef struct {
     BOOL keepFiles;
     double defaultValue;
     char *antsPath;
+    char *interpolationMethod;
 } rsApplyTransformationApplyParams;
 
 BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpecification*** transformations, char **transformationArgs, const size_t nTransformations);
@@ -46,7 +47,7 @@ BOOL rsApplyTransformationConvertMcFlirtTransformations(rsNiftiFile* input, char
 void rsApplyTransformationConvertMcFlirtTransformMatrixToAntsTransformMatrix(mat44 *antsTransform, const rsNiftiFile* input, const mat44 *M);
 BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *params);
 char *rsApplyTransformationGetMcFlirtTransformationPath(const char *tmpDirPath, const int volumeIndex, const int transformationId);
-BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, BOOL highQuality);
+BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, const char* interpolationMethod);
 BOOL rsApplyTransformationConvertFugueShiftToANTsWarp(const rsNiftiFile* input, const rsNiftiFile* shift, const char* warpPath, BOOL verbose);
 
 void rsApplyTransformationInit(rsApplyTransformationParameters *p)
@@ -224,6 +225,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             params->keepFiles = p->keepFiles;
             params->antsPath = p->antsPath;
             params->defaultValue = p->defaultValue;
+            params->interpolationMethod = p->interpolationMethod;
 
             for (t=0; t<p->nTransformations; t++) {
                 spec = p->specs[t];
@@ -305,6 +307,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             params->keepFiles = p->keepFiles;
             params->antsPath = p->antsPath;
             params->defaultValue = p->defaultValue;
+            params->interpolationMethod = p->interpolationMethod;
             rsApplyTransformationApplyToVolume(params);
             rsFree(params);
 
@@ -387,21 +390,18 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
     p->parametersValid = TRUE;
 }
 
-BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, BOOL highQuality)
+BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params, const char *input, const char *output, const char* interpolationMethod)
 {
     char *callString = rsMalloc(sizeof(char)*30000);
     sprintf(
         callString,
-        "%santsApplyTransforms -e 3 -d 3 -i %s -o %s -r %s",
+        "%santsApplyTransforms -e 3 -d 3 -i %s -o %s -r %s --interpolation %s",
         params->antsPath,
         input,
         output,
-        params->referencepath
+        params->referencepath,
+        interpolationMethod
     );
-
-    if (highQuality) {
-        rsStringAppend(callString, " --interpolation LanczosWindowedSinc");
-    }
 
     // append transformations to the call string
     // NOTE: iterate in the reverse order as ANTs expects the transformations to be specified in that manner
@@ -520,12 +520,12 @@ BOOL rsApplyTransformationApplyToVolume(const rsApplyTransformationApplyParams *
     rsFree(tmp[0][0]); rsFree(tmp[0]); rsFree(tmp);
 
     // warp padded input
-    if (!rsApplyTransformationRunANTs(params, paddedInputName, outputName, TRUE)) {
+    if (!rsApplyTransformationRunANTs(params, paddedInputName, outputName, params->interpolationMethod)) {
         return FALSE;
     }
 
     // warp padding mask
-    if (!rsApplyTransformationRunANTs(params, inputMaskName, outputMaskName, FALSE)) {
+    if (!rsApplyTransformationRunANTs(params, inputMaskName, outputMaskName, "Linear")) {
         return FALSE;
     }
 
