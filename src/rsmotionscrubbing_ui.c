@@ -13,6 +13,7 @@ rsMotionScrubbingParameters *rsMotionScrubbingInitParameters() {
     p->callString           = NULL;
     p->fdthreshold          = 1.0;
     p->dvarsthreshold       = 0.05;
+    p->useModal             = FALSE;
     p->verbose              = FALSE;
     p->input                = NULL;
     p->output               = NULL;
@@ -169,6 +170,13 @@ void rsMotionScrubbingBuildInterface(rsMotionScrubbingParameters *p)
     o->cli_description     = "number of threads used for processing";
     o->cli_arg_description = "<n>";
     o->showInGUI           = FALSE;
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "modal";
+    o->shorthand           = 'l';
+    o->storage             = &p->useModal;
+    o->cli_description     = "use the modal value for normalising the intensities as opposed to min/max";
     rsUIAddOption(p->interface, o);
     
     o = rsUINewOption();
