@@ -3,11 +3,15 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/fcntl.h>
+#include <externals/fslio/fslio.h>
+#include <nifti1_io.h>
 #include "rsinfo_common.h"
 #include "utils/rsio.h"
 #include "rsinfo_ui.h"
 
 BOOL rsInfoPrintInfoForKey(rsNiftiExtendedHeaderInformation* info, const char* key);
+BOOL rsInfoParseHeaderModificationArgument(char **key, char **value, const char *arg);
+BOOL rsInfoSetValueForKey(rsNiftiExtendedHeaderInformation* info, const char* key, const char* value);
 
 void rsInfoInit(rsInfoParameters* p)
 {
@@ -50,6 +54,58 @@ void rsInfoInit(rsInfoParameters* p)
     p->parametersValid = TRUE;    
 }
 
+int rsNiftiWriteExtensions(znzFile fp, nifti_image *nim)
+{
+    nifti1_extension * list;
+    char               extdr[4] = { 0, 0, 0, 0 };
+    int                c, size, ok = 1;
+
+    if( znz_isnull(fp) || !nim || nim->num_ext < 0 ){
+        fprintf(stderr,"** nifti_write_extensions, bad params\n");
+        return -1;
+    }
+
+    /* if invalid extension list, clear num_ext */
+    if (!valid_nifti_extensions(nim)) {
+        nim->num_ext = 0;
+    }
+
+    /* write out extender block */
+    if (nim->num_ext > 0) {
+        extdr[0] = 1;
+    }
+
+    if (nifti_write_buffer(fp, extdr, 4) != 4){
+        fprintf(stderr,"** failed to write extender\n");
+        return -1;
+    }
+
+    list = nim->ext_list;
+    for ( c = 0; c < nim->num_ext; c++ ){
+        size = (int)nifti_write_buffer(fp, &list->esize, sizeof(int));
+        ok = (size == (int)sizeof(int));
+
+        if (ok) {
+            size = (int)nifti_write_buffer(fp, &list->ecode, sizeof(int));
+            ok = (size == (int)sizeof(int));
+        }
+
+        if (ok) {
+            size = (int)nifti_write_buffer(fp, list->edata, list->esize - 8);
+            ok = (size == list->esize - 8);
+        }
+
+        if (!ok) {
+            fprintf(stderr,"** failed while writing extension #%d\n",c);
+            return -1;
+        }
+
+        list++;
+    }
+
+    return nim->num_ext;
+}
+
 void rsInfoRun(rsInfoParameters *p)
 {
     p->parametersValid = FALSE;
@@ -84,8 +140,10 @@ void rsInfoRun(rsInfoParameters *p)
         return;
     }
 
+    unsigned int numModArgs = p->modArgs == NULL ? 0 : g_strv_length(p->modArgs);
+
     // read out comment extension
-    if (p->showComments) {
+    if (p->showComments && numModArgs < 1) {
         if (commentExt == NULL) {
             fprintf(stderr, "File does not contain any comments");
             return;
@@ -99,7 +157,8 @@ void rsInfoRun(rsInfoParameters *p)
     }
 
     // read out info extension
-    if (p->showInfo || p->infoKey != NULL) {
+    rsNiftiExtendedHeaderInformation *info;
+    if (p->showInfo || p->infoKey != NULL || numModArgs > 0) {
         if (infoExt == NULL) {
             fprintf(stderr, "File does not contain any extended header info");
             return;
@@ -108,14 +167,12 @@ void rsInfoRun(rsInfoParameters *p)
             if (size < sizeof(rsNiftiExtendedHeaderInformation)) {
                 fprintf(stderr, "Found illegal extra header information!\n");
             } else if (p->infoKey != NULL) {
-                rsNiftiExtendedHeaderInformation *info = (rsNiftiExtendedHeaderInformation *) infoExt->edata;
-                BOOL success = rsInfoPrintInfoForKey(info, p->infoKey);
-                if (!success) {
-                    return;
-                }
+                info = (rsNiftiExtendedHeaderInformation *) infoExt->edata;
+                p->parametersValid = rsInfoPrintInfoForKey(info, p->infoKey);
+                return;
             } else {
                 fprintf(stdout, "Extra header information:\n");
-                rsNiftiExtendedHeaderInformation *info = (rsNiftiExtendedHeaderInformation *) infoExt->edata;
+                info = (rsNiftiExtendedHeaderInformation *) infoExt->edata;
                 rsNiftiPrintExtendedHeaderInformation(info);
                 fprintf(stdout, "\n");
             }
@@ -132,6 +189,56 @@ void rsInfoRun(rsInfoParameters *p)
             fwrite(dicomExt->edata, sizeof(char), size-8, p->dicom);
         }
     }
+
+    // modify header values if requested
+    if (numModArgs > 0) {
+        for(int i = 0; i< numModArgs; i++){
+            const char *argument = p->modArgs[i];
+            char *key;
+            char *value;
+
+            if (!rsInfoParseHeaderModificationArgument(&key, &value, argument)) {
+                fprintf(stderr, "Failed to parse header modification argument '%s'. Expected notation is key=value.\n", argument);
+                return;
+            }
+
+            if (!rsInfoSetValueForKey(info, key, value)) {
+                fprintf(stderr, "Key '%s' is invalid!\n", key);
+                return;
+            }
+        }
+
+        // write out nifti header
+        int imageType = FslGetFileType(p->input->fslio);
+        znzFile output = znzopen(p->inputpath, "r+",FslIsCompressedFileType(imageType));
+
+        if (znz_isnull(output)) {
+            fprintf(stderr, "failed to open %s for writing\n", p->inputpath);
+            return;
+        }
+
+        nifti_1_header nhdr = nifti_convert_nim2nhdr(p->input->fslio->niftiptr);
+        size_t ss = znzwrite(&nhdr, 1, sizeof(nhdr), output);
+
+        if (ss < sizeof(nhdr) ){
+            fprintf(stderr, "failed writing header to %s\n", p->inputpath);
+            znzclose(output);
+            return;
+        }
+
+        // write out nifti header extensions
+        ss = rsNiftiWriteExtensions(output, p->input->fslio->niftiptr);
+
+        if (ss < p->input->fslio->niftiptr->num_ext) {
+            fprintf(stderr, "failed writing all nifti extensions (%ld out of %ld) to %s\n", ss, p->input->fslio->niftiptr->num_ext, p->inputpath);
+            znzclose(output);
+            return;
+        }
+
+        znzclose(output);
+    }
+
+    p->parametersValid = TRUE;
 }
 
 void rsInfoDestroy(rsInfoParameters* p)
@@ -146,8 +253,6 @@ void rsInfoDestroy(rsInfoParameters* p)
         p->input = NULL;
     }
 
-    p->parametersValid = TRUE;
-
     rsInfoFreeParams(p);
 }
 
@@ -159,91 +264,85 @@ BOOL rsInfoPrintInfoForKey(rsNiftiExtendedHeaderInformation* info, const char* k
         k[i] = tolower(k[i]);
     }
 
-    if ( ! strcmp(k, "rstoolsheaderversion") ) {
-        fprintf(stdout, "%d", (int)info->RSToolsHeaderVersion);
-    } else if ( ! strcmp(k, "implementationversionname") ) {
-        fprintf(stdout, "%s", info->ImplementationVersionName);
-    } else if ( ! strcmp(k, "acquisitiondate") ) {
-        fprintf(stdout, "%s", info->AcquisitionDate);
-    } else if ( ! strcmp(k, "institutionname") ) {
-        fprintf(stdout, "%s", info->InstitutionName);
-    } else if ( ! strcmp(k, "institutionaddress") ) {
-        fprintf(stdout, "%s", info->InstitutionAddress);
-    } else if ( ! strcmp(k, "studydescription") ) {
-        fprintf(stdout, "%s", info->StudyDescription);
-    } else if ( ! strcmp(k, "seriesdescription") ) {
-        fprintf(stdout, "%s", info->SeriesDescription);
-    } else if ( ! strcmp(k, "operatorsname") ) {
-        fprintf(stdout, "%s", info->OperatorsName);
-    } else if ( ! strcmp(k, "manufacturermodelname") ) {
-        fprintf(stdout, "%s", info->ManufacturerModelName);
-    } else if ( ! strcmp(k, "patientname") ) {
-        fprintf(stdout, "%s", info->PatientName);
-    } else if ( ! strcmp(k, "patientid") ) {
-        fprintf(stdout, "%s", info->PatientID);
-    } else if ( ! strcmp(k, "patientbirthdate") ) {
-        fprintf(stdout, "%s", info->PatientBirthDate);
-    } else if ( ! strcmp(k, "patientsex") ) {
-        fprintf(stdout, "%s", info->PatientSex);
-    } else if ( ! strcmp(k, "patientage") ) {
-        fprintf(stdout, "%s", info->PatientAge);
-    } else if ( ! strcmp(k, "patientweight") ) {
-        fprintf(stdout, "%s", info->PatientWeight);
-    } else if ( ! strcmp(k, "sequencename") ) {
-        fprintf(stdout, "%s", info->SequenceName);
-    } else if ( ! strcmp(k, "slicethickness") ) {
-        fprintf(stdout, "%s", info->SliceThickness);
-    } else if ( ! strcmp(k, "repetitiontime") ) {
-        fprintf(stdout, "%s", info->RepetitionTime);
-    } else if ( ! strcmp(k, "echotime") ) {
-        fprintf(stdout, "%s", info->EchoTime);
-    } else if ( ! strcmp(k, "magneticfieldstrength") ) {
-        fprintf(stdout, "%s", info->MagneticFieldStrength);
-    } else if ( ! strcmp(k, "spacingbetweenslices") ) {
-        fprintf(stdout, "%s", info->SpacingBetweenSlices);
-    } else if ( ! strcmp(k, "numberofphaseencodingsteps") ) {
-        fprintf(stdout, "%s", info->NumberOfPhaseEncodingSteps);
-    } else if ( ! strcmp(k, "pixelbandwidth") ) {
-        fprintf(stdout, "%s", info->PixelBandwidth);
-    } else if ( ! strcmp(k, "softwareversions") ) {
-        fprintf(stdout, "%s", info->SoftwareVersions);
-    } else if ( ! strcmp(k, "protocolname") ) {
-        fprintf(stdout, "%s", info->ProtocolName);
-    } else if ( ! strcmp(k, "transmitcoilname") ) {
-        fprintf(stdout, "%s", info->TransmitCoilName);
-    } else if ( ! strcmp(k, "inplanephaseencodingdirection") ) {
-        fprintf(stdout, "%s", info->InPlanePhaseEncodingDirection);
-    } else if ( ! strcmp(k, "phaseencodingdirection") ) {
-        fprintf(stdout, "%s", info->PhaseEncodingDirection);
-    } else if ( ! strcmp(k, "patientposition") ) {
-        fprintf(stdout, "%s", info->PatientPosition);
-    } else if ( ! strcmp(k, "bandwidthperpixelphaseencode") ) {
-        fprintf(stdout, "%.15f", info->BandwidthPerPixelPhaseEncode);
-    } else if ( ! strcmp(k, "seriesnumber") ) {
-        fprintf(stdout, "%s", info->SeriesNumber);
-    } else if ( ! strcmp(k, "imagecomments") ) {
-        fprintf(stdout, "%s", info->ImageComments);
-    } else if ( ! strcmp(k, "matrixsize") ) {
-        fprintf(stdout, "%s", info->MatrixSize);
-    } else if ( ! strcmp(k, "fieldofview") ) {
-        fprintf(stdout, "%s", info->FieldOfView);
-    } else if ( ! strcmp(k, "grappafactor") ) {
-        fprintf(stdout, "%s", info->GrappaFactor);
-    } else if ( ! strcmp(k, "phaseencodinglines") ) {
-        fprintf(stdout, "%s", info->PhaseEncodingLines);
-    } else if ( ! strcmp(k, "dwelltime") ) {
-        fprintf(stdout, "%.15f", info->DwellTime);
-    } else if ( ! strcmp(k, "rows") ) {
-        fprintf(stdout, "%d", (int)info->Rows);
-    } else if ( ! strcmp(k, "columns") ) {
-        fprintf(stdout, "%d", (int)info->Columns);
-    } else if ( ! strcmp(k, "mosaicrefacqtimes") ) {
-        for (short i=0; (i<sizeof(info->MosaicRefAcqTimes)/sizeof(double) && !isnan(info->MosaicRefAcqTimes[i])); i++) {
-            fprintf(stdout, "%.1f\n", info->MosaicRefAcqTimes[i]);
+    rsNiftiExtendedHeaderInformationEntry **entries = rsNiftiExtendendHeaderInformationListCreateEntryMap(info);
+
+    // find key in header information map
+    BOOL found = FALSE;
+    for (int i=0; entries[i] != NULL; i++) {
+        char* key = rsString(entries[i]->key);
+
+        for (short j = 0; j<strlen(key); j++){
+            key[j] = tolower(key[j]);
         }
-    } else {
-        return FALSE;
+
+        if (!strcmp(k, key)) {
+            char *value = entries[i]->format(entries[i], FALSE);
+            fprintf(stdout, "%s", value);
+            rsFree(value);
+            found = TRUE;
+        }
+        rsFree(key);
+
+        if (found) {
+            break;
+        }
     }
 
-    return TRUE;
+    rsNiftiExtendendHeaderInformationListDestroyEntryMap(entries);
+    return found;
+}
+
+BOOL rsInfoSetValueForKey(rsNiftiExtendedHeaderInformation* info, const char* key, const char* value)
+{
+    // make all caps-down
+    char* k = rsString(key);
+    for(short i = 0; i<strlen(key); i++){
+        k[i] = tolower(k[i]);
+    }
+
+    rsNiftiExtendedHeaderInformationEntry **entries = rsNiftiExtendendHeaderInformationListCreateEntryMap(info);
+
+    // find key in header information map
+    BOOL found = FALSE;
+    for (int i=0; entries[i] != NULL; i++) {
+        char* key = rsString(entries[i]->key);
+
+        for (short j = 0; j<strlen(key); j++){
+            key[j] = tolower(key[j]);
+        }
+
+        if (!strcmp(k, key)) {
+            entries[i]->parse(entries[i], value);
+            found = TRUE;
+        }
+        rsFree(key);
+
+        if (found) {
+            break;
+        }
+    }
+
+    rsNiftiExtendendHeaderInformationListDestroyEntryMap(entries);
+    return found;
+}
+
+BOOL rsInfoParseHeaderModificationArgument(char **key, char **value, const char *arg)
+{
+    char *argCopy = rsString(arg);
+
+    const char* keyPtr = strtok(argCopy, "=");
+    const char* valPtr = strtok(NULL, "=");
+
+    BOOL success;
+
+    if ( strtok(NULL,"=") != NULL || keyPtr == NULL || valPtr == NULL || strlen(keyPtr) < 1) {
+        success = FALSE;
+    } else {
+        *key = rsString(keyPtr);
+        *value = rsString(valPtr);
+        success = TRUE;
+    }
+
+    rsFree(argCopy);
+    return success;
 }

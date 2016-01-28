@@ -55,49 +55,233 @@ rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation()
     return info;
 }
 
-void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info) {
-    fprintf(stdout, "ImplementationVersionName    : %s\n", info->ImplementationVersionName);
-    fprintf(stdout, "AcquisitionDate              : %s\n", info->AcquisitionDate);
-    fprintf(stdout, "InstitutionName              : %s\n", info->InstitutionName);
-    fprintf(stdout, "InstitutionAddress           : %s\n", info->InstitutionAddress);
-    fprintf(stdout, "StudyDescription             : %s\n", info->StudyDescription);
-    fprintf(stdout, "SeriesDescription            : %s\n", info->SeriesDescription);
-    fprintf(stdout, "OperatorsName                : %s\n", info->OperatorsName);
-    fprintf(stdout, "ManufacturerModelName        : %s\n", info->ManufacturerModelName);
-    fprintf(stdout, "PatientName                  : %s\n", info->PatientName);
-    fprintf(stdout, "PatientID                    : %s\n", info->PatientID);
-    fprintf(stdout, "PatientBirthDate             : %s\n", info->PatientBirthDate);
-    fprintf(stdout, "PatientSex                   : %s\n", info->PatientSex);
-    fprintf(stdout, "PatientAge                   : %s\n", info->PatientAge);
-    fprintf(stdout, "PatientWeight                : %s\n", info->PatientWeight);
-    fprintf(stdout, "SequenceName                 : %s\n", info->SequenceName);
-    fprintf(stdout, "SliceThickness               : %s\n", info->SliceThickness);
-    fprintf(stdout, "RepetitionTime               : %s\n", info->RepetitionTime);
-    fprintf(stdout, "EchoTime                     : %s\n", info->EchoTime);
-    fprintf(stdout, "MagneticFieldStrength        : %s\n", info->MagneticFieldStrength);
-    fprintf(stdout, "SpacingBetweenSlices         : %s\n", info->SpacingBetweenSlices);
-    fprintf(stdout, "NumberOfPhaseEncodingSteps   : %s\n", info->NumberOfPhaseEncodingSteps);
-    fprintf(stdout, "PixelBandwidth               : %s\n", info->PixelBandwidth);
-    fprintf(stdout, "SoftwareVersions             : %s\n", info->SoftwareVersions);
-    fprintf(stdout, "ProtocolName                 : %s\n", info->ProtocolName);
-    fprintf(stdout, "TransmitCoilName             : %s\n", info->TransmitCoilName);
-    fprintf(stdout, "InPlanePhaseEncodingDirection: %s\n", info->InPlanePhaseEncodingDirection);
-    fprintf(stdout, "PatientPosition              : %s\n", info->PatientPosition);
-    fprintf(stdout, "BandwidthPerPixelPhaseEncode : %.15f\n", info->BandwidthPerPixelPhaseEncode);
-    fprintf(stdout, "SeriesNumber                 : %s\n", info->SeriesNumber);
-    fprintf(stdout, "ImageComments                : %s\n", info->ImageComments);
-    fprintf(stdout, "MatrixSize                   : %s\n", info->MatrixSize);
-    fprintf(stdout, "FieldOfView                  : %s\n", info->FieldOfView);
-    fprintf(stdout, "GrappaFactor                 : %s\n", info->GrappaFactor);
-    fprintf(stdout, "PhaseEncodingLines           : %s\n", info->PhaseEncodingLines);
-    fprintf(stdout, "PhaseEncodingDirection       : %s\n", info->PhaseEncodingDirection);
-    fprintf(stdout, "DwellTime                    : %.15f\n", info->DwellTime);
-    fprintf(stdout, "Rows                         : %d\n", (int)info->Rows);
-    fprintf(stdout, "Columns                      : %d\n", (int)info->Columns);
+void* rsNiftiExtendendHeaderInformationGet(void* self) {
+    return ((rsNiftiExtendedHeaderInformationEntry *)self)->data;
+}
+
+void rsNiftiExtendendHeaderInformationSetString(void* self, const void* value) {
+    sprintf((char*)((rsNiftiExtendedHeaderInformationEntry *)self)->data, "%s", (char*)value);
+}
+
+void rsNiftiExtendendHeaderInformationSetDouble(void* self, const void* value) {
+    const double v = *((double*)value);
+    *((double*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = v;
+}
+
+void rsNiftiExtendendHeaderInformationParseDouble(void* self, const void* value) {
+    const char* vString = (char*)value;
+    *((double*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = strtod(vString, NULL);
+}
+
+void rsNiftiExtendendHeaderInformationSetUnsignedShort(void* self, const void* value) {
+    const unsigned short v = *((unsigned short*)value);
+    *((unsigned short*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = v;
+}
+
+void rsNiftiExtendendHeaderInformationSetShort(void* self, const void* value) {
+    const short v = *((short*)value);
+    *((short*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = v;
+}
+
+void rsNiftiExtendendHeaderInformationParseUnsignedShort(void* self, const void* value) {
+    const char* vString = (char*)value;
+    *((unsigned short*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = (unsigned short)atoi(vString);
+}
+
+void rsNiftiExtendendHeaderInformationParseShort(void* self, const void* value) {
+    const char* vString = (char*)value;
+    *((short*)((rsNiftiExtendedHeaderInformationEntry *)self)->data) = (short)atoi(vString);
+}
+
+void rsNiftiExtendendHeaderInformationSetSliceTimings(void* self, const void* value) {
+    double* values = (double*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data);
+    const double* newValues = *((double**)value);
 
     short nSlicesTimes = 0;
-    for (nSlicesTimes=0; (nSlicesTimes<sizeof(info->MosaicRefAcqTimes)/sizeof(double) && !isnan(info->MosaicRefAcqTimes[nSlicesTimes])); nSlicesTimes++);;
-    fprintf(stdout, "MosaicRefAcqTimes            : [%d values]\n", (int)nSlicesTimes);
+    for (nSlicesTimes=0; (nSlicesTimes<1024 && !isnan(newValues[nSlicesTimes])); nSlicesTimes++) {
+        values[nSlicesTimes] = newValues[nSlicesTimes];
+    }
+
+    if (nSlicesTimes<1024) {
+        values[nSlicesTimes] = log(-1.0); // terminate with nan
+    }
+}
+
+void rsNiftiExtendendHeaderInformationParseSliceTimings(void* self, const void* value) {
+    char* vString = rsString((char*)value);
+    double* values = (double*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data);
+
+    char *tmp = vString;
+    char *current;
+    size_t i = 0;
+
+    // reset current values
+    for (i=0; i<1024; i++) {
+        values[i] = log(-1.0);
+    }
+
+    // parse and set given values
+    i = 0;
+    do {
+        current = strtok(tmp, ",");
+        tmp = NULL;
+
+        if (current == NULL) {
+            break;
+        }
+
+        values[i++] = strtod(current, NULL);
+    } while (TRUE);
+}
+
+char* rsNiftiExtendendHeaderInformationFormatString(void* self, BOOL shorten) {
+    return rsString((char*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data));
+}
+
+void* rsNiftiExtendendHeaderInformationFormatDouble(void* self, BOOL shorten) {
+    const double* value = (double*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data);
+    char *string = (char*)rsMalloc(sizeof(char)*17L);
+    sprintf(string, "%.15f", *value);
+    return string;
+}
+
+void* rsNiftiExtendendHeaderInformationFormatUnsignedShort(void* self, BOOL shorten) {
+    const unsigned short value = *((unsigned short*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data));
+    char *string = (char*)rsMalloc(sizeof(char)*20L);
+    sprintf(string, "%d", value);
+    return string;
+}
+
+void* rsNiftiExtendendHeaderInformationFormatShort(void* self, BOOL shorten) {
+    const short value = *((short*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data));
+    char *string = (char*)rsMalloc(sizeof(char)*20L);
+    sprintf(string, "%d", value);
+    return string;
+}
+
+void* rsNiftiExtendendHeaderInformationFormatSliceTimes(void* self, BOOL shorten) {
+
+    const rsNiftiExtendedHeaderInformationEntry* entry  = (rsNiftiExtendedHeaderInformationEntry *)self;
+    const double* values = (double*)(entry->data);
+
+    short nSlicesTimes = 0;
+    for (nSlicesTimes=0; (nSlicesTimes<1024 && !isnan(values[nSlicesTimes])); nSlicesTimes++)
+        ;;
+
+    if (shorten) {
+        char *string = (char*)rsMalloc(sizeof(char)*14L);
+        sprintf(string, "[%d values]", (int)nSlicesTimes);
+        return string;
+    }
+
+    char *string = (char*)rsMalloc(sizeof(char)*9L*((size_t)nSlicesTimes));
+    char *stringEnd = string;
+    for (int i=0; i<nSlicesTimes; i++) {
+        stringEnd += sprintf(stringEnd, "%.1f\n", values[i]);
+    }
+    return string;
+}
+
+rsNiftiExtendedHeaderInformationEntry * rsNiftiExtendendHeaderInformationListCreateEntry(char* key, rsNiftiExntededHeaderInformationGetterFunc get, rsNiftiExntededHeaderInformationSetterFunc set, rsNiftiExntededHeaderInformationSetterFunc parse, rsNiftiExntededHeaderInformationFormatterFunc format, void *data) {
+    rsNiftiExtendedHeaderInformationEntry * entry = (rsNiftiExtendedHeaderInformationEntry *)rsMalloc(sizeof(rsNiftiExtendedHeaderInformationEntry));
+    entry->key = key;
+    entry->format = format;
+    entry->data = data;
+    entry->get = get;
+    entry->set = set;
+    entry->parse = parse;
+    return entry;
+}
+
+rsNiftiExtendedHeaderInformationEntry ** rsNiftiExtendendHeaderInformationListCreateEntryMap(rsNiftiExtendedHeaderInformation* info) {
+    rsNiftiExntededHeaderInformationGetterFunc get = (rsNiftiExntededHeaderInformationGetterFunc)rsNiftiExtendendHeaderInformationGet;
+    rsNiftiExntededHeaderInformationSetterFunc setString = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationSetString;
+    rsNiftiExntededHeaderInformationSetterFunc setDouble = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationSetDouble;
+    rsNiftiExntededHeaderInformationSetterFunc setUShort = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationSetShort;
+    rsNiftiExntededHeaderInformationSetterFunc setShort = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationSetUnsignedShort;
+    rsNiftiExntededHeaderInformationSetterFunc setSliceTimings= (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationSetSliceTimings;
+    rsNiftiExntededHeaderInformationSetterFunc parseDouble = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationParseDouble;
+    rsNiftiExntededHeaderInformationSetterFunc parseUShort = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationParseUnsignedShort;
+    rsNiftiExntededHeaderInformationSetterFunc parseShort = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationParseShort;
+    rsNiftiExntededHeaderInformationSetterFunc parseSliceTimings = (rsNiftiExntededHeaderInformationSetterFunc)rsNiftiExtendendHeaderInformationParseSliceTimings;
+    rsNiftiExntededHeaderInformationFormatterFunc formatString = (rsNiftiExntededHeaderInformationFormatterFunc)rsNiftiExtendendHeaderInformationFormatString;
+    rsNiftiExntededHeaderInformationFormatterFunc formatDouble = (rsNiftiExntededHeaderInformationFormatterFunc)rsNiftiExtendendHeaderInformationFormatDouble;
+    rsNiftiExntededHeaderInformationFormatterFunc formatUShort= (rsNiftiExntededHeaderInformationFormatterFunc)rsNiftiExtendendHeaderInformationFormatUnsignedShort;
+    rsNiftiExntededHeaderInformationFormatterFunc formatShort= (rsNiftiExntededHeaderInformationFormatterFunc)rsNiftiExtendendHeaderInformationFormatShort;
+    rsNiftiExntededHeaderInformationFormatterFunc formatSliceTimings= (rsNiftiExntededHeaderInformationFormatterFunc)rsNiftiExtendendHeaderInformationFormatSliceTimes;
+
+    rsNiftiExtendedHeaderInformationEntry * entries[] = {
+        rsNiftiExtendendHeaderInformationListCreateEntry("RSToolsHeaderVersion",          get, setShort,  parseShort,  formatShort,  &info->RSToolsHeaderVersion),
+        rsNiftiExtendendHeaderInformationListCreateEntry("ImplementationVersionName",     get, setString, setString,   formatString, &info->ImplementationVersionName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("AcquisitionDate",               get, setString, setString,   formatString, &info->AcquisitionDate),
+        rsNiftiExtendendHeaderInformationListCreateEntry("InstitutionName",               get, setString, setString,   formatString, &info->InstitutionName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("InstitutionAddress",            get, setString, setString,   formatString, &info->InstitutionAddress),
+        rsNiftiExtendendHeaderInformationListCreateEntry("StudyDescription",              get, setString, setString,   formatString, &info->StudyDescription),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SeriesDescription",             get, setString, setString,   formatString, &info->SeriesDescription),
+        rsNiftiExtendendHeaderInformationListCreateEntry("OperatorsName",                 get, setString, setString,   formatString, &info->OperatorsName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("ManufacturerModelName",         get, setString, setString,   formatString, &info->ManufacturerModelName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientName",                   get, setString, setString,   formatString, &info->PatientName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientID",                     get, setString, setString,   formatString, &info->PatientID),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientBirthDate",              get, setString, setString,   formatString, &info->PatientBirthDate),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientSex",                    get, setString, setString,   formatString, &info->PatientSex),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientAge",                    get, setString, setString,   formatString, &info->PatientAge),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientWeight",                 get, setString, setString,   formatString, &info->PatientWeight),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SequenceName",                  get, setString, setString,   formatString, &info->SequenceName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SliceThickness",                get, setString, setString,   formatString, &info->SliceThickness),
+        rsNiftiExtendendHeaderInformationListCreateEntry("RepetitionTime",                get, setString, setString,   formatString, &info->RepetitionTime),
+        rsNiftiExtendendHeaderInformationListCreateEntry("EchoTime",                      get, setString, setString,   formatString, &info->EchoTime),
+        rsNiftiExtendendHeaderInformationListCreateEntry("MagneticFieldStrength",         get, setString, setString,   formatString, &info->MagneticFieldStrength),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SpacingBetweenSlices",          get, setString, setString,   formatString, &info->SpacingBetweenSlices),
+        rsNiftiExtendendHeaderInformationListCreateEntry("NumberOfPhaseEncodingSteps",    get, setString, setString,   formatString, &info->NumberOfPhaseEncodingSteps),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PixelBandwidth",                get, setString, setString,   formatString, &info->PixelBandwidth),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SoftwareVersions",              get, setString, setString,   formatString, &info->SoftwareVersions),
+        rsNiftiExtendendHeaderInformationListCreateEntry("ProtocolName",                  get, setString, setString,   formatString, &info->ProtocolName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("TransmitCoilName",              get, setString, setString,   formatString, &info->TransmitCoilName),
+        rsNiftiExtendendHeaderInformationListCreateEntry("InPlanePhaseEncodingDirection", get, setString, setString,   formatString, &info->InPlanePhaseEncodingDirection),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PatientPosition",               get, setString, setString,   formatString, &info->PatientPosition),
+        rsNiftiExtendendHeaderInformationListCreateEntry("BandwidthPerPixelPhaseEncode",  get, setDouble, parseDouble, formatDouble, &info->BandwidthPerPixelPhaseEncode),
+        rsNiftiExtendendHeaderInformationListCreateEntry("SeriesNumber",                  get, setString, setString,   formatString, &info->SeriesNumber),
+        rsNiftiExtendendHeaderInformationListCreateEntry("ImageComments",                 get, setString, setString,   formatString, &info->ImageComments),
+        rsNiftiExtendendHeaderInformationListCreateEntry("MatrixSize",                    get, setString, setString,   formatString, &info->MatrixSize),
+        rsNiftiExtendendHeaderInformationListCreateEntry("FieldOfView",                   get, setString, setString,   formatString, &info->FieldOfView),
+        rsNiftiExtendendHeaderInformationListCreateEntry("GrappaFactor",                  get, setString, setString,   formatString, &info->GrappaFactor),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PhaseEncodingLines",            get, setString, setString,   formatString, &info->PhaseEncodingLines),
+        rsNiftiExtendendHeaderInformationListCreateEntry("PhaseEncodingDirection",        get, setString, setString,   formatString, &info->PhaseEncodingDirection),
+        rsNiftiExtendendHeaderInformationListCreateEntry("DwellTime",                     get, setDouble, parseDouble, formatDouble, &info->DwellTime),
+        rsNiftiExtendendHeaderInformationListCreateEntry("Rows",                          get, setUShort, parseUShort, formatUShort, &info->Rows),
+        rsNiftiExtendendHeaderInformationListCreateEntry("Columns",                       get, setUShort, parseUShort, formatUShort, &info->Columns),
+        rsNiftiExtendendHeaderInformationListCreateEntry("MosaicRefAcqTimes",             get, setSliceTimings, parseSliceTimings, formatSliceTimings, &info->MosaicRefAcqTimes[0]),
+        NULL
+    };
+
+    size_t nEntries = sizeof(entries) / sizeof(double*);
+
+    rsNiftiExtendedHeaderInformationEntry** finalEntries = (rsNiftiExtendedHeaderInformationEntry**)rsMalloc(nEntries * sizeof(rsNiftiExtendedHeaderInformationEntry*));
+
+    for (int i=0; i<nEntries; i++) {
+        finalEntries[i] = entries[i];
+    }
+
+    return finalEntries;
+}
+
+void rsNiftiExtendendHeaderInformationListDestroyEntryMap(rsNiftiExtendedHeaderInformationEntry** entryMap) {
+    for (int i=0; entryMap[i] != NULL; i++) {
+        rsFree(entryMap[i]);
+    }
+    rsFree(entryMap);
+}
+
+void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info) {
+    rsNiftiExtendedHeaderInformationEntry **entries = rsNiftiExtendendHeaderInformationListCreateEntryMap(info);
+
+    for (int i=0; entries[i] != NULL; i++) {
+        char *value = entries[i]->format(entries[i], TRUE);
+        fprintf(stdout, "% 30s : %s\n", entries[i]->key, value);
+        rsFree(value);
+    }
+
+    rsNiftiExtendendHeaderInformationListDestroyEntryMap(entries);
 }
 
 void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length)
@@ -253,6 +437,9 @@ void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info,
                 const short presentNumberOfSlices = length / sizeof(double);
                 const short applicableSlices = fmin(maxNumberOfSlices, presentNumberOfSlices);
                 const double* sliceTimings = (double*)buffer;
+                for (short i=0; i<maxNumberOfSlices; i++) {
+                    info->MosaicRefAcqTimes[i] = log(-1.0);
+                }
                 for (short i=0; i<applicableSlices; i++) {
                     info->MosaicRefAcqTimes[i] = sliceTimings[i];
                 }
@@ -371,7 +558,7 @@ rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_ima
 size_t rsNiftiGetDicomValueLength(const char *const valueRepresentation)
 {
     const char longValueRepresentaions[][2] = {
-            "OB", "OW", "OF", "SQ", "UT", "UN"
+        "OB", "OW", "OF", "SQ", "UT", "UN"
     };
 
     size_t length = 6;

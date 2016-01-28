@@ -1091,7 +1091,9 @@ void rsWriteNiftiHeader(FSLIO *fslio, char* comment)
   if (fslio==NULL)  RSIOERR("FslWriteHeader: Null pointer passed for FSLIO");
 
   if (fslio->niftiptr!=NULL) {
-    rsAddCommentToNiftiHeader(fslio->niftiptr, comment);
+    if (comment != NULL) {
+        rsAddCommentToNiftiHeader(fslio->niftiptr, comment);
+    }
 
     fslio->written_hdr = 1;
     if (znz_isnull(fslio->fileptr)) RSIOERR("FslWriteHeader: no file opened!");

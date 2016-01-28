@@ -18,6 +18,8 @@ typedef struct {
     char *dicompath;
 
     char *infoKey;
+
+    char **modArgs;
     
     BOOL showComments;
     BOOL showInfo;

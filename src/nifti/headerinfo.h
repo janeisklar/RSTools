@@ -50,6 +50,19 @@ typedef struct {
     double MosaicRefAcqTimes[1024];             // (0019,1029)
 } rsNiftiExtendedHeaderInformation;
 
+typedef void* (*rsNiftiExntededHeaderInformationGetterFunc) (void* self);
+typedef void (*rsNiftiExntededHeaderInformationSetterFunc) (void* self, const void* value);
+typedef char* (*rsNiftiExntededHeaderInformationFormatterFunc) (void* self, BOOL shorten);
+
+typedef struct {
+    rsNiftiExntededHeaderInformationGetterFunc get;
+    rsNiftiExntededHeaderInformationSetterFunc set;
+    rsNiftiExntededHeaderInformationSetterFunc parse;
+    rsNiftiExntededHeaderInformationFormatterFunc format;
+    char *key;
+    void *data;
+} rsNiftiExtendedHeaderInformationEntry;
+
 typedef struct {
     const short tagGroup;
     const short tagElement;
@@ -58,11 +71,14 @@ typedef struct {
 } rsDicomElement;
 
 rsNiftiExtendedHeaderInformation* rsNiftiInitializeExtendedHeaderInformation();
+rsNiftiExtendedHeaderInformationEntry ** rsNiftiExtendendHeaderInformationListCreateEntryMap(rsNiftiExtendedHeaderInformation* info);
+void rsNiftiExtendendHeaderInformationListDestroyEntryMap(rsNiftiExtendedHeaderInformationEntry** entryMap);
 void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info);
 void rsNiftiAddExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* info, const rsDicomElement* dicomElement, char* buffer, size_t length);
 rsNiftiExtendedHeaderInformation* rsNiftiFindExtendedHeaderInformation(nifti_image *nim);
 size_t rsNiftiGetDicomValueLength(const char *const valueRepresentation);
 void rsNiftiCopyTrimmedValue(char *dest, char*buffer, size_t length);
+
 
 #ifdef __cplusplus
 }

@@ -69,22 +69,31 @@ void rsInfoBuildInterface(rsInfoParameters *p)
     o->shorthand           = 'k';
     o->type                = G_OPTION_ARG_STRING;
     o->storage             = &p->infoKey;
-    o->cli_description     = "key that will be read out from the extended nifti header information (overwrites --info). For a list of keys see --info";
+    o->cli_description     = "key that will be read out from the extended nifti header information (overwrites --info). For a list of keys see --info. The keys are not case-sensitive.";
     o->cli_arg_description = "<key>";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "m";
+    o->shorthand           = 'm';
+    o->type                = G_OPTION_ARG_STRING_ARRAY;
+    o->storage             = &p->modArgs;
+    o->cli_description     = "key/value pairs that define header properties that will be modified in-place (--input / -i). The keys are not case-sensitive. Example: '-i foo.nii -m PatientAge=045Y' changes the patient age in the header of foo.nii. It can be specified more than once to modify multiple header properties. To set a string containing spaces, use quotes around the value (f.e. -m InstitutionName=\"My Institution Name\"). Arrays should be supplied as a list of comma-separated values (f.e. -m MosaicRefAcqTimes=1.23,4.56,7.89,...)";
+    o->cli_arg_description = "<key=val>";
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
     o->name                = "info";
     o->shorthand           = 'n';
     o->storage             = &p->showInfo;
-    o->cli_description     = "show extended nifti header information";
+    o->cli_description     = "show only the extended nifti header information";
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
     o->name                = "comments";
     o->shorthand           = 'c';
     o->storage             = &p->showComments;
-    o->cli_description     = "show the comments in the nifti header";
+    o->cli_description     = "show only the comments in the nifti header";
     rsUIAddOption(p->interface, o);
 }
 
