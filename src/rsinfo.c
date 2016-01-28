@@ -16,8 +16,10 @@ int main(int argc, char * argv[]) {
         rsInfoRun(p);
     }
 
+    BOOL execSuccessful = p->parametersValid;
+
     // Free memory
     rsInfoDestroy(p);
 
-    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
+    return execSuccessful ? EXIT_SUCCESS : EXIT_FAILURE;
 }

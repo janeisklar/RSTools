@@ -2,7 +2,7 @@
 #include "rsbandpass_ui.h"
 
 int main(int argc, char * argv[])
-{    
+{
     // Parse run arguments
     rsBandpassParameters *p = rsBandpassParseParams(argc, argv);
     
@@ -15,9 +15,11 @@ int main(int argc, char * argv[])
     if ( p->parametersValid ) {
         rsBandpassRun(p);
     }
+    
+    BOOL execSuccessful = p->parametersValid;
 
     // Free memory
     rsBandpassDestroy(p);
 
-    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
+    return execSuccessful ? EXIT_SUCCESS : EXIT_FAILURE;
 }

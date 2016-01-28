@@ -15,9 +15,11 @@ int main(int argc, char * argv[])
     if ( p->parametersValid ) {
         rsZeropaddingRun(p);
     }
+    
+    BOOL execSuccessful = p->parametersValid;
 
     // Free memory
     rsZeropaddingDestroy(p);
 
-    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
+    return execSuccessful ? EXIT_SUCCESS : EXIT_FAILURE;
 }

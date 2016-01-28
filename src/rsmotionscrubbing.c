@@ -15,9 +15,11 @@ int main(int argc, char * argv[])
     if ( p->parametersValid ) {
         rsMotionScrubbingRun(p);
     }
+    
+    BOOL execSuccessful = p->parametersValid;
 
     // Free memory
     rsMotionScrubbingDestroy(p);
 
-    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
+    return execSuccessful ? EXIT_SUCCESS : EXIT_FAILURE;
 }

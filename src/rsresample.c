@@ -15,9 +15,11 @@ int main(int argc, char * argv[])
     if ( p->parametersValid ) {
         rsResampleRun(p);
     }
+    
+    BOOL execSuccessful = p->parametersValid;
 
     // Free memory
     rsResampleDestroy(p);
 
-    return p->parametersValid ? EXIT_SUCCESS : EXIT_FAILURE;
+    return execSuccessful ? EXIT_SUCCESS : EXIT_FAILURE;
 }
