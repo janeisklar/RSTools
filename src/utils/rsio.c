@@ -57,14 +57,78 @@ BOOL rsCheckInputs(const char **paths)
     return readable;
 }
 
+BOOL rsInferAccessModeFromParentDirectory(const char *path, mode_t *mode)
+{
+    char *parentPath = (char*)rsMalloc(strlen(path)+1);
+    sprintf(parentPath, "%s", path);
+    char *lastDirSeparator = strrchr(parentPath, '/');
+
+    if (lastDirSeparator == NULL) {
+        // we have been given a relative path, use the current directory instead
+        sprintf(parentPath, ".");
+    } else {
+        *lastDirSeparator = '\0';
+    }
+
+    if (strlen(parentPath) < 1) {
+        rsFree(parentPath);
+        return FALSE;
+    }
+
+    struct stat s;
+    if (stat(parentPath, &s) == 0 && S_ISDIR(s.st_mode)) {
+        rsFree(parentPath);
+        *mode = s.st_mode & 00777;
+        return TRUE;
+    }
+
+    rsFree(parentPath);
+    return FALSE;
+}
+
+BOOL rsEnsurePathToFileExists(const char *filePath)
+{
+    assert(filePath && *filePath);
+
+    // copy file path
+    char *filePathCopy = (char*)rsMalloc(strlen(filePath)+1);
+    sprintf(filePathCopy, "%s", filePath);
+
+    // iterate through the path
+    char *p;
+    for (p=strchr(filePathCopy+1, '/'); p; p=strchr(p+1, '/')) {
+        *p = '\0';
+        mode_t mode = 0755; // default value if it can't be determined
+        rsInferAccessModeFromParentDirectory(filePathCopy, &mode);
+
+        if (mkdir(filePathCopy, mode) == -1) {
+            if (errno != EEXIST) {
+                fprintf(stderr, "Path '%s' could not be created!\n", filePathCopy);
+                rsFree(filePathCopy);
+                return FALSE;
+            }
+        }
+        *p = '/';
+    }
+
+    rsFree(filePathCopy);
+    return TRUE;
+}
+
 BOOL rsCheckOutputs(const char **paths)
 {
     BOOL writable = TRUE;
     int i = 0;
     while ( paths[i] == NULL || strcmp(paths[i], RSIO_LASTFILE) != 0 ) {
-        if ( paths[i] != NULL && ! rsFileIsWritable(paths[i]) ) {
-            fprintf(stderr, "Error: File '%s' is not writable!\n", paths[i]);
-            writable = FALSE;
+        if ( paths[i] != NULL ) {
+            if (!rsEnsurePathToFileExists(paths[i])) {
+                fprintf(stderr, "Error: Path to file '%s' could not be created!\n", paths[i]);
+                writable = FALSE;
+            }
+            if (!rsFileIsWritable(paths[i])) {
+                fprintf(stderr, "Error: File '%s' is not writable!\n", paths[i]);
+                writable = FALSE;
+            }
         }
         i++;
     }
