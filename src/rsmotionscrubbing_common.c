@@ -1,5 +1,6 @@
 #include "rsmotionscrubbing_common.h"
 #include "utils/rsio.h"
+#include <gsl/gsl_histogram.h>
 
 extern double rad2deg(const double rad);
 extern double deg2mm(const double dist, const double deg);
@@ -115,21 +116,33 @@ void rsMotionScrubbingRun(rsMotionScrubbingParameters *p)
     p->parametersValid = FALSE;
     
     // compute value range
-    double min,max;
-    rsComputeValueRange(p->input, p->maskPoints, p->nMaskPoints, &min, &max);
+    rsMotionScrubbingNormParams normParams;
+    normParams.useModal = p->useModal;
+
+    if (p->useModal) {
+        rsComputeModal(p->input, p->maskPoints, p->nMaskPoints, &normParams.modal);
+    }
+    else {
+        rsComputeValueRange(p->input, p->maskPoints, p->nMaskPoints, &normParams.min, &normParams.max);
+    }
     
     if ( p->verbose ) {
-        fprintf(stdout, "Value range [%.2f;%.2f]\n", min, max);
+        if (p->useModal) {
+            fprintf(stdout, "Modal value [%.2f]\n", normParams.modal);
+        }
+        else {
+            fprintf(stdout, "Value range [%.2f;%.2f]\n", normParams.min, normParams.max);
+        }
     }
     
     double fd[p->rpEntries];
     
     // compute framewise displacement
     rsComputeFramewiseDisplacement(&fd[0], &p->rp[0], p->rpEntries);
-    
+
     // compute dvars
     double dvars[p->input->vDim];
-    rsComputeDVARs(&dvars[0], min, max, p->input, p->maskPoints, p->nMaskPoints);
+    rsComputeDVARs(&dvars[0], normParams, p->input, p->maskPoints, p->nMaskPoints);
     
     // save dvars if requested
     if ( p->dvarspath != NULL ) {
@@ -271,6 +284,50 @@ void rsComputeValueRange(rsNiftiFile *file, Point3D *maskPoints, unsigned long n
     free(data);
 }
 
+void rsComputeModal(rsNiftiFile *file, Point3D *maskPoints, unsigned long nMaskPoints, double *modal)
+{
+    const int n_bins = 4096;
+
+    gsl_histogram * h = gsl_histogram_alloc (n_bins);
+    gsl_histogram_set_ranges_uniform (h, 0.0, (double)(n_bins-1));
+
+    double ***data = d3matrix(file->zDim-1,  file->yDim-1, file->xDim-1);
+
+    for (int t=rsMin(5, file->vDim-1); t<file->vDim; t=t+1) {
+
+        rsExtractVolumeFromRSNiftiFileBuffer(file, data[0][0], t);
+
+        for (long p = 0L; p<nMaskPoints; p=p+1L) {
+            const Point3D* point  = &maskPoints[p];
+            const double intensity = data[point->z][point->y][point->x];
+
+            if ( intensity != intensity ) {
+                continue;
+            }
+
+            gsl_histogram_increment (h, intensity);
+        }
+    }
+
+
+    double max_count = -1.0;
+
+    for (int i = 0; i < n_bins; i=i+1) {
+        const double count = gsl_histogram_get (h, i);
+
+        if (max_count < count) {
+            max_count = count;
+            *modal = (double)i;
+        }
+    }
+
+    free(data[0][0]);
+    free(data[0]);
+    free(data);
+
+    gsl_histogram_free(h);
+}
+
 /*
  * Compute framewise displacement values as defined in:
  * Power, Jonathan D., et al. "Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion." Neuroimage 59.3 (2012): 2142-2154. APA
@@ -293,7 +350,7 @@ void rsComputeFramewiseDisplacement(double *fd, double **rp, int length)
  * Compute DVARs as defined in:
  * Power, Jonathan D., et al. "Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion." Neuroimage 59.3 (2012): 2142-2154. APA
  */
-void rsComputeDVARs(double *dvars, const double min, const double max, const rsNiftiFile *file, Point3D *maskPoints, unsigned long nMaskPoints)
+void rsComputeDVARs(double *dvars, const rsMotionScrubbingNormParams normParams, const rsNiftiFile *file, Point3D *maskPoints, unsigned long nMaskPoints)
 {
     dvars[0]=0;
     int t;
@@ -313,8 +370,8 @@ void rsComputeDVARs(double *dvars, const double min, const double max, const rsN
             
             for (long p = 0L; p<nMaskPoints; p=p+1L) {
                 const Point3D* point  = &maskPoints[p];
-                const double INow    = (dataNow[point->z][point->y][point->x]    - min)/fabs(max-min);
-                const double IBefore = (dataBefore[point->z][point->y][point->x] - min)/fabs(max-min);
+                const double INow    = normParams.useModal ? dataNow[point->z][point->y][point->x]    / normParams.modal : (dataNow[point->z][point->y][point->x]    - normParams.min) / (normParams.max - normParams.min);
+                const double IBefore = normParams.useModal ? dataBefore[point->z][point->y][point->x] / normParams.modal : (dataBefore[point->z][point->y][point->x] - normParams.min) / (normParams.max - normParams.min);
                 
                 dvars[t]=dvars[t] + pow(INow - IBefore, 2.0);
             }

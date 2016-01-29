@@ -34,6 +34,7 @@ typedef struct {
 
     short rpformat;
 
+    BOOL useModal;
     BOOL verbose;
     BOOL parametersValid;
 
