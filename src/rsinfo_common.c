@@ -20,28 +20,47 @@ void rsInfoInit(rsInfoParameters* p)
     /* verify accessibility of inputs/outputs */
     BOOL inputsReadable = rsCheckInputs((const char*[]){
         (const char*)p->inputpath,
+        (const char*)p->extensionSource,
         RSIO_LASTFILE
     });
     
     BOOL outputsWritable = rsCheckOutputs((const char*[]){
         (const char*)p->dicompath,
+        (const char*)p->outputpath,
         RSIO_LASTFILE
     });
     
-    if ( ! inputsReadable || ! outputsWritable ) {
+    if (!inputsReadable || !outputsWritable) {
         return;
     }    
 
     // open input file (header-only)
-    p->input = rsOpenNiftiFile(p->inputpath, RSNIFTI_OPEN_NONE);
+    p->input = rsOpenNiftiFile(p->inputpath, p->outputpath==NULL ? RSNIFTI_OPEN_NONE : RSNIFTI_OPEN_READ);
 
-    if ( ! p->input->readable ) {
+    if (!p->input->readable) {
         fprintf(stderr, "\nError: The nifti file that was supplied as input (%s) could not be read.\n", p->inputpath);
         return;
     }
 
+    // if an extension source is set the input file needs to be copied over to a new file
+
+    // open extension source if required
+    if (p->extensionSource != NULL) {
+        p->extensionInput = rsOpenNiftiFile(p->extensionSource, RSNIFTI_OPEN_NONE);
+
+        if (!p->extensionInput->readable) {
+            fprintf(stderr, "\nError: The nifti file that was supplied as source for the extensions to be copied (%s) could not be read.\n", p->extensionSource);
+            return;
+        }
+    }
+
+    if (p->extensionSource != NULL && p->outputpath == NULL) {
+        fprintf(stderr, "\nSpecifying an extension source requires an output paht to be set as the file will have to be re-created (header length varies).\n");
+        return;
+    }
+
     // prepare dicom file if required
-    if ( p->dicompath != NULL ) {
+    if (p->dicompath != NULL) {
         p->dicom = fopen(p->dicompath, "w");
     }
 
@@ -109,10 +128,49 @@ int rsNiftiWriteExtensions(znzFile fp, nifti_image *nim)
 void rsInfoRun(rsInfoParameters *p)
 {
     p->parametersValid = FALSE;
-
-    // check extensions
     nifti_image *nim = p->input->fslio->niftiptr;
 
+    BOOL modifyHeaderOnly = p->outputpath == NULL;
+    BOOL showOutput = p->modArgs < 1 && p->extensionSource == NULL;
+
+    // create output file if required
+    if (p->outputpath != NULL) {
+        rsNiftiFile *ref = p->extensionInput == NULL ? p->input : p->extensionInput;
+        p->output = rsCloneNiftiFileWithNewDimensions(p->outputpath, ref, RSNIFTI_OPEN_NONE, p->input->xDim, p->input->yDim, p->input->zDim, p->input->vDim);
+        if (!p->output->readable) {
+            fprintf(stderr, "\nError: The nifti file containing the output (%s) could not be created.\n", p->outputpath);
+            return;
+        }
+        // we copied the extension source to copy the extensions along with the header we therefore have to
+        // make sure that all other nifti properties are copied over from the input nifti and not from the extension source
+        p->output->intent_code = p->input->intent_code;
+        p->output->intent_p1   = p->input->intent_p1;
+        p->output->intent_p2   = p->input->intent_p2;
+        p->output->intent_p3   = p->input->intent_p3;
+        p->output->dt          = p->input->dt;
+        p->output->pixtype     = p->input->pixtype;
+        p->output->inter       = p->input->inter;
+        p->output->slope       = p->input->slope;
+        FslSetIntent(p->output->fslio, p->output->intent_code, p->output->intent_p1, p->output->intent_p2, p->output->intent_p3);
+        size_t dim = 4;
+        FslGetDimensionality(p->input->fslio, &dim);
+        FslSetDimensionality(p->output->fslio, dim);
+        FslSetDataType(p->output->fslio, p->output->dt);
+        float tmp[4];
+        FslGetVoxDim(p->input->fslio, &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
+        FslSetVoxDim(p->output->fslio, tmp[0], tmp[1], tmp[2], tmp[3]);
+        mat44 tmpMat;
+        FslGetStdXform(p->input->fslio, &tmpMat);
+        FslSetStdXform(p->output->fslio, p->input->fslio->niftiptr->sform_code, tmpMat);
+        FslGetRigidXform(p->input->fslio, &tmpMat);
+        FslSetRigidXform(p->output->fslio, p->input->fslio->niftiptr->qform_code, tmpMat);
+        short tmpDt;
+        FslGetDataType(p->input->fslio, &tmpDt);
+        FslSetDataType(p->output->fslio, tmpDt);
+        nim = p->output->fslio->niftiptr;
+    }
+
+    // check extensions
     if( nim->num_ext <= 0 || nim->ext_list == NULL ){
         fprintf(stderr, "File does not contain any RSTools header information.\n");
         return;
@@ -143,7 +201,7 @@ void rsInfoRun(rsInfoParameters *p)
     unsigned int numModArgs = p->modArgs == NULL ? 0 : g_strv_length(p->modArgs);
 
     // read out comment extension
-    if (p->showComments && numModArgs < 1) {
+    if (p->showComments && showOutput) {
         if (commentExt == NULL) {
             fprintf(stderr, "File does not contain any comments");
             return;
@@ -171,10 +229,12 @@ void rsInfoRun(rsInfoParameters *p)
                 p->parametersValid = rsInfoPrintInfoForKey(info, p->infoKey);
                 return;
             } else {
-                fprintf(stdout, "Extra header information:\n");
                 info = (rsNiftiExtendedHeaderInformation *) infoExt->edata;
-                rsNiftiPrintExtendedHeaderInformation(info);
-                fprintf(stdout, "\n");
+                if (showOutput) {
+                    fprintf(stdout, "Extra header information:\n");
+                    rsNiftiPrintExtendedHeaderInformation(info);
+                    fprintf(stdout, "\n");
+                }
             }
         }
     }
@@ -207,10 +267,14 @@ void rsInfoRun(rsInfoParameters *p)
                 return;
             }
         }
+    }
+
+    // write out modified header only
+    if (modifyHeaderOnly) {
 
         // write out nifti header
         int imageType = FslGetFileType(p->input->fslio);
-        znzFile output = znzopen(p->inputpath, "r+",FslIsCompressedFileType(imageType));
+        znzFile output = znzopen(p->inputpath, "r+", FslIsCompressedFileType(imageType));
 
         if (znz_isnull(output)) {
             fprintf(stderr, "failed to open %s for writing\n", p->inputpath);
@@ -220,7 +284,7 @@ void rsInfoRun(rsInfoParameters *p)
         nifti_1_header nhdr = nifti_convert_nim2nhdr(p->input->fslio->niftiptr);
         size_t ss = znzwrite(&nhdr, 1, sizeof(nhdr), output);
 
-        if (ss < sizeof(nhdr) ){
+        if (ss < sizeof(nhdr)) {
             fprintf(stderr, "failed writing header to %s\n", p->inputpath);
             znzclose(output);
             return;
@@ -236,6 +300,10 @@ void rsInfoRun(rsInfoParameters *p)
         }
 
         znzclose(output);
+    } else {
+        // rewrite the complete file (outputpath)
+        rsWriteNiftiHeader(p->output->fslio, NULL);
+        FslWriteVolumes(p->output->fslio, p->input->data, p->output->vDim);
     }
 
     p->parametersValid = TRUE;
@@ -246,6 +314,16 @@ void rsInfoDestroy(rsInfoParameters* p)
     if ( p->input != NULL ) {
         rsCloseNiftiFile(p->input, FALSE);
         p->input = NULL;
+    }
+
+    if ( p->output != NULL ) {
+        rsCloseNiftiFile(p->output, FALSE);
+        p->output = NULL;
+    }
+
+    if ( p->extensionInput != NULL ) {
+        rsCloseNiftiFile(p->extensionInput, TRUE);
+        p->output = NULL;
     }
 
     if ( p->dicom != NULL ) {

@@ -16,6 +16,8 @@ extern "C" {
 typedef struct {
     char *inputpath;
     char *dicompath;
+    char *extensionSource;
+    char *outputpath;
 
     char *infoKey;
 
@@ -25,6 +27,8 @@ typedef struct {
     BOOL showInfo;
 
     rsNiftiFile *input;
+    rsNiftiFile *output;
+    rsNiftiFile *extensionInput;
     FILE *dicom;
 
     BOOL parametersValid;

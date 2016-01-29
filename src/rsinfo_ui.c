@@ -6,8 +6,11 @@ rsInfoParameters* rsInfoInitParameters()
     
     p->inputpath            = NULL;
     p->dicompath            = NULL;
+    p->extensionSource      = NULL;
     p->parametersValid      = FALSE;
     p->input                = NULL;
+    p->output               = NULL;
+    p->extensionInput       = NULL;
     p->dicom                = NULL;
     p->showComments         = FALSE;
     p->showInfo             = FALSE;
@@ -51,7 +54,7 @@ void rsInfoBuildInterface(rsInfoParameters *p)
     o->shorthand           = 'i';
     o->type                = G_OPTION_ARG_FILENAME;
     o->storage             = &p->inputpath;
-    o->cli_description     = "the input volume to be regressed";
+    o->cli_description     = "the input volume from which the header information will be read out";
     o->cli_arg_description = "<volume>";
     rsUIAddOption(p->interface, o);
     
@@ -69,7 +72,7 @@ void rsInfoBuildInterface(rsInfoParameters *p)
     o->shorthand           = 'k';
     o->type                = G_OPTION_ARG_STRING;
     o->storage             = &p->infoKey;
-    o->cli_description     = "key that will be read out from the extended nifti header information (overwrites --info). For a list of keys see --info. The keys are not case-sensitive.";
+    o->cli_description     = "key that will be read out  from the extended nifti header information (overwrites --info). For a list of keys see --info. The keys are not case-sensitive.";
     o->cli_arg_description = "<key>";
     rsUIAddOption(p->interface, o);
 
@@ -83,10 +86,19 @@ void rsInfoBuildInterface(rsInfoParameters *p)
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
-    o->name                = "info";
-    o->shorthand           = 'n';
-    o->storage             = &p->showInfo;
-    o->cli_description     = "show only the extended nifti header information";
+    o->name                = "copyExtension";
+    o->shorthand           = 'x';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->extensionSource;
+    o->cli_description     = "allows to specify a nifti from which all extensions will be copied over to the output. (requires the specification of --output / -o)";
+    rsUIAddOption(p->interface, o);
+
+    o = rsUINewOption();
+    o->name                = "output";
+    o->shorthand           = 'o';
+    o->type                = G_OPTION_ARG_FILENAME;
+    o->storage             = &p->outputpath;
+    o->cli_description     = "instead of applying the changes in-place, a modified copy of the whole file will be created at the specified path";
     rsUIAddOption(p->interface, o);
 
     o = rsUINewOption();
@@ -101,6 +113,8 @@ void rsInfoFreeParams(rsInfoParameters* p)
 {
     rsFree(p->inputpath);
     rsFree(p->dicompath);
+    rsFree(p->extensionSource);
+    rsFree(p->outputpath);
     rsUIDestroyInterface(p->interface);
     rsFree(p);
 }
