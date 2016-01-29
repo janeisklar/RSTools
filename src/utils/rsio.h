@@ -3,6 +3,7 @@
 
 #include "rscommon.h"
 #include <sys/stat.h>
+#include <sys/types.h>
 
 // rare string to denote the end of a list of files
 #define RSIO_LASTFILE "%%LAST--FILE%%"
