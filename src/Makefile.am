@@ -19,6 +19,7 @@ bin_PROGRAMS =                                \
 	rsorientation                             \
 	rsregression                              \
 	rsresample                                \
+	rsrescale                                 \
 	rsroi                                     \
 	rstimecourse                              \
 	rsttest                                   \
@@ -36,6 +37,7 @@ lib_LTLIBRARIES =                             \
 	librsregression.la                        \
 	librsorientation.la                       \
 	librsresample.la                          \
+	librsrescale.la                           \
 	librsroi.la                               \
 	librstimecourse.la                        \
 	librszeropadding.la                       \
@@ -61,6 +63,8 @@ librsregression_la_SOURCES = rsregression_ui.c rsregression_common.c
 librsregression_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsresample_la_SOURCES = rsresample_ui.c rsresample_common.c 
 librsresample_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsrescale_la_SOURCES = rsrescale_ui.c rsrescale_common.c
+librsrescale_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsroi_la_SOURCES = rsroi_ui.c rsroi_common.c
 librsroi_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librstimecourse_la_SOURCES = rstimecourse_ui.c rstimecourse_common.c
@@ -96,6 +100,9 @@ rsregression_LDADD = librsregression.la @LIBOBJS@ $(rslibraries)
 
 rsresample_SOURCES = rsresample.c
 rsresample_LDADD = librsresample.la @LIBOBJS@ $(rslibraries)
+
+rsrescale_SOURCES = rsrescale.c
+rsrescale_LDADD = librsrescale.la @LIBOBJS@ $(rslibraries)
 
 rsroi_SOURCES = rsroi.c
 rsroi_LDADD = librsroi.la @LIBOBJS@ $(rslibraries)
@@ -137,6 +144,8 @@ nobase_pkginclude_HEADERS =                                          \
 	rsregression_ui.h                                                \
 	rsresample_common.h                                              \
 	rsresample_ui.h                                                  \
+	rsrescale_common.h                                               \
+	rsrescale_ui.h                                                   \
 	rsapplytransformation_common.h                                   \
 	rsapplytransformation_ui.h                                       \
 	rsroi_common.h                                                   \
@@ -211,7 +220,7 @@ install-exec-hook:
 	echo 'Description: Resting-state pre-processing tools / pipeline' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsrescale -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	
