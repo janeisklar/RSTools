@@ -104,6 +104,8 @@ void rsApplyTransformationInit(rsApplyTransformationParameters *p)
             const rsApplyTransformationTransSpecification *spec = p->specs[t];
             if (spec->type == TRANS_MCFLIRT) {
                 fprintf(stdout, "[MCFLIRT] ");
+            } else if (spec->type == TRANS_MCFLIRT_INV) {
+                fprintf(stdout, "[MCFLIRT_INV] ");
             } else if (spec->type == TRANS_ANTS) {
                 fprintf(stdout, "[ANTS] ");
             } else if (spec->type == TRANS_MULTIPLICATION) {
@@ -134,7 +136,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
 
     // convert transformations if necessary
     for (short t=0; t<p->nTransformations; t++) {
-        if (p->specs[t]->type == TRANS_MCFLIRT) {
+        if (p->specs[t]->type == TRANS_MCFLIRT || p->specs[t]->type == TRANS_MCFLIRT_INV) {
             if (!rsApplyTransformationConvertMcFlirtTransformations(p->input, &p->specs[t]->mcflirtAntsFiles, p->input->vDim, p->specs[t]->file)) {
                 return;
             }
@@ -187,7 +189,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
             }
             spec->transOut = rsCloneNiftiFile(transOutPath, reference, RSNIFTI_OPEN_ALLOC, p->output->vDim);
             rsFree(transOutPath);
-        } else if (spec->type == TRANS_MCFLIRT) {
+        } else if (spec->type == TRANS_MCFLIRT || spec->type == TRANS_MCFLIRT_INV) {
             for (short i = 0; i < p->output->vDim; i++) {
                 char *transPath = rsApplyTransformationGetMcFlirtTransformationPath(tmpDirPath, i, spec->transformationId);
                 FILE *trans = fopen(transPath, "wb");
@@ -368,7 +370,7 @@ void rsApplyTransformationRun(rsApplyTransformationParameters *p)
         for (short t=0; t<p->nTransformations; t++) {
             rsApplyTransformationTransSpecification *spec = p->specs[t];
 
-            if (spec->type != TRANS_MCFLIRT) {
+            if (spec->type != TRANS_MCFLIRT && spec->type != TRANS_MCFLIRT_INV) {
                 continue;
             }
 
@@ -419,6 +421,12 @@ BOOL rsApplyTransformationRunANTs(const rsApplyTransformationApplyParams *params
             char *transPath = rsApplyTransformationGetMcFlirtTransformationPath(params->tmpDirPath, params->volumeIndex, spec->transformationId);
             rsStringAppend(callString, " -t ");
             rsStringAppend(callString, transPath);
+            rsFree(transPath);
+        } else if (spec->type == TRANS_MCFLIRT_INV) {
+            char *transPath = rsApplyTransformationGetMcFlirtTransformationPath(params->tmpDirPath, params->volumeIndex, spec->transformationId);
+            rsStringAppend(callString, " -t \"[");
+            rsStringAppend(callString, transPath);
+            rsStringAppend(callString, ",1]\"");
             rsFree(transPath);
         } else if (spec->type == TRANS_ANTS) {
             rsStringAppend(callString, " -t ");
@@ -977,6 +985,10 @@ BOOL rsApplyTransformationParseTransformationFile(rsApplyTransformationTransSpec
         if (rsStringStartsWith(transformationArgs[i], "mcflirt,")) {
             (*transformations)[i]->type = TRANS_MCFLIRT;
             preamble = strlen("mcflirt,");
+            (*transformations)[i]->isAppliedInTargetSpace = FALSE;
+        } else if (rsStringStartsWith(transformationArgs[i], "mcflirt_inv,")) {
+            (*transformations)[i]->type = TRANS_MCFLIRT_INV;
+            preamble = strlen("mcflirt_inv,");
             (*transformations)[i]->isAppliedInTargetSpace = FALSE;
         } else if (rsStringStartsWith(transformationArgs[i], "ants,")) {
             (*transformations)[i]->type = TRANS_ANTS;

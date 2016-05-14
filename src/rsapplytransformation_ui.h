@@ -12,6 +12,7 @@ extern "C" {
 
 enum rsApplyTransformationTransType {
     TRANS_MCFLIRT,
+    TRANS_MCFLIRT_INV,
     TRANS_ANTS,
     TRANS_MULTIPLICATION,
     TRANS_DIVISION,
