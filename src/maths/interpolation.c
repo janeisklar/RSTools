@@ -117,6 +117,8 @@ double rsInterpolation3DLanczosInterpolation(double***data, short xh, short yh, 
 
     // return a linear interpolated value if we exceed the bounds of this interpolation method
     if (!rsSignedPointInVolume(convStart, xh, yh, zh) || !rsSignedPointInVolume(convEnd, xh, yh, zh)) {
+        rsFree(convStart);
+        rsFree(convEnd);
         return rsTriLinearDistInterpolation(data, xh, yh, zh, voxSize, point);
     }
 
@@ -138,6 +140,9 @@ double rsInterpolation3DLanczosInterpolation(double***data, short xh, short yh, 
             }
         }
     }
+
+    rsFree(convStart);
+    rsFree(convEnd);
 
     return result;
 }
