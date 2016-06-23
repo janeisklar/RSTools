@@ -221,113 +221,24 @@ void rsDeobliqueDestroy(rsDeobliqueParameters *p)
 
 void rsDeobliqueWorldMatrix(mat44 *output, mat44 *transform, short newDims[3], const mat44 *input, const rsDeobliqueParameters *p)
 {
-    // set initial transformation to the identity matrix
+    mat44 desiredOutput;
+
+    // set desired output
     for (short i=0; i<4; i++) {
         for (short j=0; j<4; j++) {
-            transform->m[i][j] = i==j ? 1 : 0;
+            desiredOutput.m[i][j] = i==j ? p->pixDimOut[i] : 0;
         }
     }
+    desiredOutput.m[0][3] = input->m[0][3];
+    desiredOutput.m[1][3] = input->m[1][3];
+    desiredOutput.m[2][3] = input->m[2][3];
+    desiredOutput.m[3][3] = input->m[3][3];
 
-    // compute transformation matrix for deobliqueing
-    //(repeat several times to rule out numerical instabilities)
-    for (short iteration = 0; iteration<20; iteration++) {
+    // compute inverse of input matrix
+    mat44 invInput = nifti_mat44_inverse(*input);
 
-        // transform input with current transformation matrix
-        mat44 initialRotation;
-        rsMat44MatrixMult(&initialRotation, transform, input);
-
-        // compute rotation angles of input matrix
-        const double yaw   = atan2(initialRotation.m[2][1], initialRotation.m[2][2]); // x rotation
-        const double pitch = asin(initialRotation.m[2][0]) * -1.0;                    // y rotation
-        const double roll  = atan2(initialRotation.m[1][0], initialRotation.m[0][0]); // z rotation
-
-        // define rotation around x-axis
-        mat44 xRotation;
-        xRotation.m[0][0] = 1;
-        xRotation.m[0][1] = 0;
-        xRotation.m[0][2] = 0;
-        xRotation.m[0][3] = 0;
-        xRotation.m[1][0] = 0;
-        xRotation.m[1][1] = cos(-1 * yaw);
-        xRotation.m[1][2] = sin(-1 * yaw) * -1.0;
-        xRotation.m[1][3] = 0;
-        xRotation.m[2][0] = 0;
-        xRotation.m[2][1] = sin(-1 * yaw);
-        xRotation.m[2][2] = cos(-1 * yaw);
-        xRotation.m[2][3] = 0;
-        xRotation.m[3][0] = 0;
-        xRotation.m[3][1] = 0;
-        xRotation.m[3][2] = 0;
-        xRotation.m[3][3] = 1;
-
-        // define rotation around y-axis
-        mat44 yRotation;
-        yRotation.m[0][0] = cos(-1 * pitch);
-        yRotation.m[0][1] = 0;
-        yRotation.m[0][2] = sin(-1 * pitch);
-        yRotation.m[0][3] = 0;
-        yRotation.m[1][0] = 0;
-        yRotation.m[1][1] = 1;
-        yRotation.m[1][2] = 0;
-        yRotation.m[1][3] = 0;
-        yRotation.m[2][0] = sin(-1 * pitch) * -1.0;
-        yRotation.m[2][1] = 0;
-        yRotation.m[2][2] = cos(-1 * pitch);
-        yRotation.m[2][3] = 0;
-        yRotation.m[3][0] = 0;
-        yRotation.m[3][1] = 0;
-        yRotation.m[3][2] = 0;
-        yRotation.m[3][3] = 1;
-
-        // define rotation around z-axis
-        mat44 zRotation;
-        zRotation.m[0][0] = cos(-1 * roll);
-        zRotation.m[0][1] = sin(-1 * roll) * -1.0;
-        zRotation.m[0][2] = 0;
-        zRotation.m[0][3] = 0;
-        zRotation.m[1][0] = sin(-1 * roll);
-        zRotation.m[1][1] = cos(-1 * roll);
-        zRotation.m[1][2] = 0;
-        zRotation.m[1][3] = 0;
-        zRotation.m[2][0] = 0;
-        zRotation.m[2][1] = 0;
-        zRotation.m[2][2] = 1;
-        zRotation.m[2][3] = 0;
-        zRotation.m[3][0] = 0;
-        zRotation.m[3][1] = 0;
-        zRotation.m[3][2] = 0;
-        zRotation.m[3][3] = 1;
-
-        // assemble and apply transformation
-        mat44 xyRotation;
-        rsMat44MatrixMult(&xyRotation, &yRotation, &xRotation);
-
-        mat44 xyzRotation;
-        rsMat44MatrixMult(&xyzRotation, &zRotation, &xyRotation);
-
-        rsMat44MatrixMult(transform, &xyzRotation, transform);
-    }
-
-    // fix voxel scaling
-    mat44 scalingMatrix;
-    scalingMatrix.m[0][0] = p->pixDimOut[0] / p->pixDimIn[0];
-    scalingMatrix.m[0][1] = 0;
-    scalingMatrix.m[0][2] = 0;
-    scalingMatrix.m[0][3] = 0;
-    scalingMatrix.m[1][0] = 0;
-    scalingMatrix.m[1][1] = p->pixDimOut[1] / p->pixDimIn[1];
-    scalingMatrix.m[1][2] = 0;
-    scalingMatrix.m[1][3] = 0;
-    scalingMatrix.m[2][0] = 0;
-    scalingMatrix.m[2][1] = 0;
-    scalingMatrix.m[2][2] = p->pixDimOut[2] / p->pixDimIn[2];
-    scalingMatrix.m[2][3] = 0;
-    scalingMatrix.m[3][0] = 0;
-    scalingMatrix.m[3][1] = 0;
-    scalingMatrix.m[3][2] = 0;
-    scalingMatrix.m[3][3] = 1;
-
-    rsMat44MatrixMult(transform, &scalingMatrix, transform);
+    // compute required transformation to make it deoblique: transform = inv(input) * desiredOutput
+    rsMat44MatrixMult(transform, &invInput, &desiredOutput);
     rsMat44MatrixMult(output, transform, input);
 
     // compute the boundary size necessary to fit the whole volume after rotation
