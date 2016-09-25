@@ -13,6 +13,7 @@ bin_PROGRAMS =                                \
 	rsdeoblique                               \
 	rsinfo                                    \
 	rsmask                                    \
+	rsmaskborderdistance                      \
 	rsmotionscrubbing                         \
 	rsscrubbing                               \
 	rssmoothing                               \
@@ -31,6 +32,7 @@ lib_LTLIBRARIES =                             \
 	librscorrelation.la                       \
 	librsdeoblique.la                         \
 	librsinfo.la                              \
+	librsmaskborderdistance.la                \
 	librsmotionscrubbing.la                   \
 	librsscrubbing.la                         \
 	librssmoothing.la                         \
@@ -53,6 +55,8 @@ librsinfo_la_SOURCES = rsinfo_ui.c rsinfo_common.c
 librsinfo_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsmotionscrubbing_la_SOURCES = rsmotionscrubbing_ui.c rsmotionscrubbing_common.c
 librsmotionscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
+librsmaskborderdistance_la_SOURCES = rsmaskborderdistance_ui.c rsmaskborderdistance_common.c
+librsmaskborderdistance_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librsscrubbing_la_SOURCES = rsscrubbing_ui.c rsscrubbing_common.c
 librsscrubbing_la_LIBADD = @LIBOBJS@ $(rslibraries)
 librssmoothing_la_SOURCES = rssmoothing_ui.c rssmoothing_common.c
@@ -114,6 +118,10 @@ rsinfo_SOURCES = rsinfo.c
 rsinfo_LDADD = librsinfo.la @LIBOBJS@ $(rslibraries)
 
 rsmask_SOURCES = rsmask.c
+
+rsmaskborderdistance_SOURCES = rsmaskborderdistance.c
+rsmaskborderdistance_LDADD = librsmaskborderdistance.la @LIBOBJS@ $(rslibraries)
+
 rsttest_SOURCES = rsttest.c
 
 rszeropadding_SOURCES = rszeropadding.c
@@ -132,7 +140,9 @@ nobase_pkginclude_HEADERS =                                          \
 	rsdeoblique_ui.h                                                 \
 	rsinfo_common.h                                                  \
 	rsinfo_ui.h                                                      \
-	rsmotionscrubbing_common.h                                       \
+	rsbandpass_common.h                                              \
+	rsmaskborderdistance_ui.h                                        \
+	rsmaskborderdistance_common.h                                    \
 	rsmotionscrubbing_ui.h                                           \
 	rsorientation_common.h                                           \
 	rsorientation_ui.h                                               \
@@ -220,7 +230,7 @@ install-exec-hook:
 	echo 'Description: Resting-state pre-processing tools / pipeline' >> $(srcdir)/rstools.pc
 	echo 'Requires: glib-2.0 >= 2.32.0, gsl >= 1.15, gmodule-2.0 >= 2.32.0, xerces-c >= 3.0.0' >> $(srcdir)/rstools.pc
 	echo 'Version: '$(VERSION) >> $(srcdir)/rstools.pc
-	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsrescale -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
+	echo 'Libs: -L'${libdir}' -lrsbandpass -lrsbatchutils -lrscorrelation -lrsdeoblique -lrsfslio -lrsmathutils -lrsmaskborderdistance -lrsmotionscrubbing -lrsscrubbing -lrssmoothing -lrsorientation -lrsniftiutils -lrsregression -lrsresample -lrsrescale -lrsroi -lrsinfo -lrstimecourse -lrszeropadding -lrsapplytransformation -lrsutils' >> $(srcdir)/rstools.pc
 	echo 'Libs.private:' >> $(srcdir)/rstools.pc
 	echo 'Cflags: -fopenmp -I'$(DESTDIR)$(includedir)'/rstools' >> $(srcdir)/rstools.pc
 	
