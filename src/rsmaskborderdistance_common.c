@@ -1,7 +1,7 @@
 #include <nifti/headerinfo.h>
 #include <nifti/rsniftiutils.h>
 #include <externals/fslio/fslio.h>
-#include <rstools/maths/geom.h>
+#include "maths/geom.h"
 #include "rsmaskborderdistance_common.h"
 #include "rsmaskborderdistance_ui.h"
 #include "utils/rsio.h"

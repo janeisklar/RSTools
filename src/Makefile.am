@@ -130,7 +130,7 @@ rszeropadding_LDADD = librszeropadding.la @LIBOBJS@ $(rslibraries)
 rsapplytransformation_SOURCES = rsapplytransformation.c
 rsapplytransformation_LDADD = librsapplytransformation.la @LIBOBJS@ $(rslibraries)
 
-nobase_pkginclude_HEADERS =                                          \
+nobase_pkginclude_HEADERS =                                              \
 	rsbandpass_common.h                                              \
 	rsbandpass_ui.h                                                  \
 	rscommon.h                                                       \
@@ -140,9 +140,9 @@ nobase_pkginclude_HEADERS =                                          \
 	rsdeoblique_ui.h                                                 \
 	rsinfo_common.h                                                  \
 	rsinfo_ui.h                                                      \
-	rsbandpass_common.h                                              \
 	rsmaskborderdistance_ui.h                                        \
 	rsmaskborderdistance_common.h                                    \
+        rsmotionscrubbing_common.h                                       \
 	rsmotionscrubbing_ui.h                                           \
 	rsorientation_common.h                                           \
 	rsorientation_ui.h                                               \
