@@ -3,9 +3,6 @@
 #include "utils/rsio.h"
 #include <math.h>
 
-double ***rsCreateGaussianKernel(double sigma, short *xdimkernel, short *ydimkernel, short *zdimkernel, double xvoxsize, double yvoxsize, double zvoxsize);
-void rsConvolveWithKernel(double ***result, double ***input, double ***kernel, short xdim, short ydim, short zdim, short xdimKernel, short ydimKernel, short zdimKernel);
-
 void rsSmoothingInit(rsSmoothingParameters *p)
 {
     p->parametersValid = FALSE;

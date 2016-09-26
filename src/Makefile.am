@@ -120,7 +120,7 @@ rsinfo_LDADD = librsinfo.la @LIBOBJS@ $(rslibraries)
 rsmask_SOURCES = rsmask.c
 
 rsmaskborderdistance_SOURCES = rsmaskborderdistance.c
-rsmaskborderdistance_LDADD = librsmaskborderdistance.la @LIBOBJS@ $(rslibraries)
+rsmaskborderdistance_LDADD = librsmaskborderdistance.la librssmoothing.la @LIBOBJS@ $(rslibraries)
 
 rsttest_SOURCES = rsttest.c
 

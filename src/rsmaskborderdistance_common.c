@@ -3,6 +3,7 @@
 #include <externals/fslio/fslio.h>
 #include "maths/geom.h"
 #include "rsmaskborderdistance_common.h"
+#include "rssmoothing_common.h"
 #include "rsmaskborderdistance_ui.h"
 #include "utils/rsio.h"
 
@@ -71,6 +72,11 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
 {
     p->parametersValid = FALSE;
 
+    // Get voxel spacing
+    float xSpacing, ySpacing, zSpacing, tr;
+    FslGetVoxDim(p->input->fslio, &xSpacing, &ySpacing, &zSpacing, &tr);
+
+
     // Prepare world matrix for coordinate conversion
     mat44 inputWorldMatrix = p->output->fslio->niftiptr->sform_code == NIFTI_XFORM_UNKNOWN
                              ? p->output->fslio->niftiptr->qto_xyz
@@ -84,21 +90,78 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
     double ***mask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
     rsExtractVolumeFromRSNiftiFileBuffer(p->input, mask[0][0], 0);
 
+    // Binarize mask (>0)
+    if (p->verbose) {
+        fprintf(stdout, "Binarize mask\n");
+    }
+
+    short x, y, z;
+    for (z=0; z<p->input->zDim; z++) {
+        for (y = 0; y < p->input->yDim; y++) {
+            for (x = 0; x < p->input->xDim; x++) {
+                if (mask[z][y][x] < 0.1 || isnan(mask[z][y][x]) || isinf(mask[z][y][x])) {
+                    mask[z][y][x] = 0.0;
+                } else {
+                    mask[z][y][x] = 1.0;
+                }
+            }
+        }
+    }
+
+    // Create gaussian smoothing kernel
+    double kernelSizeFWHM = fmaxf(xSpacing, fmaxf(ySpacing, zSpacing)) * 5.0;
+    double kernelSigma = kernelSizeFWHM / (2.0*sqrt(2.0*log(2.0)));
+    if (p->verbose) {
+        fprintf(stdout, "Create smoothing kernel with FWHM = %.2f mm (sigma = %.2f)\n", kernelSizeFWHM, kernelSigma);
+    }
+
+    short kerneldim[3];
+    double ***kernel = rsCreateGaussianKernel(kernelSigma, &kerneldim[0], &kerneldim[1], &kerneldim[2], xSpacing, ySpacing, zSpacing);
+    double ***xKernel = d3matrix(0,0,kerneldim[0]-1);
+    double ***yKernel = d3matrix(0,kerneldim[1]-1,0);
+    double ***zKernel = d3matrix(kerneldim[2]-1,0,0);
+    const short xMidKernel = (kerneldim[0]-1)/2,
+        yMidKernel = (kerneldim[1]-1)/2,
+        zMidKernel = (kerneldim[2]-1)/2;
+    for (short n=0; n<kerneldim[0]; n++)
+        xKernel[0][0][n] = kernel[zMidKernel][yMidKernel][n];
+    for (short n=0; n<kerneldim[1]; n++)
+        yKernel[0][n][0] = kernel[zMidKernel][n][xMidKernel];
+    for (short n=0; n<kerneldim[2]; n++)
+        zKernel[n][0][0] = kernel[n][yMidKernel][xMidKernel];
+
+    // Create processing mask
+    if (p->verbose) {
+        fprintf(stdout, "Create processing mask by smoothing the input mask\n");
+    }
+
+    double ***processingMask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
+    double ***tmp = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
+    rsConvolveWithKernel(processingMask, mask, xKernel, p->input->xDim, p->input->yDim, p->input->zDim, kerneldim[0], 1, 1);
+    rsConvolveWithKernel(tmp, processingMask, yKernel, p->input->xDim, p->input->yDim, p->input->zDim, 1, kerneldim[1], 1);
+    rsConvolveWithKernel(processingMask, tmp, zKernel, p->input->xDim, p->input->yDim, p->input->zDim, 1, 1, kerneldim[2]);
+
+    // Cleanup kernel
+    rsFree(tmp[0][0]);     rsFree(tmp[0]);     rsFree(tmp);
+    rsFree(kernel[0][0]);  rsFree(kernel[0]);  rsFree(kernel);
+    rsFree(xKernel[0][0]); rsFree(xKernel[0]); rsFree(xKernel);
+    rsFree(yKernel[0][0]); rsFree(yKernel[0]); rsFree(yKernel);
+    rsFree(zKernel[0][0]); rsFree(zKernel[0]); rsFree(zKernel);
+
+    // Count number of on and off-mask voxels and initialize those values with NaN
     if (p->verbose) {
         fprintf(stdout, "Go through voxels and determine whether they are in the mask or not\n");
     }
 
-    // Count number of on and off-mask voxels and initialize those values with NaN
-    short x, y, z;
     unsigned long nOffMaskVoxels = 0L;
     unsigned long nOnMaskVoxels = 0L;
     for (z=0; z<p->input->zDim; z++) {
         for (y = 0; y < p->input->yDim; y++) {
             for (x = 0; x < p->input->xDim; x++) {
-                if (mask[z][y][x] < 0.1) {
-                    nOffMaskVoxels += 1L;
-                } else {
+                if (mask[z][y][x] > 0.1) {
                     nOnMaskVoxels += 1L;
+                } else if (processingMask[z][y][x] > 0.5) {
+                    nOffMaskVoxels += 1L;
                 }
             }
         }
@@ -119,28 +182,29 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
                 // determine coordinate of this voxel
                 FslGetMMCoord(inputWorldMatrix, x, y, z, &(pointMM->x), &(pointMM->y), &(pointMM->z));
 
-                if (mask[z][y][x] < 0.1) {
+                if (mask[z][y][x] > 0.1) {
+                    onMaskPoints[onMaskVoxelIndex] = pointMM;
+                    onMaskPointsVX[onMaskVoxelIndex] = point;
+                    onMaskVoxelIndex += 1L;
+                    continue;
+                } else if (processingMask[z][y][x] > 0.5) {
                     offMaskPoints[offMaskVoxelIndex] = pointMM;
                     offMaskVoxelIndex += 1L;
 
                     // set the value in the filtered data to NaN
                     rsWriteTimecourseToRSNiftiFileBuffer(p->output, emptybuffer, point);
-
-                    rsFree(point);
-                } else {
-                    onMaskPoints[onMaskVoxelIndex] = pointMM;
-                    onMaskPointsVX[onMaskVoxelIndex] = point;
-                    onMaskVoxelIndex += 1L;
                 }
+
+                rsFree(point);
             }
         }
     }
 
-    rsFree(mask[0][0]);
-    rsFree(mask[0]);
-    rsFree(mask);
+    rsFree(mask[0][0]);           rsFree(mask[0]);           rsFree(mask);
+    rsFree(processingMask[0][0]); rsFree(processingMask[0]); rsFree(processingMask);
 
     if (p->verbose) {
+        fprintf(stdout, "Found %lu voxels in the mask and %lu outside of the mask\n", nOnMaskVoxels, nOffMaskVoxels);
         fprintf(stdout, "Compute distances\n");
     }
 
@@ -156,19 +220,21 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
 
             for (offMaskVoxelIndex = 0L; offMaskVoxelIndex < nOffMaskVoxels; offMaskVoxelIndex += 1L) {
                 // euclidean distance seems to be too slow :-(
-                /*currentDistance = powf(
+                currentDistance = powf(
                     (
                         powf(onMaskPoints[onMaskVoxelIndex]->x - offMaskPoints[offMaskVoxelIndex]->x, 2.0) +
                         powf(onMaskPoints[onMaskVoxelIndex]->y - offMaskPoints[offMaskVoxelIndex]->y, 2.0) +
                         powf(onMaskPoints[onMaskVoxelIndex]->z - offMaskPoints[offMaskVoxelIndex]->z, 2.0)
                     ),
                     1.0/2.0
-                );*/
+                );
 
+                /*
                 // so we use the manhattan distance instead
                 currentDistance = fabsf(onMaskPoints[onMaskVoxelIndex]->x - offMaskPoints[offMaskVoxelIndex]->x) +
                                   fabsf(onMaskPoints[onMaskVoxelIndex]->y - offMaskPoints[offMaskVoxelIndex]->y) +
                                   fabsf(onMaskPoints[onMaskVoxelIndex]->z - offMaskPoints[offMaskVoxelIndex]->z);
+                */
 
                 if (currentDistance < minDistance) {
                     minDistance = currentDistance;
