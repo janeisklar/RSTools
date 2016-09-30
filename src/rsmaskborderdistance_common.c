@@ -7,6 +7,8 @@
 #include "rsmaskborderdistance_ui.h"
 #include "utils/rsio.h"
 
+void rsMarkNeighbouringVoxels(double ***result, double ***input, short xdim, short ydim, short zdim);
+
 void rsMaskBorderDistanceInit(rsMaskBorderDistanceParameters *p)
 {
     p->parametersValid = FALSE;
@@ -108,45 +110,13 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
         }
     }
 
-    // Create gaussian smoothing kernel
-    double kernelSizeFWHM = fmaxf(xSpacing, fmaxf(ySpacing, zSpacing)) * 10.0;
-    double kernelSigma = kernelSizeFWHM / (2.0*sqrt(2.0*log(2.0)));
-    if (p->verbose) {
-        fprintf(stdout, "Create smoothing kernel with FWHM = %.2f mm (sigma = %.2f)\n", kernelSizeFWHM, kernelSigma);
-    }
-
-    short kerneldim[3];
-    double ***kernel = rsCreateGaussianKernel(kernelSigma, &kerneldim[0], &kerneldim[1], &kerneldim[2], xSpacing, ySpacing, zSpacing);
-    double ***xKernel = d3matrix(0,0,kerneldim[0]-1);
-    double ***yKernel = d3matrix(0,kerneldim[1]-1,0);
-    double ***zKernel = d3matrix(kerneldim[2]-1,0,0);
-    const short xMidKernel = (kerneldim[0]-1)/2,
-        yMidKernel = (kerneldim[1]-1)/2,
-        zMidKernel = (kerneldim[2]-1)/2;
-    for (short n=0; n<kerneldim[0]; n++)
-        xKernel[0][0][n] = kernel[zMidKernel][yMidKernel][n];
-    for (short n=0; n<kerneldim[1]; n++)
-        yKernel[0][n][0] = kernel[zMidKernel][n][xMidKernel];
-    for (short n=0; n<kerneldim[2]; n++)
-        zKernel[n][0][0] = kernel[n][yMidKernel][xMidKernel];
-
     // Create processing mask
     if (p->verbose) {
-        fprintf(stdout, "Create processing mask by smoothing the input mask (>0.3)\n");
+        fprintf(stdout, "Create processing mask by including mask neighbouring voxels only\n");
     }
 
     double ***processingMask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
-    double ***tmp = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
-    rsConvolveWithKernel(processingMask, mask, xKernel, p->input->xDim, p->input->yDim, p->input->zDim, kerneldim[0], 1, 1);
-    rsConvolveWithKernel(tmp, processingMask, yKernel, p->input->xDim, p->input->yDim, p->input->zDim, 1, kerneldim[1], 1);
-    rsConvolveWithKernel(processingMask, tmp, zKernel, p->input->xDim, p->input->yDim, p->input->zDim, 1, 1, kerneldim[2]);
-
-    // Cleanup kernel
-    rsFree(tmp[0][0]);     rsFree(tmp[0]);     rsFree(tmp);
-    rsFree(kernel[0][0]);  rsFree(kernel[0]);  rsFree(kernel);
-    rsFree(xKernel[0][0]); rsFree(xKernel[0]); rsFree(xKernel);
-    rsFree(yKernel[0][0]); rsFree(yKernel[0]); rsFree(yKernel);
-    rsFree(zKernel[0][0]); rsFree(zKernel[0]); rsFree(zKernel);
+    rsMarkNeighbouringVoxels(processingMask, mask, p->input->xDim, p->input->yDim, p->input->zDim);
 
     // Count number of on and off-mask voxels and initialize those values with NaN
     if (p->verbose) {
@@ -270,6 +240,32 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
     FslWriteVolumes(p->output->fslio, p->output->data, p->output->vDim);
 
     p->parametersValid = TRUE;
+}
+
+void rsMarkNeighbouringVoxels(double ***result, double ***input, short xdim, short ydim, short zdim) {
+    for (short z=0; z<zdim; z++) {
+        for (short y=0; y<ydim; y++) {
+            for (short x=0; x<xdim; x++) {
+                BOOL include = FALSE;
+                for (short mz=-1; mz<2 && include == FALSE; mz++) {
+                    const short z2 = z + mz;
+                    for (short my=-1; my<2 && include == FALSE; my++) {
+                        const short y2 = y + my;
+                        for (short mx=-1; mx<2; mx++) {
+                            const short x2 = x + mx;
+                            if (x2>=0 && x2<xdim && y2>=0 && y2<ydim && z2>=0 && z2<zdim) {
+                                if (input[z2][y2][x2] > 0.5) {
+                                    include = TRUE;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                result[z][y][x] = include ? 1.0 : 0.0;
+            }
+        }
+    }
 }
 
 void rsMaskBorderDistanceDestroy(rsMaskBorderDistanceParameters *p)
