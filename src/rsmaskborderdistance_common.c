@@ -109,7 +109,7 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
     }
 
     // Create gaussian smoothing kernel
-    double kernelSizeFWHM = fmaxf(xSpacing, fmaxf(ySpacing, zSpacing)) * 5.0;
+    double kernelSizeFWHM = fmaxf(xSpacing, fmaxf(ySpacing, zSpacing)) * 10.0;
     double kernelSigma = kernelSizeFWHM / (2.0*sqrt(2.0*log(2.0)));
     if (p->verbose) {
         fprintf(stdout, "Create smoothing kernel with FWHM = %.2f mm (sigma = %.2f)\n", kernelSizeFWHM, kernelSigma);
@@ -132,7 +132,7 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
 
     // Create processing mask
     if (p->verbose) {
-        fprintf(stdout, "Create processing mask by smoothing the input mask\n");
+        fprintf(stdout, "Create processing mask by smoothing the input mask (>0.3)\n");
     }
 
     double ***processingMask = d3matrix(p->input->zDim-1, p->input->yDim-1, p->input->xDim-1);
@@ -160,7 +160,7 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
             for (x = 0; x < p->input->xDim; x++) {
                 if (mask[z][y][x] > 0.1) {
                     nOnMaskVoxels += 1L;
-                } else if (processingMask[z][y][x] > 0.5) {
+                } else if (processingMask[z][y][x] > 0.3) {
                     nOffMaskVoxels += 1L;
                 }
             }
@@ -187,7 +187,7 @@ void rsMaskBorderDistanceRun(rsMaskBorderDistanceParameters *p)
                     onMaskPointsVX[onMaskVoxelIndex] = point;
                     onMaskVoxelIndex += 1L;
                     continue;
-                } else if (processingMask[z][y][x] > 0.5) {
+                } else if (processingMask[z][y][x] > 0.3) {
                     offMaskPoints[offMaskVoxelIndex] = pointMM;
                     offMaskVoxelIndex += 1L;
 
