@@ -9,6 +9,7 @@ rsRescaleParameters *rsRescaleInitParameters() {
     p->scale[1]             = -1.0;
     p->scale[2]             = -1.0;
     p->callString           = NULL;
+    p->linearInterpolation  = FALSE;
     p->verbose              = FALSE;
     p->input                = NULL;
     p->output               = NULL;
@@ -124,7 +125,14 @@ void rsRescaleBuildInterface(rsRescaleParameters *p)
     o->cli_description     = "the factor by which to scale the voxel dimensions in z-directiom";
     o->cli_arg_description = "<float>";
     rsUIAddOption(p->interface, o);
-    
+
+    o = rsUINewOption();
+    o->name                = "linear";
+    o->shorthand           = 'l';
+    o->storage             = &p->linearInterpolation;
+    o->cli_description     = "use linear interpolation (much faster)";
+    rsUIAddOption(p->interface, o);
+
     o = rsUINewOption();
     o->name                = "threads";
     o->shorthand           = 't';

@@ -240,7 +240,11 @@ void rsResampleApplyInterpolation(double ***data_out, const rsRescaleParameters 
             FslGetMMCoord(p->invInputWorldMatrix, outputPointInMM->x, outputPointInMM->y, outputPointInMM->z, &inputPointInVX->x, &inputPointInVX->y, &inputPointInVX->z);
 
             // interpolate current voxel
-            data_out[z][y][x] = rsInterpolation3DLanczosInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, pixdim, inputPointInVX);
+            if (p->linearInterpolation) {
+                data_out[z][y][x] = rsTriLinearDistInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, pixdim, inputPointInVX);
+            } else {
+                data_out[z][y][x] = rsInterpolation3DLanczosInterpolation(data_in, p->input->xDim, p->input->yDim, p->input->zDim, pixdim, inputPointInVX);
+            }
 
             rsFree(outputPointInMM);
             rsFree(inputPointInVX);

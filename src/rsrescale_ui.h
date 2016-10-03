@@ -25,6 +25,7 @@ typedef struct {
     mat44 outputWorldMatrix;
     mat44 invInputWorldMatrix;
 
+    BOOL linearInterpolation;
     BOOL verbose;
     BOOL parametersValid;
 
