@@ -227,8 +227,10 @@ BOOL rsUIParse(rsUIInterface* I, int argc, char * argv[], void *userData)
         fprintf(stdout, "%s\n", g_option_context_get_help(context, TRUE, NULL));
         return FALSE;
     }
-    
-    if ( ! g_option_context_parse(context, &argc, &argv, &error) ) {
+
+    I->nExtraArguments = argc;
+
+    if ( ! g_option_context_parse(context, &I->nExtraArguments, &argv, &error) ) {
         fprintf(stderr, "option parsing failed: %s\n", error->message);
         return FALSE;
     }

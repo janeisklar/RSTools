@@ -46,6 +46,7 @@ typedef struct {
     rsUIOption** options;
     size_t       nOptions;
     size_t       helpIndent;
+    int          nExtraArguments;
 } rsUIInterface;
 
 rsUIInterface*  rsUINewInterface();
