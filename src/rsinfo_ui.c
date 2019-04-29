@@ -5,6 +5,7 @@ rsInfoParameters* rsInfoInitParameters()
     rsInfoParameters *p = (rsInfoParameters*)rsMalloc(sizeof(rsInfoParameters));
     
     p->inputpath            = NULL;
+    p->outputpath           = NULL;
     p->dicompath            = NULL;
     p->extensionSource      = NULL;
     p->parametersValid      = FALSE;
