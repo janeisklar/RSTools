@@ -140,7 +140,7 @@ char* rsNiftiExtendendHeaderInformationFormatString(void* self, BOOL shorten) {
 
 void* rsNiftiExtendendHeaderInformationFormatDouble(void* self, BOOL shorten) {
     const double* value = (double*)(((rsNiftiExtendedHeaderInformationEntry *)self)->data);
-    char *string = (char*)rsMalloc(sizeof(char)*17L);
+    char *string = (char*)rsMalloc(sizeof(char)*19L);
     sprintf(string, "%.15f", *value);
     return string;
 }
@@ -277,7 +277,7 @@ void rsNiftiPrintExtendedHeaderInformation(rsNiftiExtendedHeaderInformation* inf
 
     for (int i=0; entries[i] != NULL; i++) {
         char *value = entries[i]->format(entries[i], TRUE);
-        fprintf(stdout, "% 30s : %s\n", entries[i]->key, value);
+        fprintf(stdout, "%30s : %s\n", entries[i]->key, value);
         rsFree(value);
     }
 
