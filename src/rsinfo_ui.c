@@ -16,6 +16,7 @@ rsInfoParameters* rsInfoInitParameters()
     p->showComments         = FALSE;
     p->showInfo             = FALSE;
     p->infoKey              = NULL;
+    p->modArgs              = NULL;
     p->interface            = NULL;
 
     return p;
