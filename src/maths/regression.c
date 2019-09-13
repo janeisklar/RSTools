@@ -159,7 +159,12 @@ int rsMultifitLinearSVD (const gsl_vector * y,
         GSL_ERROR ("covariance matrix is not square", GSL_ENOTSQR);
     } else if (c->size != cov->size1) {
         GSL_ERROR("number of parameters does not match size of covariance matrix", GSL_EBADLEN);
-    } else if (work->w->A->size1 != work->w->n || work->w->A->size2 != work->w->p) {
+    }
+    #if GSL_MAJOR_VERSION < 2
+    else if (work->w->A->size1 != work->w->n || work->w->A->size2 != work->w->p) {
+    #else
+    else if (work->w->A->size1 != work->w->nmax || work->w->A->size2 != work->w->pax) {
+    #endif
         GSL_ERROR("size of workspace does not match size of observation matrix", GSL_EBADLEN);
     } else {
         size_t i, j, p_eff;
