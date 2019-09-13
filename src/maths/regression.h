@@ -9,6 +9,7 @@
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_version.h>
 
 #include "linalg.h"
 
