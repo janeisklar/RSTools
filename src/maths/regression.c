@@ -163,7 +163,7 @@ int rsMultifitLinearSVD (const gsl_vector * y,
     #if GSL_MAJOR_VERSION < 2
     else if (work->w->A->size1 != work->w->n || work->w->A->size2 != work->w->p) {
     #else
-    else if (work->w->A->size1 != work->w->nmax || work->w->A->size2 != work->w->pax) {
+    else if (work->w->A->size1 != work->w->nmax || work->w->A->size2 != work->w->pmax) {
     #endif
         GSL_ERROR("size of workspace does not match size of observation matrix", GSL_EBADLEN);
     } else {
